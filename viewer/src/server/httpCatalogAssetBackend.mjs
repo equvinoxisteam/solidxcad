@@ -30,7 +30,18 @@ function stepUrlFromEntry(entry) {
     return explicitStepUrl;
   }
   const sourceKind = String(entry?.sourceKind || entry?.stepSourceKind || "").trim().toLowerCase();
-  return sourceKind === "python" ? "" : sourceUrlFromEntry(entry);
+  if (sourceKind === "python") {
+    return "";
+  }
+  // SolidX HTTP catalog entries expose presigned downloads on `url`.
+  return sourceUrlFromEntry(entry) || normalizeString(entry?.url);
+}
+
+function stepFileRefFromEntry(entry, fallback = "") {
+  return (
+    normalizeFileRef(entry?.stepFile || entry?.step?.file || entry?.step?.path) ||
+    normalizeFileRef(entry?.file || fallback)
+  );
 }
 
 function outputUrlFromEntry(entry, fileRef) {
@@ -141,12 +152,47 @@ export function createHttpCatalogAssetBackend({
     };
   }
 
+  async function readStepSourceStatus({ fileRef, catalog = null, catalogUrl = "" } = {}) {
+    const requestedFileRef = normalizeFileRef(fileRef);
+    const currentCatalog = catalog || await readCatalog({ catalogUrl });
+    const entry = catalogEntryForFileRef(currentCatalog, requestedFileRef);
+    if (!entry) {
+      throw new Error(`STEP catalog entry not found: ${requestedFileRef || "(missing)"}`);
+    }
+    const repoStepRef = stepFileRefFromEntry(entry, requestedFileRef);
+    const sourceKind = String(entry?.sourceKind || entry?.stepSourceKind || "step").trim().toLowerCase();
+    const sourceUrl = stepUrlFromEntry(entry);
+
+    return {
+      ok: Boolean(sourceUrl),
+      file: repoStepRef,
+      stepPath: repoStepRef,
+      sourceKind: sourceKind === "python" ? "python" : "step",
+      step: sourceUrl
+        ? {
+            ok: true,
+            status: "current",
+            missing: false,
+            stale: false,
+          }
+        : {
+            ok: false,
+            status: "missing",
+            missing: true,
+            stale: false,
+            message: "STEP file is missing.",
+          },
+    };
+  }
+
   return {
     kind: "http-catalog",
+    canGenerateStepArtifacts: false,
     catalogPath: "catalog.json",
     readCatalog,
     refreshCatalog,
     resolveFileAssetAccess,
     readFileAsset,
+    readStepSourceStatus,
   };
 }
