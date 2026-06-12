@@ -49,8 +49,23 @@ function catalogHashForFile(fileDoc) {
   return key || 'v1';
 }
 
-async function contentUrlForFile(file, { projectId, apiBase, usePresignedUrls }) {
+function publicContentUrlForFile(rel, { apiBase, catalogToken }) {
+  const params = new URLSearchParams();
+  params.set('token', catalogToken);
+  params.set('file', rel);
+  return `${apiBase}/api/viewer/public/content?${params.toString()}`;
+}
+
+async function contentUrlForFile(file, {
+  projectId,
+  apiBase,
+  usePresignedUrls,
+  catalogToken = '',
+}) {
   const rel = fileRefForDoc(file);
+  if (catalogToken) {
+    return publicContentUrlForFile(rel, { apiBase, catalogToken });
+  }
   if (
     usePresignedUrls
     && file.s3Key
@@ -61,7 +76,12 @@ async function contentUrlForFile(file, { projectId, apiBase, usePresignedUrls })
   return `${apiBase}/api/viewer/projects/${projectId}/content?file=${encodeURIComponent(rel)}`;
 }
 
-export async function buildProjectCatalog(files, { projectId, apiBase, usePresignedUrls = false }) {
+export async function buildProjectCatalog(files, {
+  projectId,
+  apiBase,
+  usePresignedUrls = false,
+  catalogToken = '',
+}) {
   const fileByRel = new Map();
   for (const file of files) {
     fileByRel.set(fileRefForDoc(file), file);
@@ -76,13 +96,17 @@ export async function buildProjectCatalog(files, { projectId, apiBase, usePresig
       continue;
     }
 
-    const url = await contentUrlForFile(file, { projectId, apiBase, usePresignedUrls });
+    const url = await contentUrlForFile(file, {
+      projectId, apiBase, usePresignedUrls, catalogToken,
+    });
 
     if (kind === 'step') {
       const glbRel = glbSidecarRelForStep(rel);
       const glbFile = fileByRel.get(glbRel);
       if (glbFile) {
-        const glbUrl = await contentUrlForFile(glbFile, { projectId, apiBase, usePresignedUrls });
+        const glbUrl = await contentUrlForFile(glbFile, {
+          projectId, apiBase, usePresignedUrls, catalogToken,
+        });
         entries.push({
           file: rel,
           kind: 'part',

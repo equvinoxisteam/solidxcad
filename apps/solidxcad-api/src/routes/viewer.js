@@ -56,12 +56,41 @@ router.get('/public/catalog', asyncHandler(async (req, res) => {
   const catalog = await buildProjectCatalog(files, {
     projectId: project._id.toString(),
     apiBase: config.apiUrl,
-    usePresignedUrls: true,
+    catalogToken: token,
   });
 
   res.setHeader('access-control-allow-origin', '*');
   res.setHeader('cache-control', 'private, max-age=30');
   res.json(catalog);
+}));
+
+router.get('/public/content', asyncHandler(async (req, res) => {
+  const token = String(req.query.token || '').trim();
+  const fileRef = String(req.query.file || '').trim();
+  if (!token) return res.status(400).json({ error: 'token query required' });
+  if (!fileRef) return res.status(400).json({ error: 'file query required' });
+
+  let payload;
+  try {
+    payload = verifyViewerCatalogToken(token);
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired viewer token' });
+  }
+
+  const project = await Project.findOne({ _id: payload.projectId, userId: payload.userId });
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+
+  const files = await ProjectFile.find({ projectId: project._id });
+  const match = files.find((f) => fileRefForDoc(f) === fileRef || f.name === fileRef);
+  if (!match) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+
+  const stream = await getObjectStream(match.s3Key);
+  res.setHeader('access-control-allow-origin', '*');
+  res.setHeader('content-type', match.mimeType || 'application/octet-stream');
+  res.setHeader('cache-control', 'private, max-age=300');
+  stream.pipe(res);
 }));
 
 router.use(requireAuth);
