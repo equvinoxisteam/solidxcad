@@ -62,6 +62,8 @@ apps/**/.env
 apps/**/.env.local
 apps/**/.next
 apps/**/node_modules
+apps/**/*.tsbuildinfo
+*.tsbuildinfo
 .env
 .env.local
 .env.production

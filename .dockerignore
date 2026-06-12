@@ -10,9 +10,6 @@ benchmarks
 plugins
 docs
 tests
+# cad-viewer skill is not needed in API/viewer Docker images (separate viewer service)
 skills/cad-viewer
-skills/implicit-cad
-skills/urdf
-skills/srdf
-skills/sdf
 step.parts
