@@ -1,0 +1,340 @@
+// Browser: same-origin /api via Next rewrite. Long jobs (slice) can bypass proxy.
+const DIRECT_API_URL =
+  typeof window !== 'undefined'
+    ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')
+    : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
+
+const API_URL = typeof window !== 'undefined' ? '' : DIRECT_API_URL;
+
+export function projectId(project: { _id?: string; id?: string }) {
+  return project._id || project.id || '';
+}
+
+export function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('solidxcad_token');
+}
+
+export function setToken(token: string) {
+  localStorage.setItem('solidxcad_token', token);
+}
+
+export function clearToken() {
+  localStorage.removeItem('solidxcad_token');
+  localStorage.removeItem('solidxcad_user');
+}
+
+export function getStoredUser() {
+  if (typeof window === 'undefined') return null;
+  const raw = localStorage.getItem('solidxcad_user');
+  return raw ? JSON.parse(raw) : null;
+}
+
+export function setStoredUser(user: unknown) {
+  localStorage.setItem('solidxcad_user', JSON.stringify(user));
+}
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  directApi = false,
+): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const base = directApi && typeof window !== 'undefined' ? DIRECT_API_URL : API_URL;
+
+  let res: Response;
+  try {
+    res = await fetch(`${base}${path}`, { ...options, headers });
+  } catch {
+    throw new Error(
+      'Cannot reach API. Start the API: cd apps/solidxcad-api && npm run dev',
+    );
+  }
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (res.status === 401) throw new Error(data.error || 'Please log in again');
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+  return data as T;
+}
+
+export const api = {
+  sendOtp: (body: { email: string; purpose: 'signup' | 'reset' }) =>
+    request<{ ok: boolean; message: string; devOtp?: string }>('/api/auth/otp/send', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  verifyOtp: (body: { email: string; purpose: 'signup' | 'reset'; code: string }) =>
+    request<{ ok: boolean; verified: boolean }>('/api/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  register: (body: { name?: string; email: string; password: string; otp: string }) =>
+    request<{ token: string; user: User }>('/api/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+
+  login: (body: { email: string; password: string }) =>
+    request<{ token: string; user: User }>('/api/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+
+  resetPassword: (body: { email: string; otp: string; password: string }) =>
+    request<{ token: string; user: User }>('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  googleVerify: (credential: string) =>
+    request<{ token: string; user: User }>('/api/auth/google/verify', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
+    }),
+
+  completeOnboarding: (body: {
+    name?: string;
+    useCase?: string;
+    experience?: string;
+    goal?: string;
+    complete?: boolean;
+  }) =>
+    request<{ user: User }>('/api/auth/onboarding', { method: 'PATCH', body: JSON.stringify(body) }),
+
+  updateProfile: (body: { name: string }) =>
+    request<{ user: User }>('/api/auth/profile', { method: 'PATCH', body: JSON.stringify(body) }),
+
+  me: () => request<{ user: User }>('/api/auth/me'),
+
+  getProjects: () => request<{ projects: Project[] }>('/api/projects'),
+
+  createProject: (body: { name: string; description?: string }) =>
+    request<{ project: Project }>('/api/projects', { method: 'POST', body: JSON.stringify(body) }),
+
+  getProject: (id: string) => request<{ project: Project }>(`/api/projects/${id}`),
+
+  deleteProject: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}`, { method: 'DELETE' }),
+
+  getFiles: (projectId: string) => request<{ files: ProjectFile[] }>(`/api/projects/${projectId}/files`),
+
+  getMessages: (projectId: string) => request<{ messages: ChatMessage[] }>(`/api/projects/${projectId}/messages`),
+
+  chat: (body: { projectId: string; message: string; stream?: boolean }) =>
+    request<{ reply: string; cadResult?: CadResult }>('/api/agent/chat', { method: 'POST', body: JSON.stringify(body) }),
+
+  billingConfig: () => request<BillingConfig>('/api/billing/config'),
+
+  createOrder: () => request<{ orderId: string; amount: number; currency: string; keyId: string }>('/api/billing/create-order', { method: 'POST', body: '{}' }),
+
+  verifyPayment: (body: Record<string, string>) =>
+    request<{ ok: boolean; plan: string; credits: number }>('/api/billing/verify', { method: 'POST', body: JSON.stringify(body) }),
+
+  searchParts: (query: string) =>
+    request<unknown>('/api/manufacturing/parts/search', { method: 'POST', body: JSON.stringify({ query }) }),
+
+  importPart: (body: { projectId: string; partId?: string; partUrl?: string; name?: string }) =>
+    request<{ file: ProjectFile }>('/api/manufacturing/parts/import', { method: 'POST', body: JSON.stringify(body) }),
+
+  sliceModel: (body: { projectId: string; fileId: string; profilePath?: string }) =>
+    request<{ ok: boolean; file?: ProjectFile; error?: string }>(
+      '/api/manufacturing/slice',
+      { method: 'POST', body: JSON.stringify(body) },
+      true,
+    ),
+
+  syncViewerWorkspace: (projectId: string) =>
+    request<ViewerSyncResult>(`/api/viewer/projects/${projectId}/sync`, { method: 'POST', body: '{}' }),
+
+  getViewerSession: (projectId: string, fileRef?: string) => {
+    const q = fileRef ? `?file=${encodeURIComponent(fileRef)}` : '';
+    return request<ViewerSession>(`/api/viewer/projects/${projectId}/session${q}`);
+  },
+
+  getViewerCatalog: (projectId: string) =>
+    request<{ schemaVersion: number; entries: unknown[] }>(`/api/viewer/projects/${projectId}/catalog`),
+
+  getChatModels: () => request<ChatModelsResponse>('/api/agent/models'),
+};
+
+export type ChatModel = {
+  id: string;
+  label: string;
+  tier: 'fast' | 'quality' | 'budget';
+  description: string;
+};
+
+export type ChatModelsResponse = {
+  models: ChatModel[];
+  defaultModel: string;
+};
+
+const MODEL_STORAGE_KEY = 'solidxcad_chat_model';
+const WEB_SEARCH_STORAGE_KEY = 'solidxcad_web_search';
+
+export function getStoredWebSearch(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(WEB_SEARCH_STORAGE_KEY) === '1';
+}
+
+export function setStoredWebSearch(enabled: boolean) {
+  localStorage.setItem(WEB_SEARCH_STORAGE_KEY, enabled ? '1' : '0');
+}
+
+export function getStoredChatModel(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(MODEL_STORAGE_KEY);
+}
+
+export function setStoredChatModel(modelId: string) {
+  localStorage.setItem(MODEL_STORAGE_KEY, modelId);
+}
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  plan: string;
+  credits: number;
+  unlimitedCredits?: boolean;
+  onboardingCompleted?: boolean;
+  isVerified?: boolean;
+  authProvider?: string;
+  avatarUrl?: string | null;
+  onboarding?: { useCase?: string; experience?: string; goal?: string };
+};
+
+export function formatCredits(user: User | null | undefined): string {
+  if (!user) return '0';
+  if (user.unlimitedCredits || user.credits >= 999999) return 'Unlimited';
+  return String(user.credits);
+}
+
+export type Project = {
+  _id: string;
+  name: string;
+  description?: string;
+  updatedAt: string;
+  createdAt: string;
+};
+
+export type ProjectFile = {
+  _id: string;
+  name: string;
+  kind: string;
+  downloadUrl: string;
+  s3Key: string;
+  createdAt?: string;
+};
+
+export type ChatMessage = {
+  _id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  createdAt: string;
+};
+
+export type CadResult = {
+  ok: boolean;
+  skill?: string;
+  url?: string;
+  error?: string;
+  repaired?: boolean;
+  deferred?: boolean;
+  hint?: string;
+  hintMessage?: string;
+  file?: { _id?: string; name: string; kind: string; s3Key?: string };
+  sliceFile?: { _id?: string; name: string; kind: string; s3Key?: string };
+};
+
+export type ViewerSession = {
+  viewerUrl: string;
+  workspaceDir: string;
+  file: string;
+  catalogUrl: string;
+  viewerLink: string;
+};
+
+export type ViewerSyncResult = {
+  workspaceDir: string;
+  files: { id: string; file: string; name: string; kind: string }[];
+  viewerUrl: string;
+};
+
+export type BillingConfig = {
+  keyId: string;
+  plan: { name: string; amountUsd: number; credits: number };
+  freeCredits: number;
+};
+
+export async function streamChat(
+  projectId: string,
+  message: string,
+  model: string,
+  webSearch: boolean,
+  onDelta: (text: string) => void,
+  onDone: (payload: { cadResult?: CadResult; pipelineDeferred?: boolean }) => void,
+  onError: (err: string) => void,
+  onCadStatus?: (message: string, skill?: string, status?: string) => void,
+  onAgentPhase?: (phase: string, message: string) => void,
+) {
+  const token = getToken();
+  const res = await fetch(`/api/agent/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      projectId,
+      message,
+      model,
+      stream: true,
+      generateCad: true,
+      webSearch: Boolean(webSearch),
+    }),
+  });
+
+  if (!res.ok || !res.body) {
+    const data = await res.json().catch(() => ({}));
+    onError(data.error || 'Request could not complete — try again');
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split('\n\n');
+    buffer = parts.pop() || '';
+
+    for (const part of parts) {
+      const line = part.trim();
+      if (!line.startsWith('data:')) continue;
+      try {
+        const json = JSON.parse(line.slice(5));
+        if (json.type === 'delta') onDelta(json.content);
+        if (json.type === 'agent_phase' && json.phase) {
+          onAgentPhase?.(json.phase, json.message || json.phase);
+        }
+        if (json.type === 'cad_status' && json.message) {
+          onCadStatus?.(json.message, json.skill, json.status);
+        }
+        if (json.type === 'done') {
+          onDone({ cadResult: json.cadResult, pipelineDeferred: json.pipelineDeferred });
+        }
+        if (json.type === 'error') onError(json.error);
+      } catch {
+        // ignore
+      }
+    }
+  }
+}

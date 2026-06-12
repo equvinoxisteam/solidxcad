@@ -56,3 +56,12 @@ tmp/
 
 # Local printer credentials
 /bambu-printers.json
+
+# SolidX CAD portal
+apps/**/.env
+apps/**/.env.local
+apps/**/.next
+apps/**/node_modules
+.env
+.env.local
+.env.production

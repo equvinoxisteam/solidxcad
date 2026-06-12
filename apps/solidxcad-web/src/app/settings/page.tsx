@@ -1,0 +1,222 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Script from 'next/script';
+import { Check, CreditCard, Loader2, User } from 'lucide-react';
+import { Navbar } from '@/components/Navbar';
+import {
+  api,
+  formatCredits,
+  getToken,
+  setStoredUser,
+  type BillingConfig,
+  type User as UserType,
+} from '@/lib/api';
+
+declare global {
+  interface Window {
+    Razorpay: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
+export default function SettingsPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<UserType | null>(null);
+  const [billing, setBilling] = useState<BillingConfig | null>(null);
+  const [name, setName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+  const [paying, setPaying] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!getToken()) {
+      router.push('/login');
+      return;
+    }
+    Promise.all([api.me(), api.billingConfig()])
+      .then(([me, bill]) => {
+        setUser(me.user);
+        setName(me.user.name || '');
+        setStoredUser(me.user);
+        setBilling(bill);
+      })
+      .catch(() => router.push('/login'))
+      .finally(() => setLoading(false));
+  }, [router]);
+
+  async function saveName(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError('Name cannot be empty');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    setSaved(false);
+    try {
+      const { user: updated } = await api.updateProfile({ name: trimmed });
+      setUser(updated);
+      setStoredUser(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save name');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function upgrade() {
+    if (!billing || !window.Razorpay) return;
+    setPaying(true);
+    try {
+      const order = await api.createOrder();
+      const rzp = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'SolidX CAD Pro',
+        description: 'Pro plan subscription',
+        order_id: order.orderId,
+        handler: async (response: Record<string, string>) => {
+          await api.verifyPayment(response);
+          const me = await api.me();
+          setUser(me.user);
+          setStoredUser(me.user);
+        },
+        theme: { color: '#103A8E' },
+      });
+      rzp.open();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Payment failed');
+    } finally {
+      setPaying(false);
+    }
+  }
+
+  const nameChanged = user && name.trim() !== (user.name || '');
+
+  return (
+    <div className="dashboard-scene min-h-screen flex flex-col relative overflow-hidden">
+      <div className="auth-bg opacity-60" aria-hidden />
+      <div className="auth-grid opacity-40" aria-hidden />
+
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+        <Navbar />
+
+        <main className="flex-1 max-w-lg mx-auto w-full px-4 sm:px-6 py-8">
+          <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Settings</h1>
+          <p className="text-gray-400 text-sm mb-8">Manage your account and subscription</p>
+
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-brand" />
+            </div>
+          ) : user ? (
+            <div className="space-y-5">
+              {error && (
+                <div className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl p-3">
+                  {error}
+                </div>
+              )}
+
+              <section className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/85 p-6 space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-brand/15 border border-brand/25 flex items-center justify-center">
+                    <User className="w-5 h-5 text-brand" />
+                  </div>
+                  <h2 className="font-semibold text-white">Account</h2>
+                </div>
+
+                <form onSubmit={saveName} className="space-y-4">
+                  <div>
+                    <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1.5">
+                      Display name
+                    </label>
+                    <input
+                      className="auth-input"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your name"
+                      autoComplete="name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1.5">
+                      Email
+                    </label>
+                    <input
+                      className="auth-input opacity-70 cursor-not-allowed"
+                      value={user.email}
+                      readOnly
+                      disabled
+                    />
+                  </div>
+
+                  {(nameChanged || saved) && (
+                    <button
+                      type="submit"
+                      className="auth-btn-primary flex items-center justify-center gap-2 w-full sm:w-auto px-6"
+                      disabled={saving || !name.trim()}
+                    >
+                      {saving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : saved ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Saved
+                        </>
+                      ) : (
+                        'Save changes'
+                      )}
+                    </button>
+                  )}
+                </form>
+              </section>
+
+              <section className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/85 p-6 space-y-3">
+                <h2 className="font-semibold text-white">Subscription</h2>
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-gray-400">Plan</span>
+                  <span className="text-sm font-medium text-white uppercase">{user.plan}</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-400">Credits</span>
+                  <span className="text-sm font-medium text-blue-200">
+                    {formatCredits(user)} remaining
+                  </span>
+                </div>
+              </section>
+
+              {user.plan !== 'pro' && billing && (
+                <section className="auth-card rounded-2xl border border-brand/25 bg-brand/5 p-6">
+                  <h2 className="font-semibold text-white mb-1 flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-brand" />
+                    Upgrade to Pro
+                  </h2>
+                  <p className="text-sm text-gray-400 mb-4">
+                    ${billing.plan.amountUsd}/month · {billing.plan.credits} credits · unlimited projects
+                  </p>
+                  <button
+                    type="button"
+                    onClick={upgrade}
+                    className="auth-btn-primary flex items-center justify-center gap-2 w-full sm:w-auto px-6"
+                    disabled={paying}
+                  >
+                    {paying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Pay with Razorpay'}
+                  </button>
+                </section>
+              )}
+            </div>
+          ) : null}
+        </main>
+      </div>
+    </div>
+  );
+}

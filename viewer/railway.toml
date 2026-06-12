@@ -1,0 +1,8 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "viewer/Dockerfile"
+
+[deploy]
+healthcheckPath = "/__cad/server"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"

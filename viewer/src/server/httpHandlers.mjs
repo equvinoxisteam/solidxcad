@@ -52,6 +52,26 @@ function requestFileRef(requestUrl) {
   return String(requestUrl?.searchParams?.get("file") || "").trim();
 }
 
+function requestCatalogUrl(requestUrl, req) {
+  const fromQuery = String(requestUrl?.searchParams?.get("catalogUrl") || "").trim();
+  if (fromQuery) {
+    return fromQuery;
+  }
+  const refererUrl = requestRefererUrl(req);
+  if (refererUrl) {
+    return String(refererUrl.searchParams.get("catalogUrl") || "").trim();
+  }
+  return "";
+}
+
+function catalogReadOptions(requestUrl, req, { rootDir = "", fileRef = "" } = {}) {
+  return {
+    rootDir,
+    fileRef,
+    catalogUrl: requestCatalogUrl(requestUrl, req),
+  };
+}
+
 function requestHeader(req, name) {
   const headers = req?.headers || {};
   const value = headers[String(name || "").toLowerCase()];
@@ -125,6 +145,7 @@ function readJsonBody(req, { limitBytes = 256 * 1024 } = {}) {
 function fileAssetRequest(backend, requestUrl, {
   rootDir,
   catalog,
+  catalogUrl = "",
 } = {}) {
   const fileRef = requestFileRef(requestUrl);
   const request = {
@@ -132,6 +153,7 @@ function fileAssetRequest(backend, requestUrl, {
     asset: requestUrl.searchParams.get("asset") || "output",
     rootDir,
     catalog,
+    catalogUrl,
   };
   if (typeof backend.resolveRequestRoot === "function") {
     request.resolvedRoot = backend.resolveRequestRoot({ rootDir, fileRef });
@@ -208,13 +230,17 @@ export function createCadViewerApiMiddleware({
     const requestUrl = new URL(req.url || "/", "http://localhost");
     const activeRootDir = requestRootDir(requestUrl) || rootDir || "";
     const activeFileRef = requestFileRef(requestUrl);
+    const activeCatalogUrl = requestCatalogUrl(requestUrl, req);
     if (requestUrl.pathname === "/__cad/server") {
       sendJson(res, 200, serverInfo({ rootDir: activeRootDir, fileRef: activeFileRef }));
       return;
     }
     if (requestUrl.pathname === "/__cad/catalog") {
       try {
-        const catalog = await backend.readCatalog({ rootDir: activeRootDir, fileRef: activeFileRef });
+        const catalog = await backend.readCatalog(catalogReadOptions(requestUrl, req, {
+          rootDir: activeRootDir,
+          fileRef: activeFileRef,
+        }));
         if (typeof backend.resolveRequestRoot === "function" && (activeRootDir || activeFileRef)) {
           onCatalogActivated(
             backend.resolveRequestRoot({ rootDir: activeRootDir, fileRef: activeFileRef }),
@@ -258,8 +284,15 @@ export function createCadViewerApiMiddleware({
       }
 
       try {
-        const catalog = await backend.readCatalog({ rootDir: activeRootDir, fileRef: activeFileRef });
-        const request = fileAssetRequest(backend, requestUrl, { rootDir: activeRootDir, catalog });
+        const catalog = await backend.readCatalog(catalogReadOptions(requestUrl, req, {
+          rootDir: activeRootDir,
+          fileRef: activeFileRef,
+        }));
+        const request = fileAssetRequest(backend, requestUrl, {
+          rootDir: activeRootDir,
+          catalog,
+          catalogUrl: activeCatalogUrl,
+        });
 
         if (preferFileDownloadRedirects && typeof backend.resolveFileAssetAccess === "function") {
           const access = await backend.resolveFileAssetAccess(request);
@@ -382,8 +415,15 @@ export function createCadViewerApiMiddleware({
           });
           return;
         }
-        const catalog = await backend.readCatalog({ rootDir: activeRootDir, fileRef: activeFileRef });
-        const request = fileAssetRequest(backend, requestUrl, { rootDir: activeRootDir, catalog });
+        const catalog = await backend.readCatalog(catalogReadOptions(requestUrl, req, {
+          rootDir: activeRootDir,
+          fileRef: activeFileRef,
+        }));
+        const request = fileAssetRequest(backend, requestUrl, {
+          rootDir: activeRootDir,
+          catalog,
+          catalogUrl: activeCatalogUrl,
+        });
         const result = await backend.openFileAsset(request);
         sendJson(res, 200, {
           ok: true,
@@ -418,7 +458,10 @@ export function createCadViewerApiMiddleware({
       }
       try {
         const body = await readJsonBody(req);
-        const catalog = await backend.readCatalog({ rootDir: activeRootDir, fileRef: activeFileRef });
+        const catalog = await backend.readCatalog(catalogReadOptions(requestUrl, req, {
+          rootDir: activeRootDir,
+          fileRef: activeFileRef,
+        }));
         const resolvedRoot = typeof backend.resolveRequestRoot === "function"
           ? backend.resolveRequestRoot({ rootDir: activeRootDir, fileRef: activeFileRef })
           : backend.resolveRoot(activeRootDir);
@@ -441,8 +484,14 @@ export function createCadViewerApiMiddleware({
           entry: result.entry || null,
           catalog: result.catalog || (
             typeof backend.refreshCatalog === "function"
-              ? await backend.refreshCatalog({ rootDir: activeRootDir, fileRef: activeFileRef })
-              : await backend.readCatalog({ rootDir: activeRootDir, fileRef: activeFileRef })
+              ? await backend.refreshCatalog(catalogReadOptions(requestUrl, req, {
+                rootDir: activeRootDir,
+                fileRef: activeFileRef,
+              }))
+              : await backend.readCatalog(catalogReadOptions(requestUrl, req, {
+                rootDir: activeRootDir,
+                fileRef: activeFileRef,
+              }))
           ),
           downloadUrl: `/__cad/download?dir=${encodeURIComponent(activeRootDir)}&file=${encodeURIComponent(result.outputFileRef)}&asset=output`,
           filename: result.filename,
@@ -463,11 +512,15 @@ export function createCadViewerApiMiddleware({
         return;
       }
       try {
-        const catalog = await backend.readCatalog({ rootDir: activeRootDir, fileRef: activeFileRef });
+        const catalog = await backend.readCatalog(catalogReadOptions(requestUrl, req, {
+          rootDir: activeRootDir,
+          fileRef: activeFileRef,
+        }));
         const request = {
           fileRef: activeFileRef,
           rootDir: activeRootDir,
           catalog,
+          catalogUrl: activeCatalogUrl,
         };
         if (typeof backend.resolveRequestRoot === "function") {
           request.resolvedRoot = backend.resolveRequestRoot({ rootDir: activeRootDir, fileRef: activeFileRef });
@@ -506,7 +559,10 @@ export function createCadViewerApiMiddleware({
         return;
       }
       try {
-        const catalog = await backend.readCatalog({ rootDir: activeRootDir, fileRef: activeFileRef });
+        const catalog = await backend.readCatalog(catalogReadOptions(requestUrl, req, {
+          rootDir: activeRootDir,
+          fileRef: activeFileRef,
+        }));
         const resolvedRoot = typeof backend.resolveRequestRoot === "function"
           ? backend.resolveRequestRoot({ rootDir: activeRootDir, fileRef: activeFileRef })
           : backend.resolveRoot(activeRootDir);
@@ -517,8 +573,14 @@ export function createCadViewerApiMiddleware({
           catalog,
         });
         const nextCatalog = typeof backend.refreshCatalog === "function"
-          ? await backend.refreshCatalog({ rootDir: activeRootDir, fileRef: activeFileRef })
-          : await backend.readCatalog({ rootDir: activeRootDir, fileRef: activeFileRef });
+          ? await backend.refreshCatalog(catalogReadOptions(requestUrl, req, {
+            rootDir: activeRootDir,
+            fileRef: activeFileRef,
+          }))
+          : await backend.readCatalog(catalogReadOptions(requestUrl, req, {
+            rootDir: activeRootDir,
+            fileRef: activeFileRef,
+          }));
         onCatalogChanged(resolvedRoot);
         sendJson(res, result.ok ? 200 : 500, {
           ok: result.ok,

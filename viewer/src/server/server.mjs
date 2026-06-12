@@ -9,6 +9,7 @@ import {
   buildHostedViewerServerInfo,
 } from "./vercelApi.mjs";
 import { createVercelBlobAssetBackend } from "./vercelBlobAssetBackend.mjs";
+import { createHttpCatalogAssetBackend } from "./httpCatalogAssetBackend.mjs";
 import {
   createCadViewerApiMiddleware,
   createLocalAssetMiddleware,
@@ -87,7 +88,7 @@ const workspaceRoot = resolveWorkspaceRoot({
   defaultWorkspaceRoot,
 });
 const backendKind = normalizeViewerAssetBackend(runtimeEnv.VIEWER_ASSET_BACKEND);
-const port = normalizeViewerPort(runtime.args.port, DEFAULT_VIEWER_PORT);
+const port = normalizeViewerPort(runtime.args.port ?? runtimeEnv.PORT, DEFAULT_VIEWER_PORT);
 const host = runtime.args.host || "127.0.0.1";
 const serverLifetimeMs = runtime.args.shutdownAfterMs ?? normalizeServerLifetimeMs(runtimeEnv.VIEWER_SERVER_LIFETIME_MS);
 const distRoot = path.resolve(viewerAppRoot, "dist");
@@ -96,7 +97,11 @@ const backend = backendKind === VIEWER_ASSET_BACKENDS.VERCEL_BLOB
       ...vercelBlobConfigFromEnv(runtimeEnv),
       readOnly: true,
     })
-  : createLocalAssetBackend({
+  : backendKind === VIEWER_ASSET_BACKENDS.HTTP_CATALOG
+    ? createHttpCatalogAssetBackend({
+        defaultCatalogUrl: String(runtimeEnv.VIEWER_CATALOG_URL || "").trim(),
+      })
+    : createLocalAssetBackend({
       workspaceRoot,
       defaultFile: normalizeViewerDefaultFile(runtimeEnv.VIEWER_DEFAULT_FILE || ""),
       githubUrl: normalizeViewerGithubUrl(runtimeEnv.VIEWER_GITHUB_URL || ""),

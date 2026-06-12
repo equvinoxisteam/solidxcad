@@ -1129,7 +1129,9 @@ export default function CadWorkspaceTopBar({
   navigationAvailable = true
 }) {
   const viewerVersion = String(viewerPackage.version || "").trim();
-  const githubUrl = normalizeViewerGithubUrl(import.meta.env?.VIEWER_GITHUB_URL);
+  const embedMode = typeof window !== "undefined"
+    && new URLSearchParams(window.location.search).get("embed") === "1";
+  const githubUrl = embedMode ? "" : normalizeViewerGithubUrl(import.meta.env?.VIEWER_GITHUB_URL);
   const releaseUrl = viewerGithubReleaseUrl(viewerVersion, githubUrl);
   const latestReleaseUrl = viewerGithubLatestReleaseUrl(githubUrl);
   const latestReleaseApiUrl = previewMode ? "" : viewerGithubLatestReleaseApiUrl(githubUrl);
@@ -1311,11 +1313,13 @@ export default function CadWorkspaceTopBar({
 
       <TooltipProvider delayDuration={250}>
         <div className="flex shrink-0 items-center gap-1.5">
-          <VersionReleaseLink
-            version={viewerVersion}
-            releaseUrl={releaseUrl}
-            releaseCheck={releaseCheck}
-          />
+          {!embedMode ? (
+            <VersionReleaseLink
+              version={viewerVersion}
+              releaseUrl={releaseUrl}
+              releaseCheck={releaseCheck}
+            />
+          ) : null}
           {githubUrl ? (
             <Button
               asChild

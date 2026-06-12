@@ -8,7 +8,8 @@ const CAD_CATALOG_FETCH_TIMEOUT_MS = 10_000;
 const CAD_GENERATION_STATUS_REFRESH_INTERVAL_MS = 750;
 const CAD_DIR_QUERY_PARAM = "dir";
 const CAD_FILE_QUERY_PARAM = "file";
-const HOSTED_CATALOG_BACKENDS = new Set(["vercel-blob"]);
+const HOSTED_CATALOG_BACKENDS = new Set(["vercel-blob", "http-catalog"]);
+const CAD_CATALOG_URL_QUERY_PARAM = "catalogUrl";
 
 function viewerAssetBackendFromEnv() {
   return String(import.meta.env?.VIEWER_ASSET_BACKEND || "").trim().toLowerCase();
@@ -167,12 +168,20 @@ export function readActiveCadDir({ assetBackend = viewerAssetBackendFromEnv() } 
   return readStoredActiveCadDir();
 }
 
+function readCatalogUrl() {
+  return readSearchParam(CAD_CATALOG_URL_QUERY_PARAM);
+}
+
 function cadApiUrl(path, {
   activeDir = readActiveCadDir(),
   includeFile = false,
   params = {},
 } = {}) {
   const url = new URL(path, "http://cad.local");
+  const catalogUrl = readCatalogUrl();
+  if (catalogUrl) {
+    url.searchParams.set(CAD_CATALOG_URL_QUERY_PARAM, catalogUrl);
+  }
   if (activeDir) {
     url.searchParams.set(CAD_DIR_QUERY_PARAM, activeDir);
   }

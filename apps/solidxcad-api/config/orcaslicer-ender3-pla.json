@@ -1,0 +1,26 @@
+{
+  "backend": "orcaslicer",
+  "native_config": "C:\\Users\\LENOVO\\Desktop\\3d_launch - Copy\\text-to-cad\\apps\\solidxcad-api\\config\\orcaslicer-ender3-machine.json",
+  "native_settings": [
+    "C:\\Users\\LENOVO\\Desktop\\3d_launch - Copy\\text-to-cad\\apps\\solidxcad-api\\config\\orcaslicer-ender3-machine.json",
+    "C:\\Users\\LENOVO\\AppData\\Local\\OrcaSlicer\\resources\\profiles\\Creality\\process\\0.20mm Standard @Creality Ender3 0.4.json"
+  ],
+  "native_filaments": [
+    "C:\\Users\\LENOVO\\AppData\\Local\\OrcaSlicer\\resources\\profiles\\Creality\\filament\\Creality Generic PLA.json"
+  ],
+  "machine": {
+    "name": "Creality Ender-3",
+    "bed_size_mm": [220, 220],
+    "z_height_mm": 250,
+    "motion_bounds_mm": {
+      "x": [0, 220],
+      "y": [0, 220],
+      "z": [0, 250]
+    }
+  },
+  "filament": {
+    "type": "PLA",
+    "nozzle_temp_c": 220,
+    "bed_temp_c": 60
+  }
+}

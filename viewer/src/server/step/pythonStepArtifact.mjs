@@ -60,10 +60,14 @@ export function cadPythonExecutable(repoRoot) {
   const resolvedRepoRoot = path.resolve(repoRoot || "");
   return firstExistingFile([
     path.join(resolvedRepoRoot, ".venv", "bin", "python"),
+    path.join(resolvedRepoRoot, ".venv", "Scripts", "python.exe"),
     path.join(process.cwd(), ".venv", "bin", "python"),
+    path.join(process.cwd(), ".venv", "Scripts", "python.exe"),
     path.join(PACKAGE_ROOT, ".venv", "bin", "python"),
+    path.join(PACKAGE_ROOT, ".venv", "Scripts", "python.exe"),
     findUpFile(path.join(".venv", "bin", "python")),
-  ]) || "python3";
+    findUpFile(path.join(".venv", "Scripts", "python.exe")),
+  ]) || (process.platform === "win32" ? "python" : "python3");
 }
 
 export function cadPythonEnv() {

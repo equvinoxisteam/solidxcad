@@ -1,6 +1,7 @@
 export const VIEWER_ASSET_BACKENDS = Object.freeze({
   LOCAL_FS: "local-fs",
   VERCEL_BLOB: "vercel-blob",
+  HTTP_CATALOG: "http-catalog",
 });
 
 export const DEPRECATED_LOCAL_ROOT_ENV_VARS = Object.freeze([
