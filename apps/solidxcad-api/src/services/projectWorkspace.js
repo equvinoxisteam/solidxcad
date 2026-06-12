@@ -62,28 +62,27 @@ export async function syncProjectWorkspace({ userId, projectId }) {
 
   for (const entry of synced.filter((f) => f.kind === 'step')) {
     const stepDoc = files.find((f) => f._id.toString() === entry.id);
-    const wsStep = path.join(root, entry.file);
-    const glbName = `.${entry.name}.glb`;
-    const glbRel = path.posix.join(path.dirname(entry.file), glbName);
-    const glbOnDisk = path.join(root, glbRel);
+    if (!stepDoc) continue;
     try {
-      await fs.access(glbOnDisk);
-    } catch {
-      try {
-        const { generateGlbOnDisk } = await import('./artifactPipeline.js');
-        await generateGlbOnDisk(root, wsStep);
-        console.log(`[workspace] generated GLB: ${glbRel}`);
-      } catch (err) {
-        console.warn(`[workspace] GLB sidecar for ${entry.name}:`, err.message);
-        continue;
-      }
+      const { ensureGlbSidecar } = await import('./artifactPipeline.js');
+      const glbDoc = await ensureGlbSidecar({
+        userId,
+        projectId,
+        stepFileDoc: stepDoc,
+        onProgress: () => {},
+      });
+      if (!glbDoc) continue;
+      const glbRel = fileRefForDoc(glbDoc);
+      synced.push({
+        id: glbDoc._id?.toString() || `glb-${entry.id}`,
+        file: glbRel,
+        name: glbDoc.name,
+        kind: 'glb',
+      });
+      console.log(`[workspace] GLB sidecar ready: ${glbRel}`);
+    } catch (err) {
+      console.warn(`[workspace] GLB sidecar for ${entry.name}:`, err.message);
     }
-    synced.push({
-      id: `glb-${entry.id}`,
-      file: glbRel,
-      name: glbName,
-      kind: 'glb',
-    });
   }
 
   return { root, files: synced };

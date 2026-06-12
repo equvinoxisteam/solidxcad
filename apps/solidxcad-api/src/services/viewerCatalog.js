@@ -24,6 +24,18 @@ function kindForFile(fileDoc) {
   return KIND_MAP[ext] || 'other';
 }
 
+function glbSidecarRelForStep(stepRel) {
+  const dir = path.posix.dirname(stepRel);
+  const base = path.posix.basename(stepRel);
+  const glbName = `.${base}.glb`;
+  return dir === '.' ? glbName : path.posix.join(dir, glbName);
+}
+
+function isInlineStepGlbSidecar(fileDoc, rel) {
+  const name = fileDoc.name || path.posix.basename(rel);
+  return kindForFile(fileDoc) === 'glb' && name.startsWith('.') && name.endsWith('.step.glb');
+}
+
 async function contentUrlForFile(file, { projectId, apiBase, usePresignedUrls }) {
   const rel = fileRefForDoc(file);
   if (
@@ -37,19 +49,61 @@ async function contentUrlForFile(file, { projectId, apiBase, usePresignedUrls })
 }
 
 export async function buildProjectCatalog(files, { projectId, apiBase, usePresignedUrls = false }) {
-  const entries = await Promise.all(files.map(async (file) => {
+  const fileByRel = new Map();
+  for (const file of files) {
+    fileByRel.set(fileRefForDoc(file), file);
+  }
+
+  const entries = [];
+  for (const file of files) {
     const rel = fileRefForDoc(file);
     const kind = kindForFile(file);
+
+    if (isInlineStepGlbSidecar(file, rel)) {
+      continue;
+    }
+
     const url = await contentUrlForFile(file, { projectId, apiBase, usePresignedUrls });
-    return {
+
+    if (kind === 'step') {
+      const glbRel = glbSidecarRelForStep(rel);
+      const glbFile = fileByRel.get(glbRel);
+      if (glbFile) {
+        const glbUrl = await contentUrlForFile(glbFile, { projectId, apiBase, usePresignedUrls });
+        entries.push({
+          file: rel,
+          kind: 'part',
+          url: glbUrl,
+          hash: '',
+          bytes: glbFile.sizeBytes || file.sizeBytes || 0,
+          sourceKind: 'step',
+          source: {
+            file: rel,
+            url,
+          },
+          artifact: {
+            ok: true,
+            status: 'current',
+            missing: false,
+            stale: false,
+            stepPath: rel,
+            glbPath: glbRel,
+            sourceKind: 'step',
+          },
+        });
+        continue;
+      }
+    }
+
+    entries.push({
       file: rel,
       kind,
       url,
       hash: '',
       bytes: file.sizeBytes || 0,
       ...(kind === 'step' ? { sourceKind: 'step' } : {}),
-    };
-  }));
+    });
+  }
 
   entries.sort((a, b) => a.file.localeCompare(b.file));
 

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { GENERATION_STATUS_SCHEMA_VERSION } from "./catalog/generationStatus.mjs";
 import { contentTypeForFileRef } from "./vercelBlobAssetBackend.mjs";
 
 function normalizeFileRef(value) {
@@ -152,6 +153,14 @@ export function createHttpCatalogAssetBackend({
     };
   }
 
+  async function readGenerationStatus() {
+    return {
+      schemaVersion: GENERATION_STATUS_SCHEMA_VERSION,
+      runs: [],
+      files: {},
+    };
+  }
+
   async function readStepSourceStatus({ fileRef, catalog = null, catalogUrl = "" } = {}) {
     const requestedFileRef = normalizeFileRef(fileRef);
     const currentCatalog = catalog || await readCatalog({ catalogUrl });
@@ -191,6 +200,7 @@ export function createHttpCatalogAssetBackend({
     catalogPath: "catalog.json",
     readCatalog,
     refreshCatalog,
+    readGenerationStatus,
     resolveFileAssetAccess,
     readFileAsset,
     readStepSourceStatus,

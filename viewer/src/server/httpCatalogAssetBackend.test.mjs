@@ -35,6 +35,14 @@ test("http catalog backend reports STEP source status from catalog url", async (
   assert.equal(status.step.missing, false);
 });
 
+test("http catalog backend returns idle generation status", async () => {
+  const backend = createHttpCatalogAssetBackend();
+  const status = await backend.readGenerationStatus();
+  assert.equal(status.schemaVersion, 1);
+  assert.deepEqual(status.runs, []);
+  assert.deepEqual(status.files, {});
+});
+
 test("http catalog backend resolves STEP download url from entry.url", async () => {
   const backend = createHttpCatalogAssetBackend({
     defaultCatalogUrl: "https://api.example.com/catalog.json",
