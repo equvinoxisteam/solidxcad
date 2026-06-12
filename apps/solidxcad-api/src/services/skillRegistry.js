@@ -2,6 +2,8 @@
  * Maps browser chat intents to repo skills under TEXT_TO_CAD_ROOT/skills/.
  */
 
+import { detectRoboticArmRequest } from './cadPythonPresets.js';
+
 export const SKILLS = {
   cad: {
     id: 'cad',
@@ -68,9 +70,19 @@ const SLICE_RE = /\b(slice|slicing|gcode|g-code|print|fdm|orca|prusa|3d\s*print)
 const PARTS_RE = /\b(m3|m4|screw|bearing|bolt|washer|fastener|step\.parts|catalog\s*part|import\s+part)\b/i;
 const SENDCUT_RE = /\b(sendcutsend|send\s*cut\s*send|laser\s*cut\s*order)\b/i;
 
+const URDF_EXPLICIT_RE = /\b(urdf|ros\b|rviz|moveit|gazebo\s+sim)\b/i;
+const ROBOT_MECH_CAD_RE = /\b(step\b|stl\b|screw|bolt|mechanical|solid\s+model|build123d|flange|3d\s+print|fully\s+work|gripper|mm|cad)\b/i;
+
 export function detectSkillIntent(userMessage = '', assistantText = '') {
   const user = userMessage.trim();
   const combined = `${user} ${assistantText}`;
+
+  if (assistantText.includes('gen_step') || /from build123d import/i.test(assistantText)) {
+    return 'cad';
+  }
+  if (assistantText.includes('gen_urdf') && !assistantText.includes('gen_step')) {
+    return 'urdf';
+  }
 
   if (assistantText.includes('gen_srdf') || (SRDF_RE.test(user) && !IMPLICIT_RE.test(user))) {
     return 'srdf';
@@ -87,6 +99,12 @@ export function detectSkillIntent(userMessage = '', assistantText = '') {
   }
   if (PARTS_RE.test(user) && !CAD_RE.test(user) && !URDF_RE.test(user)) {
     return 'step-parts';
+  }
+  if (detectRoboticArmRequest(combined) && !URDF_EXPLICIT_RE.test(user)) {
+    return 'cad';
+  }
+  if (URDF_RE.test(user) && ROBOT_MECH_CAD_RE.test(combined)) {
+    return 'cad';
   }
   if (assistantText.includes('gen_urdf') || URDF_RE.test(user)) {
     return 'urdf';

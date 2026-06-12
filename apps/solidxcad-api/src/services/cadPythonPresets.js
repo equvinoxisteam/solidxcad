@@ -253,6 +253,102 @@ export function sanitizeCompoundInCode(code) {
   return out;
 }
 
+export function detectRoboticArmRequest(text = '') {
+  const t = String(text || '');
+  if (/\b(urdf|ros\b|rviz|moveit)\b/i.test(t) && !/\b(step|stl|screw|bolt|mechanical|build123d|solid)\b/i.test(t)) {
+    return false;
+  }
+  return /\b(robotic\s+arm|robot\s+arm|6\s*[- ]?dof|industrial\s+arm|manipulator\s+arm)\b/i.test(t)
+    || (/\b(robot|robotic|manipulator)\b/i.test(t) && /\barm\b/i.test(t));
+}
+
+export function parseRoboticArmParams(text = '') {
+  const msg = String(text || '').toLowerCase();
+  let reachMm = 450;
+  const reach = msg.match(/reach\s*[:=]?\s*(\d+(?:\.\d+)?)\s*mm|(\d+(?:\.\d+)?)\s*mm\s*reach/);
+  if (reach) reachMm = parseFloat(reach[1] || reach[2]);
+  reachMm = Math.max(250, Math.min(reachMm, 900));
+  const scale = reachMm / 450;
+  return { reachMm, scale: Math.max(0.7, Math.min(scale, 1.3)) };
+}
+
+export function buildRoboticArmGenStep({ scale = 1 } = {}) {
+  const s = Number(scale) || 1;
+  const fmt = (v) => (v * s).toFixed(2);
+  return `from build123d import *
+import math
+
+def _bolt_head(d=5, h=3):
+    return Cylinder(radius=d / 2, height=h)
+
+def _ring_bolts(radius, count, z, d=5, h=3):
+    bolts = []
+    for i in range(count):
+        a = 2 * math.pi * i / count
+        bolts.append(Pos(radius * math.cos(a), radius * math.sin(a), z) * _bolt_head(d, h))
+    return bolts
+
+def _side_bolts(cx, cz, face_y, radius, count, d=4, h=3):
+    bolts = []
+    for i in range(count):
+        a = 2 * math.pi * i / count
+        bx = cx + radius * math.cos(a)
+        bz = cz + radius * math.sin(a)
+        bolts.append(Pos(bx, face_y, bz) * Rot(90, Axis.X) * _bolt_head(d, h))
+    return bolts
+
+def gen_step():
+  children = []
+  base_top = ${fmt(10)}
+  children.append(Pos(0, 0, ${fmt(5)}) * Box(${fmt(160)}, ${fmt(160)}, ${fmt(10)}))
+  for sx in (-${fmt(70)}, ${fmt(70)}):
+      for sy in (-${fmt(70)}, ${fmt(70)}):
+          children.append(Pos(sx, sy, ${fmt(12)}) * _bolt_head(6, 4))
+  children.append(Pos(0, 0, base_top + ${fmt(3)}) * Cylinder(radius=${fmt(50)}, height=${fmt(6)}))
+  children.extend(_ring_bolts(${fmt(42)}, 8, base_top + ${fmt(7)}, 5, 3))
+  children.append(Pos(0, 0, base_top + ${fmt(40)}) * Cylinder(radius=${fmt(45)}, height=${fmt(80)}))
+  sh_z = base_top + ${fmt(80)} + ${fmt(35)}
+  children.append(Pos(0, 0, sh_z) * Box(${fmt(70)}, ${fmt(90)}, ${fmt(70)}))
+  for face_y in (-${fmt(46)}, ${fmt(46)}):
+      children.extend(_side_bolts(0, sh_z, face_y, ${fmt(25)}, 6, 4, 3))
+  upper_len = ${fmt(180)}
+  tilt = 60
+  rad = math.radians(tilt)
+  ux = math.sin(rad) * upper_len / 2
+  uz = math.cos(rad) * upper_len / 2
+  upper = Rot(tilt, Axis.Y) * Cylinder(radius=${fmt(22)}, height=upper_len)
+  children.append(Pos(ux, 0, sh_z + uz) * upper)
+  ex = math.sin(rad) * upper_len
+  ez = sh_z + math.cos(rad) * upper_len
+  elbow = Rot(90, Axis.X) * Cylinder(radius=${fmt(30)}, height=${fmt(70)})
+  children.append(Pos(ex, 0, ez) * elbow)
+  for face_y in (-${fmt(36)}, ${fmt(36)}):
+      children.extend(_side_bolts(ex, ez, face_y, ${fmt(22)}, 6, 4, 3))
+  fore_len = ${fmt(160)}
+  fore = Rot(90, Axis.Y) * Cylinder(radius=${fmt(18)}, height=fore_len)
+  children.append(Pos(ex + fore_len / 2, 0, ez) * fore)
+  wx = ex + fore_len
+  wp = Rot(90, Axis.X) * Cylinder(radius=${fmt(22)}, height=${fmt(50)})
+  children.append(Pos(wx, 0, ez) * wp)
+  wr = Rot(90, Axis.Y) * Cylinder(radius=${fmt(16)}, height=${fmt(45)})
+  children.append(Pos(wx + ${fmt(50)}, 0, ez) * wr)
+  tf = Rot(90, Axis.Y) * Cylinder(radius=${fmt(20)}, height=${fmt(6)})
+  children.append(Pos(wx + ${fmt(72)}, 0, ez) * tf)
+  for i in range(4):
+      a = 2 * math.pi * i / 4 + math.pi / 4
+      children.append(
+          Pos(wx + ${fmt(75)}, ${fmt(14)} * math.cos(a), ez + ${fmt(14)} * math.sin(a))
+          * Rot(0, 90, 0)
+          * _bolt_head(3, 2)
+      )
+  gx = wx + ${fmt(78)}
+  children.append(Pos(gx + ${fmt(10)}, 0, ez) * Box(${fmt(20)}, ${fmt(50)}, ${fmt(30)}))
+  for sy in (-${fmt(17)}, ${fmt(17)}):
+      children.append(Pos(gx + ${fmt(22)}, sy, ez) * Box(${fmt(10)}, ${fmt(8)}, ${fmt(35)}))
+  return Compound(label="robotic_arm_6dof", children=children)
+`;
+}
+
 export function detectGearRequest(text = '') {
   return /\b(gear|spur|helical|pinion|teeth|module)\b/i.test(text);
 }

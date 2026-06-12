@@ -43,6 +43,10 @@ def gen_step():
 
 DXF/laser: also define gen_dxf() when requested.
 
+Robotic arms (mechanical STEP, not URDF):
+- Prefer Compound(label="arm", children=[base, links, bolts, gripper]) for multi-link arms
+- Keep under ~100 lines; the pipeline also has a tested 6-DOF desktop arm preset
+
 Rules:
 - gen_step() returns final solid; no export_step/export_stl (pipeline writes files)
 - Under ~120 lines; split helpers inside the same file

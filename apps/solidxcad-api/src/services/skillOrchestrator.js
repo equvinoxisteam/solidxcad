@@ -10,7 +10,7 @@ import {
   skillMeta,
 } from './skillRegistry.js';
 import { executeCadGeneration, hasCadPayload } from './cadWorker.js';
-import { detectHilbertRequest } from './cadPythonPresets.js';
+import { detectHilbertRequest, detectRoboticArmRequest } from './cadPythonPresets.js';
 import { executeGeneratorSkill, hasGeneratorPayload } from './generatorWorker.js';
 import { executeImplicitGeneration, hasImplicitPayload } from './implicitWorker.js';
 import { executeSendCutSendPreflight } from './sendcutsendWorker.js';
@@ -33,6 +33,7 @@ function countPipelineSteps(userMessage, assistantText, cadContext, hasCode) {
   if (wantsPartsImport(userMessage)) total += 1;
   const wantsCad = hasCadPayload(assistantText, cadContext)
     || detectHilbertRequest(cadContext)
+    || detectRoboticArmRequest(cadContext)
     || (hasCode && /build123d|export_step|Box\(|Cylinder\(/i.test(assistantText));
   if (wantsCad) total += 1;
   if (wantsSliceAfterCad(userMessage) && wantsCad) total += 1;
@@ -272,6 +273,7 @@ export async function runSkillPipeline({
   } else if (skill === 'cad' || (hasCadPayload(assistantText, cadContext) && !assistantText.includes('gen_urdf') && !assistantText.includes('gen_srdf'))) {
     const wantsCad = hasCadPayload(assistantText, cadContext)
       || detectHilbertRequest(cadContext)
+    || detectRoboticArmRequest(cadContext)
       || (hasCode && /build123d|export_step|Box\(|Cylinder\(/i.test(assistantText));
     const partsAvailable = grouped.parts.length + (partsResult?.ok ? 1 : 0);
     const needsAssemblyParts = assemblyNeedsCatalogParts({

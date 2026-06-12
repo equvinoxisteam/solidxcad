@@ -26,6 +26,9 @@ import {
   sanitizeRotationUsage,
   sanitizeCompoundInCode,
   detectGearRequest,
+  detectRoboticArmRequest,
+  parseRoboticArmParams,
+  buildRoboticArmGenStep,
   buildFallbackGenStep,
   buildGearFallbackGenStep,
 } from './cadPythonPresets.js';
@@ -127,6 +130,14 @@ function resolveCadPython({ userMessage = '', assistantText = '', conversationCo
       params: { ...plate, screw: screw.name },
     };
   }
+  if (detectRoboticArmRequest(combined) && !/\bgen_urdf\s*\(/i.test(combined)) {
+    const params = parseRoboticArmParams(combined);
+    return {
+      code: buildRoboticArmGenStep(params),
+      source: 'preset-robotic-arm',
+      params,
+    };
+  }
   if (detectHilbertRequest(combined)) {
     const params = parseHilbertParams(combined);
     return {
@@ -166,7 +177,9 @@ export function extractCadPython(text) {
 
 export function hasCadPayload(text = '', conversationContext = '') {
   const combined = [conversationContext, text].filter(Boolean).join('\n');
-  return Boolean(extractCadPython(text)) || detectHilbertRequest(combined);
+  return Boolean(extractCadPython(text))
+    || detectHilbertRequest(combined)
+    || detectRoboticArmRequest(combined);
 }
 
 function prepareGenStepCode(pythonCode, { isPreset = false, preserveCompound = false, preserveAssembly = false } = {}) {
@@ -262,8 +275,9 @@ export async function executeCadGeneration({
 
   let pythonCode = resolved.code;
   let codeSource = resolved.source;
-  let isPreset = codeSource === 'preset-hilbert' || codeSource === 'preset-assembly' || codeSource === 'preset-fallback';
-  const preserveCompound = codeSource === 'preset-assembly';
+  let isPreset = ['preset-hilbert', 'preset-assembly', 'preset-fallback', 'preset-robotic-arm']
+    .includes(codeSource);
+  let preserveCompound = codeSource === 'preset-assembly' || codeSource === 'preset-robotic-arm';
   const ctx = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
   const preserveAssembly = preserveCompound || wantsAssembly(userMessage) || wantsAssembly(ctx);
   if (codeSource === 'preset-hilbert') {
@@ -272,6 +286,9 @@ export async function executeCadGeneration({
   } else if (codeSource === 'preset-assembly') {
     const { length, width, thick, screw } = resolved.params;
     onProgress(`Using tested assembly preset (${length}×${width}×${thick} mm plate + ${screw})…`);
+  } else if (codeSource === 'preset-robotic-arm') {
+    const { reachMm } = resolved.params;
+    onProgress(`Using tested 6-DOF robotic arm preset (~${reachMm} mm reach, flange bolts + gripper)…`);
   } else {
     onProgress('Extracting build123d Python from AI response…');
   }
@@ -459,6 +476,14 @@ export async function executeCadGeneration({
         isPreset = true;
         continue;
       }
+      if (detectRoboticArmRequest(hilbertCtx) && codeSource !== 'preset-robotic-arm') {
+        onProgress('Falling back to tested 6-DOF robotic arm preset…');
+        pythonCode = buildRoboticArmGenStep(parseRoboticArmParams(hilbertCtx));
+        codeSource = 'preset-robotic-arm';
+        isPreset = true;
+        preserveCompound = true;
+        continue;
+      }
       if (detectHilbertRequest(hilbertCtx) && codeSource !== 'preset-hilbert') {
         onProgress('Falling back to tested Hilbert preset…');
         pythonCode = buildHilbertGenStep(parseHilbertParams(hilbertCtx));
@@ -491,14 +516,24 @@ export async function executeCadGeneration({
   }
 
   onProgress('Using reliable solid fallback…');
-  pythonCode = detectGearRequest(ctx)
-    ? buildGearFallbackGenStep(ctx)
-    : buildFallbackGenStep(ctx);
-  codeSource = 'preset-fallback';
+  if (detectRoboticArmRequest(ctx)) {
+    pythonCode = buildRoboticArmGenStep(parseRoboticArmParams(ctx));
+    codeSource = 'preset-robotic-arm';
+    preserveCompound = true;
+  } else if (detectGearRequest(ctx)) {
+    pythonCode = buildGearFallbackGenStep(ctx);
+    codeSource = 'preset-fallback';
+  } else {
+    pythonCode = buildFallbackGenStep(ctx);
+    codeSource = 'preset-fallback';
+  }
   isPreset = true;
 
   try {
-    const finalCode = prepareGenStepCode(pythonCode, { isPreset: true });
+    const finalCode = prepareGenStepCode(pythonCode, {
+      isPreset: true,
+      preserveCompound: codeSource === 'preset-robotic-arm' || codeSource === 'preset-assembly',
+    });
     await fs.writeFile(scriptPath, finalCode, 'utf8');
     await runCadStepFromScript({
       workDir,

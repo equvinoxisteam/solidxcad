@@ -1,5 +1,5 @@
 import { hasCadPayload } from './cadWorker.js';
-import { detectHilbertRequest, wantsAssembly } from './cadPythonPresets.js';
+import { detectHilbertRequest, detectRoboticArmRequest, wantsAssembly } from './cadPythonPresets.js';
 import { hasGeneratorPayload } from './generatorWorker.js';
 import { hasImplicitPayload } from './implicitWorker.js';
 
@@ -42,8 +42,9 @@ Never mention internal APIs, OpenRouter, backends, or infrastructure. The user e
 
 ## Execute immediately when
 - Simple part with clear dimensions (e.g. "30 mm cube", "50×30 mm plate, 4 holes")
+- Mechanical robotic arm / manipulator (STEP solid with links, flange bolts, gripper) — use build123d gen_step(); pipeline applies a tested 6-DOF preset when code would be too long
 - User is clearly answering your previous numbered questions
-- User says "defaults", "just build it", "proceed", "go ahead"
+- User says "defaults", "just build it", "proceed", "go ahead", "continue"
 
 ## After user answers
 - Combine all prior answers from chat history into one design
@@ -116,7 +117,7 @@ export function isAmbiguousRequest(userMessage = '', skill = 'cad') {
 export function userProvidedFollowUp(userMessage = '', history = []) {
   const msg = userMessage.trim().toLowerCase();
   if (!msg) return false;
-  if (/^(yes|no|go ahead|proceed|use defaults?|just build|sounds good|that works)/i.test(msg)) {
+  if (/^(yes|no|go ahead|proceed|continue|use defaults?|just build|sounds good|that works)/i.test(msg)) {
     return true;
   }
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
@@ -137,6 +138,9 @@ export function shouldDeferPipeline({
 
   const context = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
   if (detectHilbertRequest(context) && userProvidedFollowUp(userMessage, history)) {
+    return false;
+  }
+  if (detectRoboticArmRequest(context) && userProvidedFollowUp(userMessage, history)) {
     return false;
   }
 
