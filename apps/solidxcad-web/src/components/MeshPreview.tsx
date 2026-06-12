@@ -59,7 +59,7 @@ export function MeshPreview({ projectId, fileId, fileName, kind }: MeshPreviewPr
         while (el.firstChild) el.removeChild(el.firstChild);
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1e1e1e);
+        scene.background = new THREE.Color(0x0a1628);
 
         const camera = new THREE.PerspectiveCamera(45, el.clientWidth / el.clientHeight, 0.1, 5000);
         camera.position.set(80, 60, 80);

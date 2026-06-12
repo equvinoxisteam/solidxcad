@@ -5,16 +5,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg-base: #1e1e1e;
-  --bg-sidebar: #252526;
-  --bg-panel: #2d2d2d;
-  --border: #3c3c3c;
-  --text: #cccccc;
+  color-scheme: dark only;
+  --bg-base: #071428;
+  --bg-sidebar: #0a1628;
+  --bg-panel: #0f1f38;
+  --border: #1e3a5f;
+  --text: #e5e7eb;
   --accent: #103A8E;
   --brand: #103A8E;
 }
 
 * { box-sizing: border-box; }
+
+html {
+  height: 100%;
+  color-scheme: dark only;
+}
 
 html, body {
   height: 100%;
@@ -28,19 +34,19 @@ body {
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #1e1e1e; }
-::-webkit-scrollbar-thumb { background: #424242; border-radius: 4px; }
+::-webkit-scrollbar-track { background: #071428; }
+::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 4px; }
 
 .btn-primary {
   @apply bg-brand hover:bg-brand-hover text-white px-4 py-2 rounded font-medium transition-colors;
 }
 
 .btn-ghost {
-  @apply border border-border hover:bg-panel text-[#ccc] px-4 py-2 rounded transition-colors;
+  @apply border border-border hover:bg-panel text-gray-300 px-4 py-2 rounded transition-colors;
 }
 
 .input {
-  @apply w-full bg-panel border border-border rounded px-3 py-2 text-[#ccc] placeholder:text-muted focus:outline-none focus:border-brand;
+  @apply w-full bg-panel border border-border rounded px-3 py-2 text-gray-200 placeholder:text-muted focus:outline-none focus:border-brand;
 }
 
 .card {

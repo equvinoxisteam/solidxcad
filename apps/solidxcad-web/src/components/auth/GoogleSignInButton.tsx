@@ -78,7 +78,7 @@ export function GoogleSignInButton({
       callback: handleCredential,
     });
     window.google.accounts.id.renderButton(btnRef.current, {
-      theme: 'outline',
+      theme: 'filled_black',
       size: 'large',
       width: Math.min(btnRef.current.offsetWidth || 380, 400),
       text: 'continue_with',
