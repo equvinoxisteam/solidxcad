@@ -59,7 +59,6 @@ router.get('/public/catalog', asyncHandler(async (req, res) => {
     catalogToken: token,
   });
 
-  res.setHeader('access-control-allow-origin', '*');
   res.setHeader('cache-control', 'private, max-age=30');
   res.json(catalog);
 }));
@@ -87,7 +86,6 @@ router.get('/public/content', asyncHandler(async (req, res) => {
   }
 
   const stream = await getObjectStream(match.s3Key);
-  res.setHeader('access-control-allow-origin', '*');
   res.setHeader('content-type', match.mimeType || 'application/octet-stream');
   res.setHeader('cache-control', 'private, max-age=300');
   stream.pipe(res);

@@ -255,7 +255,7 @@ User browser
 | Chat works, no STEP file | API must use Docker image; check `/health` → `pythonBin` |
 | CAD Viewer blank | Set `VIEWER_URL` on API; viewer service must be running |
 | Google sign-in fails | Fix OAuth origins/redirect URIs; match production URLs |
-| CORS error | `CORS_ORIGINS` on API must include exact web URL |
+| CORS error | `CORS_ORIGINS` must include the web URL; `VIEWER_URL` origin is merged automatically |
 | S3 upload fails | Check `STORAGE_BACKEND=s3` and IAM permissions |
 
 ---

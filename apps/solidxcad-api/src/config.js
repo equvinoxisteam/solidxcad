@@ -11,6 +11,22 @@ function required(name, fallback) {
   return value;
 }
 
+function originFromUrl(url) {
+  const trimmed = String(url || '').trim();
+  if (!trimmed) return '';
+  try {
+    return new URL(trimmed).origin;
+  } catch {
+    return '';
+  }
+}
+
+const configuredCorsOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:3000')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const viewerOrigin = originFromUrl(process.env.VIEWER_URL || '');
+
 export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT || 4000),
@@ -19,9 +35,10 @@ export const config = {
 
   frontendUrl: required('FRONTEND_URL', 'http://localhost:3000'),
   apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 4000}`,
-  corsOrigins: (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:3000')
-    .split(',')
-    .map((s) => s.trim()),
+  corsOrigins: [...new Set([
+    ...configuredCorsOrigins,
+    ...(viewerOrigin ? [viewerOrigin] : []),
+  ])],
 
   mongoUri: required('MONGODB_URI'),
   jwtSecret: required('JWT_SECRET'),
