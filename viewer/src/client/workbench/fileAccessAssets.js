@@ -68,7 +68,8 @@ function cleanUrl(value) {
 }
 
 function hostedBlobDownloadsAvailable(viewerServerInfo = {}) {
-  return String(viewerServerInfo?.backend || "").trim().toLowerCase() === "vercel-blob";
+  const backend = String(viewerServerInfo?.backend || "").trim().toLowerCase();
+  return backend === "vercel-blob" || backend === "http-catalog";
 }
 
 function explicitSourceFileRef(entry) {

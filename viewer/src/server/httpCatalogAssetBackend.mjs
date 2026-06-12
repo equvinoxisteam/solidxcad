@@ -45,6 +45,22 @@ function stepFileRefFromEntry(entry, fallback = "") {
   );
 }
 
+function artifactFileRefFromEntry(entry) {
+  return (
+    normalizeFileRef(entry?.assetFile || entry?.asset?.file || entry?.artifactFile || entry?.artifact?.file) ||
+    normalizeFileRef(entry?.artifact?.glbPath) ||
+    normalizeFileRef(filenameFromUrl(entry?.url))
+  );
+}
+
+function filenameFromUrl(url) {
+  try {
+    return path.posix.basename(new URL(url).pathname);
+  } catch {
+    return "";
+  }
+}
+
 function outputUrlFromEntry(entry, fileRef) {
   const extension = path.posix.extname(normalizeFileRef(fileRef)).toLowerCase();
   if (extension === ".step" || extension === ".stp") {
@@ -124,16 +140,38 @@ export function createHttpCatalogAssetBackend({
     }
 
     const outputRef = normalizeFileRef(entry.file || requestedFileRef);
-    const url = outputUrlFromEntry(entry, outputRef || requestedFileRef);
-    if (!url) {
-      throw new Error(`Output file is not available in HTTP catalog for ${requestedFileRef || "(missing)"}`);
+    const outputExtension = path.posix.extname(outputRef).toLowerCase();
+    const explicitSourceUrl = sourceUrlFromEntry(entry);
+    const explicitSourceRef = normalizeFileRef(entry?.source?.file || entry?.sourceFile || entry?.source?.path);
+    const explicitStepUrl = stepUrlFromEntry(entry);
+    const explicitStepRef = stepFileRefFromEntry(entry, outputRef);
+    const explicitArtifactUrl = normalizeString(entry?.url);
+    const explicitArtifactRef = artifactFileRefFromEntry(entry);
+    const fileRefForAsset = assetKind === "source"
+      ? explicitSourceRef
+      : assetKind === "artifact"
+        ? explicitArtifactRef
+        : outputExtension === ".step" || outputExtension === ".stp"
+          ? explicitStepRef
+          : outputRef;
+    const url = assetKind === "source"
+      ? explicitSourceUrl
+      : assetKind === "artifact"
+        ? explicitArtifactUrl
+        : outputUrlFromEntry(entry, fileRefForAsset || outputRef || requestedFileRef);
+    if (!fileRefForAsset || !url) {
+      throw new Error(
+        assetKind === "artifact"
+          ? `Artifact file is not available in HTTP catalog for ${requestedFileRef || "(missing)"}`
+          : `Output file is not available in HTTP catalog for ${requestedFileRef || "(missing)"}`
+      );
     }
     return {
       asset: assetKind,
-      file: outputRef || requestedFileRef,
+      file: fileRefForAsset,
       url,
-      filename: path.posix.basename(outputRef || requestedFileRef) || "download",
-      contentType: contentTypeForFileRef(outputRef || requestedFileRef),
+      filename: path.posix.basename(fileRefForAsset) || filenameFromUrl(url) || "download",
+      contentType: contentTypeForFileRef(fileRefForAsset),
     };
   }
 

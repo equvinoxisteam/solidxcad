@@ -55,3 +55,40 @@ test("http catalog backend resolves STEP download url from entry.url", async () 
 
   assert.equal(access.url, "https://s3.example.com/part.step?sig=abc");
 });
+
+test("http catalog backend resolves GLB artifact url for STEP part entries", async () => {
+  const partCatalog = {
+    schemaVersion: 4,
+    entries: [
+      {
+        file: "models/part_1781262354024.step",
+        kind: "part",
+        url: "https://s3.example.com/.part_1781262354024.step.glb?sig=glb",
+        hash: "abc-123",
+        sourceKind: "step",
+        source: {
+          file: "models/part_1781262354024.step",
+          url: "https://s3.example.com/part_1781262354024.step?sig=step",
+        },
+        artifact: {
+          ok: true,
+          glbPath: "models/.part_1781262354024.step.glb",
+        },
+      },
+    ],
+  };
+  const backend = createHttpCatalogAssetBackend();
+
+  const output = await backend.resolveFileAssetAccess({
+    fileRef: "models/part_1781262354024.step",
+    catalog: partCatalog,
+  });
+  const artifact = await backend.resolveFileAssetAccess({
+    fileRef: "models/part_1781262354024.step",
+    asset: "artifact",
+    catalog: partCatalog,
+  });
+
+  assert.equal(output.url, "https://s3.example.com/part_1781262354024.step?sig=step");
+  assert.equal(artifact.url, "https://s3.example.com/.part_1781262354024.step.glb?sig=glb");
+});

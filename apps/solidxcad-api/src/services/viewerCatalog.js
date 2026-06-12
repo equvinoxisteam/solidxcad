@@ -36,6 +36,19 @@ function isInlineStepGlbSidecar(fileDoc, rel) {
   return kindForFile(fileDoc) === 'glb' && name.startsWith('.') && name.endsWith('.step.glb');
 }
 
+function catalogHashForFile(fileDoc) {
+  const bytes = Number(fileDoc?.sizeBytes);
+  const safeBytes = Number.isFinite(bytes) && bytes >= 0 ? Math.trunc(bytes) : 0;
+  const updatedAt = fileDoc?.updatedAt ? new Date(fileDoc.updatedAt).getTime() : 0;
+  const createdAt = fileDoc?.createdAt ? new Date(fileDoc.createdAt).getTime() : 0;
+  const stamp = updatedAt || createdAt;
+  if (safeBytes > 0 || stamp > 0) {
+    return `${safeBytes.toString(36)}-${stamp.toString(36)}`;
+  }
+  const key = String(fileDoc?.s3Key || fileDoc?.name || '').trim();
+  return key || 'v1';
+}
+
 async function contentUrlForFile(file, { projectId, apiBase, usePresignedUrls }) {
   const rel = fileRefForDoc(file);
   if (
@@ -74,7 +87,7 @@ export async function buildProjectCatalog(files, { projectId, apiBase, usePresig
           file: rel,
           kind: 'part',
           url: glbUrl,
-          hash: '',
+          hash: catalogHashForFile(glbFile),
           bytes: glbFile.sizeBytes || file.sizeBytes || 0,
           sourceKind: 'step',
           source: {
@@ -99,7 +112,7 @@ export async function buildProjectCatalog(files, { projectId, apiBase, usePresig
       file: rel,
       kind,
       url,
-      hash: '',
+      hash: catalogHashForFile(file),
       bytes: file.sizeBytes || 0,
       ...(kind === 'step' ? { sourceKind: 'step' } : {}),
     });

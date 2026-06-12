@@ -145,6 +145,7 @@ const middlewares = [
     backend,
     enableStepArtifactBackend: stepArtifactBackendEnabled,
     claimDisabledStepArtifactRoute: true,
+    preferFileDownloadRedirects: backendKind === VIEWER_ASSET_BACKENDS.HTTP_CATALOG,
     serverInfo: ({ rootDir = "" } = {}) => {
       if (!localAssetBackendEnabled) {
         return buildHostedViewerServerInfo({ backend, env: runtimeEnv, rootDir: "" });
