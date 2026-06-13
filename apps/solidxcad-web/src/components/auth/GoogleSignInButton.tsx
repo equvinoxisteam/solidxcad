@@ -87,7 +87,7 @@ export function GoogleSignInButton({
 
   if (!config) {
     return (
-      <div className="h-10 rounded-xl bg-white/5 border border-white/10 animate-pulse" />
+      <div className="h-11 rounded-lg bg-white/[0.04] border border-white/[0.06] animate-pulse" />
     );
   }
 
@@ -107,7 +107,7 @@ export function GoogleSignInButton({
         onLoad={() => setScriptReady(true)}
       />
       <div className={disabled || loading ? 'opacity-50 pointer-events-none' : ''}>
-        <div ref={btnRef} className="flex justify-center min-h-[44px] w-full" />
+        <div ref={btnRef} className="flex justify-center min-h-[44px] w-full [&>div]:!w-full" />
       </div>
       {config.googleAuthUrl && (
         <p className="text-[10px] text-gray-500 text-center mt-2">

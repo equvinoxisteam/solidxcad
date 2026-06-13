@@ -84,6 +84,14 @@ body {
   animation: auth-bg-shift 12s ease-in-out infinite alternate;
 }
 
+.auth-bg-form {
+  background:
+    radial-gradient(ellipse 70% 55% at 85% 20%, rgba(16, 58, 142, 0.22), transparent),
+    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(26, 79, 181, 0.12), transparent),
+    linear-gradient(180deg, #071428 0%, #08182e 100%);
+  animation: none;
+}
+
 .auth-grid {
   position: absolute;
   inset: 0;
@@ -93,6 +101,22 @@ body {
     linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
   background-size: 28px 28px, 28px 28px, 28px 28px;
   mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, black, transparent);
+}
+
+.auth-grid-form {
+  opacity: 0.55;
+  mask-image: radial-gradient(ellipse 90% 80% at 65% 40%, black, transparent);
+}
+
+.auth-panel-glow {
+  position: absolute;
+  top: -20%;
+  right: -30%;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: rgba(16, 58, 142, 0.18);
+  filter: blur(70px);
 }
 
 .auth-orb {
@@ -142,11 +166,26 @@ body {
 }
 
 .auth-input {
-  @apply w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-500 bg-white/5 border border-white/15 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/40 transition-colors;
+  @apply w-full rounded-lg px-3.5 py-2.5 text-sm text-white placeholder:text-gray-500 bg-[#071428]/60 border border-white/10 focus:outline-none focus:border-brand/70 focus:ring-2 focus:ring-brand/20 transition-all;
+}
+
+.auth-label {
+  @apply block text-xs font-medium text-gray-400;
+}
+
+.auth-oauth-wrap {
+  @apply rounded-xl border border-white/[0.08] bg-white/[0.02] p-3;
 }
 
 .auth-btn-primary {
-  @apply bg-brand hover:bg-brand-hover text-white font-medium rounded-xl py-2.5 transition-colors disabled:opacity-50;
+  @apply bg-brand hover:bg-brand-hover text-white text-sm font-medium rounded-lg py-2.5 transition-colors disabled:opacity-50 shadow-sm shadow-brand/20;
+}
+
+.auth-panel {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 24px 48px rgba(0, 0, 0, 0.35);
 }
 
 .auth-card {

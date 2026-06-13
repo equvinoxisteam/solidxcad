@@ -51,53 +51,73 @@ function LoginForm() {
   }
 
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in to your design studio" badge="Quest: Enter Studio">
+    <AuthShell title="Welcome back" subtitle="Sign in to continue to your studio">
       {error && (
-        <div className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl p-3 mb-4">
+        <div
+          role="alert"
+          className="text-sm text-red-200 bg-red-500/10 border border-red-400/25 rounded-lg px-3.5 py-2.5 mb-5"
+        >
           {error}
         </div>
       )}
 
-      <GoogleSignInButton disabled={loading} onError={setError} />
+      <div className="auth-oauth-wrap">
+        <GoogleSignInButton disabled={loading} onError={setError} />
+      </div>
 
-      <div className="flex items-center gap-3 my-5">
-        <div className="flex-1 h-px bg-white/10" />
-        <span className="text-[11px] text-gray-500 uppercase tracking-wider">or email</span>
-        <div className="flex-1 h-px bg-white/10" />
+      <div className="flex items-center gap-3 my-6">
+        <div className="flex-1 h-px bg-white/[0.08]" />
+        <span className="text-[10px] text-gray-500 uppercase tracking-[0.14em] font-medium">or email</span>
+        <div className="flex-1 h-px bg-white/[0.08]" />
       </div>
 
       <form onSubmit={submit} className="space-y-4">
-        <input
-          className="auth-input"
-          type="email"
-          placeholder="Email address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-        />
-        <input
-          className="auth-input"
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoComplete="current-password"
-        />
-        <div className="flex justify-end">
-          <Link href="/forgot-password" className="text-xs text-brand hover:underline">
-            Forgot password?
-          </Link>
+        <div className="space-y-1.5">
+          <label htmlFor="login-email" className="auth-label">
+            Email address
+          </label>
+          <input
+            id="login-email"
+            className="auth-input"
+            type="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+          />
         </div>
-        <button type="submit" className="auth-btn-primary w-full" disabled={loading}>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="login-password" className="auth-label">
+              Password
+            </label>
+            <Link
+              href="/forgot-password"
+              className="text-[11px] text-brand-muted hover:text-white transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <input
+            id="login-password"
+            className="auth-input"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+          />
+        </div>
+        <button type="submit" className="auth-btn-primary w-full mt-2" disabled={loading}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Sign in'}
         </button>
       </form>
 
-      <p className="text-sm text-gray-400 text-center mt-6">
+      <p className="text-sm text-gray-500 text-center mt-7 pt-6 border-t border-white/[0.06]">
         New here?{' '}
-        <Link href="/register" className="text-brand hover:underline font-medium">
+        <Link href="/register" className="text-white hover:text-brand-muted font-medium transition-colors">
           Create free account
         </Link>
       </p>
@@ -109,7 +129,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="auth-scene min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-brand" />
+        <Loader2 className="w-7 h-7 animate-spin text-brand" />
       </div>
     }>
       <LoginForm />
