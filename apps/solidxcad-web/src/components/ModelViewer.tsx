@@ -66,7 +66,7 @@ export function ModelViewer({
                   <Box className="w-14 h-14 text-brand/40 mx-auto mb-4" />
                   <p className="text-white/80 text-sm font-medium mb-1">Mesh preview</p>
                   <p className="text-muted text-xs leading-relaxed">
-                    Describe a part in the Design Assistant. Your STL or GLB preview will appear here.
+                    Describe a part in the agent window. Your STL or GLB preview will appear here.
                   </p>
                 </div>
               </div>

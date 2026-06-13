@@ -1202,6 +1202,25 @@ export default function CadWorkspaceTopBar({
         />
       ) : null}
 
+      {embedMode ? (
+        <a
+          href={import.meta.env.VIEWER_BRAND_URL || 'https://solidxcad.equvinoxis.com'}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg pr-1 hover:opacity-90"
+          title="SolidX CAD"
+          aria-label="SolidX CAD"
+        >
+          <img
+            src="/logo.png"
+            alt="SolidX CAD"
+            className="size-7 rounded-lg shadow-sm"
+            width={28}
+            height={28}
+          />
+        </a>
+      ) : null}
+
       {breadcrumbAvailable ? (
       <Breadcrumb className="min-w-0 flex-1 overflow-hidden">
         <ScrollArea

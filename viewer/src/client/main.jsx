@@ -13,11 +13,17 @@ function ensureFavicon() {
     return;
   }
 
+  const embedMode = new URLSearchParams(window.location.search).get("embed") === "1";
   let icon = document.querySelector('link[rel="icon"]');
   if (!icon) {
     icon = document.createElement("link");
     icon.rel = "icon";
     document.head.appendChild(icon);
+  }
+  if (embedMode) {
+    icon.type = "image/png";
+    icon.href = "/logo.png";
+    return;
   }
   icon.type = "image/x-icon";
   icon.href = `${faviconUrl}?v=planetary-gear-workbench`;
@@ -29,7 +35,8 @@ function bootstrap() {
     throw new Error(`Missing #${ROOT_ID} mount point.`);
   }
   ensureFavicon();
-  document.title = "CAD Viewer";
+  const embedMode = new URLSearchParams(window.location.search).get("embed") === "1";
+  document.title = embedMode ? "SolidX CAD Workbench" : "CAD Viewer";
   const cachedRoot = globalThis[ROOT_CACHE_KEY];
   const root = cachedRoot?.element === rootElement && cachedRoot?.root
     ? cachedRoot.root

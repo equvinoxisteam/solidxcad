@@ -5,16 +5,13 @@ import {
   ArrowUp,
   Box,
   ChevronDown,
-  ExternalLink,
   Globe,
   Loader2,
   Paperclip,
   RotateCcw,
-  Sparkles,
   ThumbsDown,
   ThumbsUp,
 } from 'lucide-react';
-import type { CadResult, ChatMessage, ChatModel } from '@/lib/api';
 import {
   api,
   getStoredChatModel,
@@ -23,6 +20,8 @@ import {
   setStoredWebSearch,
   streamChat,
 } from '@/lib/api';
+import type { CadResult, ChatMessage, ChatModel } from '@/lib/api';
+import { BrandLogo } from '@/components/BrandLogo';
 
 type AgentStep = { message: string; skill?: string; status?: string };
 type AgentPhase = 'idle' | 'reading' | 'thinking' | 'planning' | 'exploring' | 'asking' | 'executing' | 'waiting' | 'searching';
@@ -83,13 +82,11 @@ export function ChatPanel({
   messages,
   onMessagesChange,
   onCadGenerated,
-  onOpenViewer,
 }: {
   projectId: string;
   messages: ChatMessage[];
   onMessagesChange: () => void;
   onCadGenerated: (result: CadResult) => void;
-  onOpenViewer?: () => void;
 }) {
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -211,8 +208,8 @@ export function ChatPanel({
     <aside className="w-full lg:w-[380px] border-l border-border bg-[#0d1a30] flex flex-col shrink-0">
       <div className="bg-gradient-to-r from-brand to-brand-light text-white px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 font-semibold text-sm">
-          <Sparkles className="w-4 h-4" />
-          Design Assistant
+          <BrandLogo size={22} showName={false} href={undefined} className="pointer-events-none" />
+          Agent Window
         </div>
         <span className="text-[10px] font-medium bg-white/15 px-2 py-0.5 rounded-full flex items-center gap-1.5">
           <span className={`w-1.5 h-1.5 rounded-full ${streaming ? 'bg-amber-300 animate-pulse' : 'bg-emerald-300'}`} />
@@ -283,23 +280,11 @@ export function ChatPanel({
 
         {lastDesign && !streaming && (
           <div className="rounded-xl border border-brand/40 bg-brand/10 p-3 mr-1">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <Box className="w-4 h-4 text-brand-muted shrink-0" />
-                <span className="text-sm font-medium text-white truncate">
-                  {SKILL_LABELS[lastDesign.skill || 'cad'] || 'Design'} saved
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenViewer?.();
-                  document.querySelector<HTMLButtonElement>('[data-viewer-tab]')?.click();
-                }}
-                className="text-xs border border-brand/50 text-brand-muted px-2 py-1 rounded-md hover:bg-brand/20 flex items-center gap-1 shrink-0"
-              >
-                Open <ExternalLink className="w-3 h-3" />
-              </button>
+            <div className="flex items-center gap-2 min-w-0">
+              <Box className="w-4 h-4 text-brand-muted shrink-0" />
+              <span className="text-sm font-medium text-white truncate">
+                {SKILL_LABELS[lastDesign.skill || 'cad'] || 'Design'} saved
+              </span>
             </div>
             <p className="text-[11px] text-muted mt-1 font-mono truncate">{lastDesign.name}</p>
           </div>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChatPanel } from '@/components/ChatPanel';
+import { openProjectViewerInNewTab } from '@/components/CadViewerFrame';
 import { ModelViewer } from '@/components/ModelViewer';
 import { ToolsPanel } from '@/components/ToolsPanel';
 import { StudioTopBar, type StudioViewMode } from '@/components/StudioTopBar';
@@ -126,6 +127,10 @@ export default function StudioPage() {
       setStatus(`✓ ${label}: ${cadName || 'saved'}${note}`);
       setHighlightFile(cadName || '');
       if (!showWorkspace && cadName) setShowWorkspace(true);
+      if (cadName && (result.skill === 'cad' || result.skill === 'urdf' || !result.skill)) {
+        const fileRef = cadName.includes('/') ? cadName : `models/${cadName}`;
+        openProjectViewerInNewTab(id, fileRef).catch(() => {});
+      }
       try {
         const [{ files: f }] = await Promise.all([
           api.getFiles(id),
@@ -198,7 +203,6 @@ export default function StudioPage() {
             messages={messages}
             onMessagesChange={refresh}
             onCadGenerated={onCadGenerated}
-            onOpenViewer={() => setViewMode('viewer')}
           />
         )}
       </div>

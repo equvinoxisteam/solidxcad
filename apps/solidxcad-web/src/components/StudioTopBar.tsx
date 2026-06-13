@@ -5,8 +5,9 @@ import {
   ArrowLeft,
   Box,
   FolderTree,
-  MessageSquare,
   Monitor,
+  PanelRightClose,
+  PanelRightOpen,
   Settings,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -118,10 +119,16 @@ export function StudioTopBar({
           type="button"
           onClick={onToggleChat}
           className={panelToggle(showChat)}
-          title="Design assistant"
+          title={showChat ? 'Hide agent window' : 'Show agent window'}
+          aria-label={showChat ? 'Hide agent window' : 'Show agent window'}
+          aria-pressed={showChat}
         >
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">Assistant</span>
+          {showChat ? (
+            <PanelRightClose className="w-3.5 h-3.5" />
+          ) : (
+            <PanelRightOpen className="w-3.5 h-3.5" />
+          )}
+          <span className="hidden md:inline">Agent</span>
         </button>
       </div>
 
