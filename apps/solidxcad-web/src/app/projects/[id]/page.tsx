@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChatPanel } from '@/components/ChatPanel';
-import { openProjectViewerInNewTab } from '@/components/CadViewerFrame';
 import { ModelViewer } from '@/components/ModelViewer';
 import { ToolsPanel } from '@/components/ToolsPanel';
 import { StudioTopBar, type StudioViewMode } from '@/components/StudioTopBar';
@@ -128,8 +127,7 @@ export default function StudioPage() {
       setHighlightFile(cadName || '');
       if (!showWorkspace && cadName) setShowWorkspace(true);
       if (cadName && (result.skill === 'cad' || result.skill === 'urdf' || !result.skill)) {
-        const fileRef = cadName.includes('/') ? cadName : `models/${cadName}`;
-        openProjectViewerInNewTab(id, fileRef).catch(() => {});
+        setViewMode('viewer');
       }
       try {
         const [{ files: f }] = await Promise.all([
