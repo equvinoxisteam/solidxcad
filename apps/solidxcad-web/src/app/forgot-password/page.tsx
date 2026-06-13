@@ -83,7 +83,6 @@ export default function ForgotPasswordPage() {
       subtitle={step === 'email' ? "We'll email you a verification code" : `Code sent to ${email}`}
       step={stepNum}
       totalSteps={3}
-      badge="Recovery"
     >
       {error && (
         <div className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl p-3 mb-4">{error}</div>

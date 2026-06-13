@@ -77,11 +77,10 @@ export default function OnboardingPage() {
 
   return (
     <AuthShell
-      title={step === 1 ? 'What should we call you?' : step === 2 ? 'Pick your path' : 'Your first mission'}
+      title={step === 1 ? 'What should we call you?' : step === 2 ? 'How will you use SolidX?' : 'What do you want to build first?'}
       subtitle={step === 3 ? 'What do you want to build first?' : 'Personalize your studio'}
       step={step}
       totalSteps={3}
-      badge="Onboarding"
     >
       {error && (
         <div className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl p-3 mb-4">{error}</div>

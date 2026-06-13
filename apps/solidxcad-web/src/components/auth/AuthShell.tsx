@@ -10,7 +10,6 @@ type AuthShellProps = {
   subtitle?: string;
   step?: number;
   totalSteps?: number;
-  badge?: string;
 };
 
 const FEATURES = [
@@ -25,7 +24,6 @@ export function AuthShell({
   subtitle,
   step = 0,
   totalSteps = 0,
-  badge,
 }: AuthShellProps) {
   const progress = totalSteps > 0 ? Math.round((step / totalSteps) * 100) : 0;
 
@@ -64,15 +62,8 @@ export function AuthShell({
       </aside>
 
       <div className="relative z-10 flex flex-1 flex-col min-h-screen">
-        <header className="px-5 sm:px-8 py-5 flex items-center justify-between lg:justify-end">
-          <div className="lg:hidden">
-            <BrandLogo href="/" size={36} />
-          </div>
-          {badge && (
-            <span className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-white/[0.04] text-gray-400 border border-white/10">
-              {badge}
-            </span>
-          )}
+        <header className="px-5 sm:px-8 py-5 lg:hidden">
+          <BrandLogo href="/" size={36} />
         </header>
 
         <main className="flex-1 flex items-center justify-center px-5 sm:px-8 pb-6">

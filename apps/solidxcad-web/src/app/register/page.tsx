@@ -82,7 +82,7 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      title={step === 'email' ? 'Start your CAD quest' : step === 'otp' ? 'Verify email' : 'Create your profile'}
+      title={step === 'email' ? 'Create your account' : step === 'otp' ? 'Verify email' : 'Create your profile'}
       subtitle={
         step === 'email'
           ? 'Free credits · no card required'
@@ -92,7 +92,6 @@ export default function RegisterPage() {
       }
       step={stepNum}
       totalSteps={3}
-      badge="New player"
     >
       {error && (
         <div className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl p-3 mb-4">{error}</div>
