@@ -1,7 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, getStoredUser, setStoredUser, type User } from '@/lib/api';
+import {
+  api,
+  clearToken,
+  getStoredUser,
+  getToken,
+  setStoredUser,
+  type User,
+} from '@/lib/api';
 
 /** Load user from localStorage after mount — avoids SSR hydration mismatch. */
 export function useClientUser(refreshFromApi = false) {
@@ -10,17 +17,27 @@ export function useClientUser(refreshFromApi = false) {
 
   useEffect(() => {
     setMounted(true);
+
+    const token = getToken();
+    if (!token) {
+      setUser(null);
+      return;
+    }
+
     setUser(getStoredUser());
 
-    if (refreshFromApi && getStoredUser()) {
+    if (refreshFromApi) {
       api.me()
         .then(({ user: u }) => {
           setUser(u);
           setStoredUser(u);
         })
-        .catch(() => {});
+        .catch(() => {
+          clearToken();
+          setUser(null);
+        });
     }
   }, [refreshFromApi]);
 
-  return { user, mounted };
+  return { user, mounted, isAuthenticated: mounted && Boolean(getToken()) };
 }

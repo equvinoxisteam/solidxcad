@@ -70,7 +70,7 @@ export default function HomePage() {
       <div className="auth-orb auth-orb-b" aria-hidden />
 
       <div className="relative z-10 flex flex-col min-h-screen">
-        <Navbar />
+        <Navbar variant="marketing" />
 
         <main className="flex-1">
           <section className="max-w-5xl mx-auto px-6 pt-14 pb-16 text-center">

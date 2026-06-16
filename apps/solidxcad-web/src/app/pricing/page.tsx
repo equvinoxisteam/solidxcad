@@ -9,7 +9,7 @@ export default function PricingPage() {
       <div className="auth-grid opacity-40" aria-hidden />
 
       <div className="relative z-10 flex flex-col min-h-screen">
-        <Navbar />
+        <Navbar variant="marketing" />
         <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-16">
           <h1 className="text-3xl font-bold text-white text-center mb-4">Simple pricing</h1>
           <p className="text-gray-400 text-center mb-12">Credits power AI design and CAD generation</p>
