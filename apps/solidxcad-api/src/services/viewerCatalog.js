@@ -63,15 +63,14 @@ async function contentUrlForFile(file, {
   catalogToken = '',
 }) {
   const rel = fileRefForDoc(file);
+  const canPresign = usePresignedUrls
+    && file.s3Key
+    && !isLocalStorageKey(file.s3Key);
+  if (canPresign) {
+    return getSignedDownloadUrl(file.s3Key, 3600);
+  }
   if (catalogToken) {
     return publicContentUrlForFile(rel, { apiBase, catalogToken });
-  }
-  if (
-    usePresignedUrls
-    && file.s3Key
-    && !isLocalStorageKey(file.s3Key)
-  ) {
-    return getSignedDownloadUrl(file.s3Key, 3600);
   }
   return `${apiBase}/api/viewer/projects/${projectId}/content?file=${encodeURIComponent(rel)}`;
 }

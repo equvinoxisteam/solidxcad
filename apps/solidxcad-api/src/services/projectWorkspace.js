@@ -15,14 +15,15 @@ export function projectWorkspaceDir(userId, projectId) {
 }
 
 function relativeFilePath(fileDoc) {
-  const name = fileDoc.name || path.basename(fileDoc.s3Key);
-  if (fileDoc.s3Key.includes('/models/')) {
+  const s3Key = String(fileDoc?.s3Key || '');
+  const name = fileDoc.name || path.basename(s3Key) || 'file';
+  if (s3Key.includes('/models/')) {
     return path.posix.join('models', name);
   }
-  if (fileDoc.s3Key.includes('/slices/')) {
+  if (s3Key.includes('/slices/')) {
     return path.posix.join('slices', name);
   }
-  if (fileDoc.s3Key.includes('/parts/')) {
+  if (s3Key.includes('/parts/')) {
     return path.posix.join('parts', name);
   }
   return name;

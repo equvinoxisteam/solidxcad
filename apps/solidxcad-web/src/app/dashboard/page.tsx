@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowUpDown,
   Calendar,
   ChevronRight,
   FolderOpen,
@@ -15,9 +14,10 @@ import {
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { DeleteProjectButton } from '@/components/DeleteProjectButton';
+import { ProjectSortMenu, type ProjectSortKey } from '@/components/ProjectSortMenu';
 import { api, getToken, projectId, type Project } from '@/lib/api';
 
-type SortKey = 'updated-desc' | 'updated-asc' | 'created-desc' | 'created-asc' | 'name-asc' | 'name-desc';
+type SortKey = ProjectSortKey;
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -145,9 +145,9 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-500 mt-1">{projectCountLabel}</p>
               </div>
 
-              <form onSubmit={createProject} className="flex flex-col sm:flex-row gap-2 w-full lg:max-w-md">
+              <form onSubmit={createProject} className="flex flex-col sm:flex-row gap-2 w-full lg:max-w-lg">
                 <input
-                  className="auth-input flex-1 h-10 text-sm"
+                  className="auth-input flex-1 min-w-0 h-10 text-sm"
                   placeholder="New project name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -169,34 +169,19 @@ export default function DashboardPage() {
             </div>
 
             {!loading && projects.length > 0 && (
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                <div className="relative flex-1 min-w-0">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              <div className="dashboard-toolbar">
+                <div className="dashboard-search-wrap">
+                  <Search className="dashboard-search-icon" aria-hidden />
                   <input
                     type="search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search projects"
-                    className="auth-input w-full h-10 pl-10 pr-3 text-sm"
+                    className="dashboard-search-input"
                     aria-label="Search projects"
                   />
                 </div>
-                <div className="relative w-full sm:w-52 shrink-0">
-                  <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                  <select
-                    value={sortKey}
-                    onChange={(e) => setSortKey(e.target.value as SortKey)}
-                    className="auth-input w-full h-10 pl-10 pr-8 text-sm appearance-none cursor-pointer"
-                    aria-label="Sort projects"
-                  >
-                    <option value="updated-desc">Newest updated</option>
-                    <option value="updated-asc">Oldest updated</option>
-                    <option value="created-desc">Newest created</option>
-                    <option value="created-asc">Oldest created</option>
-                    <option value="name-asc">Name A–Z</option>
-                    <option value="name-desc">Name Z–A</option>
-                  </select>
-                </div>
+                <ProjectSortMenu value={sortKey} onChange={setSortKey} />
               </div>
             )}
           </div>
@@ -242,27 +227,27 @@ export default function DashboardPage() {
                     <div className="group flex items-center gap-3 px-4 sm:px-5 py-3.5 hover:bg-white/[0.03] transition-colors">
                       <Link
                         href={`/projects/${p._id}`}
-                        className="flex min-w-0 flex-1 items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1.4fr)_140px_140px] lg:gap-4"
+                        className="dashboard-project-link flex min-w-0 flex-1 items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1.4fr)_140px_140px] lg:gap-4"
                       >
                         <div className="flex min-w-0 items-center gap-3">
                           <div className="dashboard-project-icon">
                             <FolderOpen className="w-4 h-4 text-brand" />
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm sm:text-base font-medium text-white truncate group-hover:text-brand-muted transition-colors">
+                          <div className="min-w-0 flex-1">
+                            <p className="dashboard-project-name text-sm sm:text-base truncate">
                               {p.name}
                             </p>
-                            <p className="text-xs text-gray-500 flex items-center gap-1.5 lg:hidden mt-0.5">
+                            <p className="text-xs text-gray-400 flex items-center gap-1.5 lg:hidden mt-0.5">
                               <Calendar className="w-3.5 h-3.5 shrink-0" />
-                              Updated {formatDate(p.updatedAt)}
+                              <span className="truncate">Updated {formatDate(p.updatedAt)}</span>
                             </p>
                           </div>
                         </div>
 
-                        <p className="hidden lg:block text-sm text-gray-400 truncate">
+                        <p className="hidden lg:block text-sm text-gray-300 truncate tabular-nums">
                           {formatDate(p.updatedAt)}
                         </p>
-                        <p className="hidden lg:block text-sm text-gray-500 truncate">
+                        <p className="hidden lg:block text-sm text-gray-400 truncate tabular-nums">
                           {formatDate(p.createdAt)}
                         </p>
                       </Link>

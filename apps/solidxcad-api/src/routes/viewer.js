@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
+import { pipeline } from 'stream/promises';
 import { requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { validateObjectId } from '../middleware/validateObjectId.js';
@@ -14,6 +15,21 @@ import { getObjectStream } from '../services/s3.js';
 import { signViewerCatalogToken, verifyViewerCatalogToken } from '../services/viewerSession.js';
 
 const router = Router();
+
+function storageErrorStatus(err) {
+  if (err?.status) return err.status;
+  if (err?.code === 'ENOENT' || err?.name === 'NoSuchKey' || err?.name === 'NotFound') {
+    return 404;
+  }
+  return 500;
+}
+
+async function sendProjectFileContent(res, match, { cacheSeconds = 300 } = {}) {
+  const stream = await getObjectStream(match.s3Key);
+  res.setHeader('content-type', match.mimeType || 'application/octet-stream');
+  res.setHeader('cache-control', `private, max-age=${cacheSeconds}`);
+  await pipeline(stream, res);
+}
 
 function buildViewerLink({ viewerUrl, file, catalogUrl, workspaceDir }) {
   const base = viewerUrl.replace(/\/$/, '');
@@ -57,6 +73,7 @@ router.get('/public/catalog', asyncHandler(async (req, res) => {
     projectId: project._id.toString(),
     apiBase: config.apiUrl,
     catalogToken: token,
+    usePresignedUrls: config.viewerCloudMode,
   });
 
   res.setHeader('cache-control', 'private, max-age=30');
@@ -85,10 +102,15 @@ router.get('/public/content', asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'File not found' });
   }
 
-  const stream = await getObjectStream(match.s3Key);
-  res.setHeader('content-type', match.mimeType || 'application/octet-stream');
-  res.setHeader('cache-control', 'private, max-age=300');
-  stream.pipe(res);
+  try {
+    await sendProjectFileContent(res, match, { cacheSeconds: 300 });
+  } catch (err) {
+    if (!res.headersSent) {
+      res.status(storageErrorStatus(err)).json({
+        error: err.message || 'Failed to load file',
+      });
+    }
+  }
 }));
 
 router.use(requireAuth);
@@ -189,10 +211,15 @@ router.get('/projects/:id/content', validateObjectId('id'), asyncHandler(async (
     }
   }
 
-  const stream = await getObjectStream(match.s3Key);
-  res.setHeader('content-type', match.mimeType || 'application/octet-stream');
-  res.setHeader('cache-control', 'private, max-age=60');
-  stream.pipe(res);
+  try {
+    await sendProjectFileContent(res, match, { cacheSeconds: 60 });
+  } catch (err) {
+    if (!res.headersSent) {
+      res.status(storageErrorStatus(err)).json({
+        error: err.message || 'Failed to load file',
+      });
+    }
+  }
 }));
 
 export default router;

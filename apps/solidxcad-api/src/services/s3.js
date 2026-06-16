@@ -250,34 +250,90 @@ export async function deleteProjectStorage(userId, projectId) {
   }));
 }
 
+function s3ObjectKey(key) {
+  return isLocalStorageKey(key) ? key.slice(LOCAL_KEY_PREFIX.length) : key;
+}
+
+function isMissingObjectError(err) {
+  const name = err?.name || '';
+  const code = err?.code || '';
+  return name === 'NoSuchKey'
+    || name === 'NotFound'
+    || code === 'ENOENT'
+    || code === 'NotFound';
+}
+
 async function readLocalKeyStream(key) {
   const localKey = isLocalStorageKey(key) ? key : toLocalKey(key);
   const data = await fsp.readFile(localPathForKey(localKey));
   return Readable.from(data);
 }
 
+async function readS3ObjectStream(key) {
+  if (!config.aws.bucket) {
+    const err = new Error('S3 bucket not configured');
+    err.status = 503;
+    throw err;
+  }
+  const result = await client.send(
+    new GetObjectCommand({ Bucket: config.aws.bucket, Key: s3ObjectKey(key) }),
+  );
+  if (!result.Body) {
+    const err = new Error('Empty S3 object body');
+    err.status = 502;
+    throw err;
+  }
+  return result.Body;
+}
+
 export async function getObjectStream(key) {
-  if (isLocalStorageKey(key)) {
-    return readLocalKeyStream(key);
+  if (!key) {
+    const err = new Error('Missing storage key');
+    err.status = 404;
+    throw err;
   }
 
-  if (shouldUseLocalStorageOnly()) {
-    return readLocalKeyStream(key);
+  const preferLocal = isLocalStorageKey(key) || shouldUseLocalStorageOnly();
+  if (preferLocal) {
+    try {
+      return await readLocalKeyStream(key);
+    } catch (localErr) {
+      if (config.aws.bucket && config.storageBackend !== 'local') {
+        try {
+          return await readS3ObjectStream(key);
+        } catch (s3Err) {
+          if (isMissingObjectError(s3Err) && isMissingObjectError(localErr)) {
+            const err = new Error('File not found in storage');
+            err.status = 404;
+            throw err;
+          }
+          throw s3Err;
+        }
+      }
+      if (isMissingObjectError(localErr)) {
+        const err = new Error('File not found in storage');
+        err.status = 404;
+        throw err;
+      }
+      throw localErr;
+    }
   }
 
   try {
-    const result = await client.send(
-      new GetObjectCommand({ Bucket: config.aws.bucket, Key: key }),
-    );
-    return result.Body;
-  } catch (err) {
-    if (shouldFallbackToLocal(err)) {
+    return await readS3ObjectStream(key);
+  } catch (s3Err) {
+    if (shouldFallbackToLocal(s3Err) || isMissingObjectError(s3Err)) {
       try {
         return await readLocalKeyStream(key);
-      } catch {
-        throw err;
+      } catch (localErr) {
+        if (isMissingObjectError(localErr) && isMissingObjectError(s3Err)) {
+          const err = new Error('File not found in storage');
+          err.status = 404;
+          throw err;
+        }
+        throw s3Err;
       }
     }
-    throw err;
+    throw s3Err;
   }
 }
