@@ -166,7 +166,13 @@ body {
 }
 
 .auth-input {
-  @apply w-full rounded-lg px-3.5 py-2.5 text-sm text-white placeholder:text-gray-500 bg-[#071428]/60 border border-white/10 focus:outline-none focus:border-brand/70 focus:ring-2 focus:ring-brand/20 transition-all;
+  @apply w-full rounded-lg px-3.5 py-2.5 text-sm text-white placeholder:text-gray-500 bg-[#071428]/60 border border-white/10 transition-all;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: rgba(16, 58, 142, 0.7);
+  box-shadow: 0 0 0 2px rgba(16, 58, 142, 0.2);
 }
 
 .auth-label {
@@ -178,7 +184,8 @@ body {
 }
 
 .auth-btn-primary {
-  @apply bg-brand hover:bg-brand-hover text-white text-sm font-medium rounded-lg py-2.5 transition-colors disabled:opacity-50 shadow-sm shadow-brand/20;
+  @apply bg-brand hover:bg-brand-hover text-white text-sm font-medium rounded-lg py-2.5 transition-colors disabled:opacity-50 shadow-sm;
+  box-shadow: 0 1px 2px rgba(16, 58, 142, 0.2);
 }
 
 .auth-panel {
@@ -214,15 +221,33 @@ body {
 }
 
 .landing-workflow-arrow {
-  @apply absolute -right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted/60;
+  position: absolute;
+  right: -0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: rgba(143, 168, 200, 0.6);
 }
 
 .landing-feature-card {
-  @apply rounded-2xl border border-white/10 bg-[#0a1628]/80 p-6 hover:border-brand/35 transition-colors;
+  @apply rounded-2xl border border-white/10 bg-[#0a1628]/80 p-6 transition-colors;
+}
+
+.landing-feature-card:hover {
+  border-color: rgba(16, 58, 142, 0.35);
 }
 
 .landing-feature-icon {
-  @apply w-10 h-10 rounded-xl bg-brand/12 border border-brand/20 flex items-center justify-center mb-4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 1rem;
+  border-radius: 0.75rem;
+  background-color: rgba(16, 58, 142, 0.12);
+  border: 1px solid rgba(16, 58, 142, 0.2);
 }
 
 .landing-prompt-panel {
