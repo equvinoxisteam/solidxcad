@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Check, Sparkles, Zap } from 'lucide-react';
+import { MarketingHeader } from '@/components/MarketingHeader';
 
 export default function PricingPage() {
   return (
@@ -8,7 +9,9 @@ export default function PricingPage() {
       <div className="auth-grid opacity-40" aria-hidden />
 
       <div className="relative z-10 flex flex-col min-h-screen">
-        <main className="flex-1 max-w-5xl mx-auto w-full px-6 pt-20 pb-16">
+        <MarketingHeader />
+
+        <main className="flex-1 max-w-5xl mx-auto w-full px-6 pt-8 sm:pt-10 pb-16">
           <div className="text-center mb-12">
             <p className="landing-eyebrow mb-4">Pricing</p>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">

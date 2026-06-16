@@ -10,6 +10,7 @@ import {
   Ruler,
   Wrench,
 } from 'lucide-react';
+import { MarketingHeader } from '@/components/MarketingHeader';
 
 const WORKFLOW = [
   { step: '01', label: 'Describe', detail: 'Engineering intent in plain language' },
@@ -68,8 +69,10 @@ export default function HomePage() {
       <div className="auth-orb auth-orb-b" aria-hidden />
 
       <div className="relative z-10 flex flex-col min-h-screen">
+        <MarketingHeader />
+
         <main className="flex-1">
-          <section className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
+          <section className="max-w-5xl mx-auto px-6 pt-8 sm:pt-10 pb-16 text-center">
             <h1 className="text-4xl md:text-[3.25rem] font-bold text-white mb-6 leading-[1.08] tracking-tight max-w-3xl mx-auto">
               From design intent
               <span className="block text-brand mt-1">to production-ready STEP</span>
