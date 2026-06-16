@@ -261,3 +261,51 @@ body {
 .auth-google-fallback {
   @apply flex w-full items-center justify-center gap-3 rounded-lg border border-white/15 bg-white text-[#3c4043] text-sm font-medium py-2.5 px-4 shadow-sm hover:bg-gray-50 transition-colors no-underline;
 }
+
+/* Pricing */
+.pricing-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 22, 40, 0.88);
+  padding: 1.5rem;
+  box-shadow: 0 0 0 1px rgba(16, 58, 142, 0.08), 0 24px 48px rgba(0, 0, 0, 0.35);
+}
+
+@media (min-width: 640px) {
+  .pricing-card {
+    padding: 2rem;
+  }
+}
+
+.pricing-card-pro {
+  border-color: rgba(16, 58, 142, 0.35);
+  background: rgba(10, 22, 40, 0.95);
+}
+
+.pricing-card-badge {
+  position: absolute;
+  top: -0.75rem;
+  right: 1rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: white;
+  background: #103A8E;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+}
+
+.pricing-card-body {
+  flex: 1 1 auto;
+}
+
+.pricing-card-cta {
+  margin-top: auto;
+  padding-top: 1.5rem;
+}
