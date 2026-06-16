@@ -1,187 +1,76 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { api, setStoredUser, setToken } from '@/lib/api';
-import { finishAuth } from '@/lib/auth';
-import { isGoogleIdentityReady, loadGoogleIdentityScript } from '@/lib/googleAuth';
+import { useEffect, useState } from 'react';
 
 type GoogleConfig = {
   googleEnabled?: boolean;
   googleClientId?: string | null;
-  googleAuthUrl?: string | null;
 };
 
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: {
-            client_id: string;
-            callback: (response: { credential: string }) => void;
-          }) => void;
-          renderButton: (
-            parent: HTMLElement,
-            options: { theme?: string; size?: string; width?: number; text?: string; shape?: string },
-          ) => void;
-        };
-      };
-    };
-  }
+const ENV_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+const GOOGLE_AUTH_PATH = '/api/auth/google';
+
+async function fetchGoogleConfig(): Promise<GoogleConfig> {
+  const res = await fetch('/api/auth/config', { cache: 'no-store' });
+  if (!res.ok) throw new Error('Google config unavailable');
+  return res.json();
+}
+
+function isGoogleAvailable(config: GoogleConfig | null) {
+  return Boolean(config?.googleEnabled || config?.googleClientId || ENV_CLIENT_ID);
 }
 
 export function GoogleSignInButton({
   disabled,
-  onError,
 }: {
   disabled?: boolean;
   onError?: (message: string) => void;
 }) {
-  const router = useRouter();
-  const btnRef = useRef<HTMLDivElement>(null);
-  const [config, setConfig] = useState<GoogleConfig | null>(null);
-  const [scriptReady, setScriptReady] = useState(isGoogleIdentityReady());
-  const [buttonReady, setButtonReady] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [available, setAvailable] = useState<boolean>(() => Boolean(ENV_CLIENT_ID));
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/config')
-      .then((r) => r.json())
-      .then((data: GoogleConfig) => setConfig(data))
-      .catch(() => setConfig({ googleEnabled: false }));
-  }, []);
-
-  const clientId =
-    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || config?.googleClientId || '';
-
-  const handleCredential = useCallback(
-    async (response: { credential: string }) => {
-      setLoading(true);
-      try {
-        const { token, user } = await api.googleVerify(response.credential);
-        setToken(token);
-        setStoredUser(user);
-        await finishAuth(router, user);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Google sign-in failed';
-        onError?.(msg);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [router, onError],
-  );
-
-  useEffect(() => {
-    if (!clientId || !config?.googleEnabled) return;
-
     let cancelled = false;
 
-    loadGoogleIdentityScript()
-      .then(() => {
-        if (!cancelled) setScriptReady(true);
-      })
-      .catch(() => {
-        if (!cancelled) onError?.('Could not load Google Sign-In. Use the link below or email sign-in.');
-      });
+    async function load() {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          const data = await fetchGoogleConfig();
+          if (!cancelled) {
+            setAvailable(isGoogleAvailable(data));
+            setChecked(true);
+          }
+          return;
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)));
+        }
+      }
 
+      if (!cancelled) {
+        setAvailable(Boolean(ENV_CLIENT_ID));
+        setChecked(true);
+      }
+    }
+
+    load();
     return () => {
       cancelled = true;
     };
-  }, [clientId, config?.googleEnabled, onError]);
+  }, []);
 
-  useEffect(() => {
-    if (!scriptReady || !clientId || !btnRef.current || !window.google?.accounts?.id) return;
-
-    const container = btnRef.current;
-    let raf = 0;
-
-    const render = () => {
-      if (!container || !window.google?.accounts?.id) return;
-      container.innerHTML = '';
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleCredential,
-      });
-      const width = Math.max(container.offsetWidth || container.parentElement?.offsetWidth || 360, 280);
-      window.google.accounts.id.renderButton(container, {
-        theme: 'filled_black',
-        size: 'large',
-        width: Math.min(width, 400),
-        text: 'continue_with',
-        shape: 'rectangular',
-      });
-      setButtonReady(true);
-    };
-
-    raf = requestAnimationFrame(render);
-
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(render);
-    });
-    observer.observe(container);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      observer.disconnect();
-    };
-  }, [scriptReady, clientId, handleCredential]);
-
-  if (!config) {
-    return (
-      <div className="h-11 rounded-lg bg-white/[0.04] border border-white/[0.06] animate-pulse" />
-    );
+  if (checked && !available) {
+    return null;
   }
-
-  if (!config.googleEnabled || !clientId) {
-    return (
-      <p className="text-xs text-gray-500 text-center py-2">
-        Google sign-in is not configured on this server.
-      </p>
-    );
-  }
-
-  const showFallback = !buttonReady || loading;
 
   return (
-    <div className={disabled || loading ? 'opacity-60 pointer-events-none' : ''}>
-      <div className="relative min-h-[44px] w-full">
-        <div
-          ref={btnRef}
-          className={`flex justify-center w-full [&>div]:!w-full ${showFallback ? 'invisible absolute inset-0' : ''}`}
-        />
-        {showFallback && (
-          <div className="w-full">
-            {config.googleAuthUrl ? (
-              <a
-                href={config.googleAuthUrl}
-                className="auth-google-fallback"
-                aria-label="Continue with Google"
-              >
-                <GoogleGlyph />
-                <span>Continue with Google</span>
-              </a>
-            ) : (
-              <div className="auth-google-fallback cursor-wait">
-                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                <span>Loading Google Sign-In…</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      {config.googleAuthUrl && buttonReady && (
-        <p className="text-[10px] text-gray-500 text-center mt-2">
-          Trouble with the button?{' '}
-          <a href={config.googleAuthUrl} className="text-brand hover:underline">
-            Open Google sign-in
-          </a>
-        </p>
-      )}
-    </div>
+    <a
+      href={GOOGLE_AUTH_PATH}
+      className={`auth-google-fallback ${disabled ? 'pointer-events-none opacity-60' : ''}`}
+      aria-label="Continue with Google"
+    >
+      <GoogleGlyph />
+      <span>Continue with Google</span>
+    </a>
   );
 }
 

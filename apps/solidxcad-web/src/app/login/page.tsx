@@ -28,13 +28,11 @@ function LoginForm() {
     const err = searchParams.get('error');
     if (err === 'google_denied') setError('Google sign-in was cancelled');
     else if (err === 'google_redirect') {
-      setError(
-        'Google redirect URI mismatch. In Google Cloud Console add: http://localhost:4000/api/auth/google/callback',
-      );
+      setError('Google redirect is misconfigured. Check GOOGLE_CLIENT_ID and callback URL in Google Cloud.');
     } else if (err === 'google_failed') {
-      setError('Google sign-in failed. Check GOOGLE_CLIENT_ID in API .env or use email sign-in.');
+      setError('Google sign-in failed. Try again or use email sign-in.');
     }
-  }, [router, searchParams]);
+  }, [searchParams]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
