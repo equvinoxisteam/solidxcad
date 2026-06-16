@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="7" fill="#071428"/>
+  <path d="M4 4h24v24H4z" stroke="#1e3a5f" stroke-width="0.5" stroke-dasharray="2 2"/>
+  <path d="M8 20 L16 8 L24 14 L24 24 L8 24 Z" stroke="#3b82f6" stroke-width="1.2" fill="none"/>
+  <path d="M16 8 L16 24 M8 20 L24 14" stroke="#3b82f6" stroke-width="0.8" opacity="0.5"/>
+  <text x="16" y="19" text-anchor="middle" font-family="system-ui,sans-serif" font-size="7" font-weight="700" fill="#e5e7eb">SX</text>
+</svg>

@@ -191,3 +191,44 @@ body {
 .auth-card {
   box-shadow: 0 0 0 1px rgba(16, 58, 142, 0.15), 0 24px 48px rgba(0, 0, 0, 0.45);
 }
+
+/* Landing — engineering-focused marketing */
+.landing-eyebrow {
+  @apply inline-block text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-muted;
+}
+
+.landing-format-pill {
+  @apply inline-flex items-center rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] font-mono font-medium text-gray-300;
+}
+
+.landing-workflow {
+  @apply grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-3 text-left;
+}
+
+.landing-workflow-step {
+  @apply relative rounded-xl border border-white/[0.08] bg-[#0a1628]/70 px-4 py-3.5;
+}
+
+.landing-workflow-node {
+  @apply flex flex-col gap-0.5;
+}
+
+.landing-workflow-arrow {
+  @apply absolute -right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted/60;
+}
+
+.landing-feature-card {
+  @apply rounded-2xl border border-white/10 bg-[#0a1628]/80 p-6 hover:border-brand/35 transition-colors;
+}
+
+.landing-feature-icon {
+  @apply w-10 h-10 rounded-xl bg-brand/12 border border-brand/20 flex items-center justify-center mb-4;
+}
+
+.landing-prompt-panel {
+  @apply rounded-2xl border border-white/10 bg-[#0a1628]/60 p-6 md:p-8;
+}
+
+.landing-prompt-chip {
+  @apply flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-[#071428]/80 px-4 py-2.5 text-sm text-gray-300 font-mono;
+}

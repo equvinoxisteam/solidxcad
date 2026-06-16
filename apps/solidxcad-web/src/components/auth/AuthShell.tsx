@@ -13,9 +13,9 @@ type AuthShellProps = {
 };
 
 const FEATURES = [
-  { icon: Sparkles, text: 'Describe parts in plain language — AI builds STEP, STL, and GLB' },
-  { icon: Layers, text: 'Assemblies, URDF robots, and catalog fasteners in one workspace' },
-  { icon: Box, text: 'Integrated CAD workbench and mesh preview' },
+  { icon: Sparkles, text: 'Text-to-STEP: parametric B-rep models from engineering descriptions' },
+  { icon: Layers, text: 'Assemblies with catalog fasteners, URDF robots, and multi-body structure' },
+  { icon: Box, text: 'In-browser CAD workbench — orbit, measure, section, and export' },
 ];
 
 export function AuthShell({
@@ -38,13 +38,13 @@ export function AuthShell({
           <BrandLogo href="/" size={44} />
           <div className="mt-12 max-w-sm">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-muted mb-3">
-              Design studio
+              Cloud CAD workbench
             </p>
             <h2 className="text-[1.65rem] font-semibold text-white leading-snug tracking-tight">
-              Natural language turned into production-ready CAD
+              From prompt to STEP — in one engineering workspace
             </h2>
             <p className="text-sm text-gray-400 mt-3 leading-relaxed">
-              Sign in to create projects, generate models, and export manufacturing files from one workspace.
+              Sign in to generate parametric geometry, inspect assemblies in 3D, and export STL, G-code, and URDF.
             </p>
           </div>
           <ul className="mt-10 space-y-4">
@@ -96,7 +96,7 @@ export function AuthShell({
         </main>
 
         <footer className="text-center text-[11px] text-gray-600 pb-6 px-4">
-          SolidX CAD · Natural language turned into CAD
+          SolidX CAD · Prompt to STEP in the browser
         </footer>
       </div>
     </div>

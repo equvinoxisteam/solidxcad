@@ -66,6 +66,12 @@ export function Navbar({ showAuth = true }: { showAuth?: boolean }) {
           </>
         ) : showAuth && mounted ? (
           <>
+            <Link
+              href="/pricing"
+              className="text-sm text-gray-400 hover:text-white px-2 hidden sm:inline"
+            >
+              Pricing
+            </Link>
             <Link href="/login" className="text-sm text-gray-400 hover:text-white px-2">
               Sign in
             </Link>
