@@ -28,7 +28,7 @@ export function Navbar({ variant = 'app' }: NavbarProps) {
 
   function logout() {
     clearToken();
-    window.location.href = '/';
+    window.location.href = '/login?fresh=1';
   }
 
   return (
@@ -64,7 +64,7 @@ export function Navbar({ variant = 'app' }: NavbarProps) {
             </Link>
             {!isAuthenticated && (
               <>
-                <Link href="/login" className="text-sm text-gray-400 hover:text-white px-2">
+                <Link href="/login?fresh=1" className="text-sm text-gray-400 hover:text-white px-2">
                   Sign in
                 </Link>
                 <Link href="/register" className="auth-btn-primary text-sm py-2 px-4">
@@ -95,7 +95,7 @@ export function Navbar({ variant = 'app' }: NavbarProps) {
 
         {!isMarketing && mounted && !user && (
           <>
-            <Link href="/login" className="text-sm text-gray-400 hover:text-white px-2">
+            <Link href="/login?fresh=1" className="text-sm text-gray-400 hover:text-white px-2">
               Sign in
             </Link>
             <Link href="/register" className="auth-btn-primary text-sm py-2 px-4">

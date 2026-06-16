@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
-import { api, ApiError, getToken, setStoredUser, setToken } from '@/lib/api';
+import { api, ApiError, clearToken, setStoredUser, setToken } from '@/lib/api';
 import { finishAuth } from '@/lib/auth';
 
 function LoginForm() {
@@ -19,11 +19,12 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (getToken()) {
-      api.me()
-        .then(({ user }) => finishAuth(router, user))
-        .catch(() => {});
+    const fresh = searchParams.get('fresh') === '1';
+    if (fresh) {
+      clearToken();
+      return;
     }
+
     const err = searchParams.get('error');
     if (err === 'google_denied') setError('Google sign-in was cancelled');
     else if (err === 'google_redirect') {

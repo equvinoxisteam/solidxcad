@@ -108,7 +108,7 @@ export default function HomePage() {
                 <ArrowRight className="w-4 h-4" aria-hidden />
               </Link>
               <Link
-                href="/login"
+                href="/login?fresh=1"
                 className="px-8 py-3 rounded-xl border border-white/15 text-gray-200 hover:bg-white/5 transition-colors text-base font-medium"
               >
                 Sign in
@@ -210,7 +210,7 @@ export default function HomePage() {
               <Link href="/pricing" className="hover:text-gray-300 transition-colors">
                 Pricing
               </Link>
-              <Link href="/login" className="hover:text-gray-300 transition-colors">
+              <Link href="/login?fresh=1" className="hover:text-gray-300 transition-colors">
                 Sign in
               </Link>
               <Link href="/register" className="hover:text-gray-300 transition-colors">
