@@ -10,7 +10,6 @@ import {
   Ruler,
   Wrench,
 } from 'lucide-react';
-import { BrandLogo } from '@/components/BrandLogo';
 import { Navbar } from '@/components/Navbar';
 
 const WORKFLOW = [
@@ -74,12 +73,6 @@ export default function HomePage() {
 
         <main className="flex-1">
           <section className="max-w-5xl mx-auto px-6 pt-14 pb-16 text-center">
-            <div className="flex justify-center mb-8">
-              <BrandLogo href="/" size={64} showName={false} />
-            </div>
-
-            <p className="landing-eyebrow mb-5">Cloud CAD for engineers</p>
-
             <h1 className="text-4xl md:text-[3.25rem] font-bold text-white mb-6 leading-[1.08] tracking-tight max-w-3xl mx-auto">
               From design intent
               <span className="block text-brand mt-1">to production-ready STEP</span>
