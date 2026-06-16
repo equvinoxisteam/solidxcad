@@ -308,3 +308,54 @@ body {
   margin-top: auto;
   padding-top: 1.5rem;
 }
+
+/* App shell */
+.app-plan-badge {
+  display: flex;
+  align-items: center;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(16, 58, 142, 0.28);
+  background: rgba(16, 58, 142, 0.12);
+  padding: 0.375rem 0.75rem;
+}
+
+.app-plan-badge-text {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #dbeafe;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 640px) {
+  .app-plan-badge-text {
+    font-size: 0.75rem;
+  }
+}
+
+.dashboard-project-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: rgba(16, 58, 142, 0.12);
+  border: 1px solid rgba(16, 58, 142, 0.2);
+  flex-shrink: 0;
+}
+
+.dashboard-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 auto 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(16, 58, 142, 0.12);
+  border: 1px solid rgba(16, 58, 142, 0.2);
+}

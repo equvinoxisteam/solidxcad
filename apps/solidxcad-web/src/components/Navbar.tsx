@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogOut, Settings, Zap } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
-import { clearToken, formatCredits } from '@/lib/api';
+import { clearToken, formatCredits, type User } from '@/lib/api';
 import { useClientUser } from '@/hooks/useClientUser';
 
 function iconBtnClass(active = false) {
@@ -13,6 +13,16 @@ function iconBtnClass(active = false) {
       ? 'bg-brand/15 border-brand/40 text-white'
       : 'border-white/10 text-gray-300 hover:text-white hover:bg-white/5 hover:border-white/20'
   }`;
+}
+
+function planBadgeText(user: User) {
+  const isPro = user.plan === 'pro';
+  const unlimited = user.unlimitedCredits || user.credits >= 999999;
+
+  if (isPro && unlimited) return 'Pro Plan';
+  if (isPro) return `Pro Plan · ${formatCredits(user)} credits`;
+  if (unlimited) return 'Free Plan · Unlimited';
+  return `Free Plan · ${formatCredits(user)} credits`;
 }
 
 type NavbarProps = {
@@ -41,16 +51,8 @@ export function Navbar({ variant = 'app' }: NavbarProps) {
 
       <div className="flex items-center gap-2 sm:gap-3 min-h-[36px]">
         {!isMarketing && mounted && user && (
-          <div className="flex items-center gap-2 text-xs sm:text-sm bg-brand/10 border border-brand/25 rounded-xl px-3 py-1.5">
-            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-blue-100 whitespace-nowrap">
-              {formatCredits(user)} credits
-            </span>
-            {user.plan === 'pro' && (
-              <span className="text-[10px] font-semibold uppercase bg-brand text-white px-1.5 py-0.5 rounded-md">
-                Pro
-              </span>
-            )}
+          <div className="app-plan-badge max-w-[11rem] sm:max-w-none" title="Current plan">
+            <span className="app-plan-badge-text">{planBadgeText(user)}</span>
           </div>
         )}
 
