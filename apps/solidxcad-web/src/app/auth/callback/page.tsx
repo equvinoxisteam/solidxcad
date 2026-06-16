@@ -4,7 +4,7 @@ import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { api, setToken } from '@/lib/api';
-import { finishAuth } from '@/lib/auth';
+import { finishAuth, postAuthPath } from '@/lib/auth';
 
 function CallbackHandler() {
   const router = useRouter();
@@ -12,13 +12,20 @@ function CallbackHandler() {
 
   useEffect(() => {
     const token = searchParams.get('token');
+    const next = searchParams.get('next');
     if (!token) {
       router.replace('/login?error=google_failed');
       return;
     }
     setToken(token);
     api.me()
-      .then(({ user }) => finishAuth(router, user))
+      .then(({ user }) => {
+        if (next === 'dashboard' || next === 'onboarding') {
+          router.replace(postAuthPath(user));
+          return;
+        }
+        finishAuth(router, user);
+      })
       .catch(() => router.replace('/login?error=google_failed'));
   }, [router, searchParams]);
 

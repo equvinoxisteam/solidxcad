@@ -10,32 +10,44 @@ import { OtpInput } from '@/components/auth/OtpInput';
 import { api, setStoredUser, setToken } from '@/lib/api';
 import { finishAuth } from '@/lib/auth';
 
-type Step = 'email' | 'otp' | 'profile';
+type Step = 'credentials' | 'otp' | 'profile';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>('email');
+  const [step, setStep] = useState<Step>('credentials');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const stepNum = step === 'email' ? 1 : step === 'otp' ? 2 : 3;
+  const stepNum = step === 'credentials' ? 1 : step === 'otp' ? 2 : 3;
 
-  async function sendOtp(e: React.FormEvent) {
+  async function continueToOtp(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError('');
     setInfo('');
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await api.sendOtp({ email, purpose: 'signup' });
-      setInfo(res.devOtp ? `Dev code: ${res.devOtp}` : res.message);
+      setInfo(res.devOtp ? `Dev code: ${res.devOtp}` : res.message || 'Verification code sent');
+      setOtp('');
       setStep('otp');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send code');
+      setError(err instanceof Error ? err.message : 'Could not send verification code');
     } finally {
       setLoading(false);
     }
@@ -46,7 +58,7 @@ export default function RegisterPage() {
     setError('');
     try {
       const res = await api.sendOtp({ email, purpose: 'signup' });
-      setInfo(res.devOtp ? `Dev code: ${res.devOtp}` : 'New code sent');
+      setInfo(res.devOtp ? `Dev code: ${res.devOtp}` : 'New code sent to your email');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not resend code');
     } finally {
@@ -54,22 +66,42 @@ export default function RegisterPage() {
     }
   }
 
-  function continueAfterOtp(e: React.FormEvent) {
+  async function verifyAndContinue(e: React.FormEvent) {
     e.preventDefault();
     if (otp.length !== 6) {
       setError('Enter the 6-digit code');
       return;
     }
+
+    setLoading(true);
     setError('');
-    setStep('profile');
+    try {
+      await api.verifyOtp({ email, purpose: 'signup', code: otp });
+      setInfo('');
+      setStep('profile');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid verification code');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function createAccount(e: React.FormEvent) {
     e.preventDefault();
+    if (!name.trim()) {
+      setError('Enter your name');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      const { token, user } = await api.register({ name, email, password, otp });
+      const { token, user } = await api.register({
+        name: name.trim(),
+        email,
+        password,
+        otp,
+      });
       setToken(token);
       setStoredUser(user);
       await finishAuth(router, user);
@@ -82,64 +114,142 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      title={step === 'email' ? 'Create your account' : step === 'otp' ? 'Verify email' : 'Create your profile'}
-      subtitle={
-        step === 'email'
-          ? 'Free credits · no card required'
+      title={
+        step === 'credentials'
+          ? 'Create your account'
           : step === 'otp'
-            ? `Code sent to ${email}`
-            : 'Almost there — tell us your name'
+            ? 'Verify your email'
+            : 'Complete your profile'
+      }
+      subtitle={
+        step === 'credentials'
+          ? 'Set your email and password — free credits, no card required'
+          : step === 'otp'
+            ? `Enter the 6-digit code sent to ${email}`
+            : 'One last step before your design studio opens'
       }
       step={stepNum}
       totalSteps={3}
     >
       {error && (
-        <div className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl p-3 mb-4">{error}</div>
+        <div
+          role="alert"
+          className="text-sm text-red-200 bg-red-500/10 border border-red-400/25 rounded-lg px-3.5 py-2.5 mb-5"
+        >
+          {error}
+        </div>
       )}
       {info && (
-        <div className="text-sm text-blue-200 bg-brand/10 border border-brand/30 rounded-xl p-3 mb-4">{info}</div>
+        <div className="text-sm text-blue-200 bg-brand/10 border border-brand/30 rounded-lg px-3.5 py-2.5 mb-5">
+          {info}
+        </div>
       )}
 
-      {step === 'email' && (
+      {step === 'credentials' && (
         <>
-          <GoogleSignInButton disabled={loading} onError={setError} />
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-[11px] text-gray-500 uppercase tracking-wider">or email</span>
-            <div className="flex-1 h-px bg-white/10" />
+          <div className="auth-oauth-wrap mb-5">
+            <GoogleSignInButton disabled={loading} onError={setError} />
           </div>
-          <form onSubmit={sendOtp} className="space-y-4">
-            <input
-              className="auth-input"
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-            <button type="submit" className="auth-btn-primary w-full" disabled={loading}>
-              {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Send verification code'}
+
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px bg-white/[0.08]" />
+            <span className="text-[10px] text-gray-500 uppercase tracking-[0.14em] font-medium">
+              or email
+            </span>
+            <div className="flex-1 h-px bg-white/[0.08]" />
+          </div>
+
+          <form onSubmit={continueToOtp} className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="register-email" className="auth-label">
+                Email address
+              </label>
+              <input
+                id="register-email"
+                className="auth-input"
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="register-password" className="auth-label">
+                Password
+              </label>
+              <input
+                id="register-password"
+                className="auth-input"
+                type="password"
+                placeholder="At least 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="register-confirm" className="auth-label">
+                Confirm password
+              </label>
+              <input
+                id="register-confirm"
+                className="auth-input"
+                type="password"
+                placeholder="Repeat password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+              />
+            </div>
+            <button type="submit" className="auth-btn-primary w-full mt-1" disabled={loading}>
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+              ) : (
+                'Continue to verification'
+              )}
             </button>
           </form>
         </>
       )}
 
       {step === 'otp' && (
-        <form onSubmit={continueAfterOtp} className="space-y-5">
+        <form onSubmit={verifyAndContinue} className="space-y-5">
           <OtpInput value={otp} onChange={setOtp} disabled={loading} />
-          <button type="submit" className="auth-btn-primary w-full" disabled={loading || otp.length !== 6}>
-            {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Verify code'}
+          <button
+            type="submit"
+            className="auth-btn-primary w-full"
+            disabled={loading || otp.length !== 6}
+          >
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+            ) : (
+              'Verify and continue'
+            )}
           </button>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-1">
             <button
               type="button"
               className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
-              onClick={() => { setStep('email'); setOtp(''); }}
+              onClick={() => {
+                setStep('credentials');
+                setOtp('');
+                setError('');
+              }}
             >
               <ArrowLeft className="w-3 h-3" /> Change email
             </button>
-            <button type="button" className="text-xs text-brand hover:underline" onClick={resendOtp} disabled={loading}>
+            <button
+              type="button"
+              className="text-xs text-brand hover:underline"
+              onClick={resendOtp}
+              disabled={loading}
+            >
               Resend code
             </button>
           </div>
@@ -148,33 +258,38 @@ export default function RegisterPage() {
 
       {step === 'profile' && (
         <form onSubmit={createAccount} className="space-y-4">
-          <input
-            className="auth-input"
-            placeholder="Your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            autoComplete="name"
-          />
-          <input
-            className="auth-input"
-            type="password"
-            placeholder="Password (8+ characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
+          <div className="space-y-1.5">
+            <label htmlFor="register-name" className="auth-label">
+              Full name
+            </label>
+            <input
+              id="register-name"
+              className="auth-input"
+              placeholder="How should we address you?"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoComplete="name"
+              autoFocus
+            />
+          </div>
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Signed in as <span className="text-gray-300">{email}</span>. You can update your profile
+            later in settings.
+          </p>
           <button type="submit" className="auth-btn-primary w-full" disabled={loading}>
-            {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Complete signup'}
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+            ) : (
+              'Open design studio'
+            )}
           </button>
         </form>
       )}
 
-      <p className="text-sm text-gray-400 text-center mt-6">
+      <p className="text-sm text-gray-500 text-center mt-7 pt-6 border-t border-white/[0.06]">
         Have an account?{' '}
-        <Link href="/login" className="text-brand hover:underline font-medium">
+        <Link href="/login" className="text-white hover:text-brand-muted font-medium transition-colors">
           Sign in
         </Link>
       </p>

@@ -58,7 +58,7 @@ export function AuthShell({
             ))}
           </ul>
         </div>
-        <p className="text-[11px] text-gray-600">SolidX CAD · equvinoxis</p>
+        <p className="text-[11px] text-gray-600">Powered by Equvinoxis Technologies</p>
       </aside>
 
       <div className="relative z-10 flex flex-1 flex-col min-h-screen">
@@ -95,8 +95,9 @@ export function AuthShell({
           </div>
         </main>
 
-        <footer className="text-center text-[11px] text-gray-600 pb-6 px-4">
-          SolidX CAD · Prompt to STEP in the browser
+        <footer className="text-center text-[11px] text-gray-600 pb-6 px-4 space-y-1">
+          <p>SolidX CAD · Prompt to STEP in the browser</p>
+          <p>Powered by Equvinoxis Technologies</p>
         </footer>
       </div>
     </div>

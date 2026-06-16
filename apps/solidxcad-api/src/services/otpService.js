@@ -28,7 +28,7 @@ export async function issueOtp(email, purpose) {
   return code;
 }
 
-export async function verifyOtp(email, purpose, code) {
+export async function verifyOtp(email, purpose, code, { consume = true } = {}) {
   const normalized = email.toLowerCase().trim();
   const record = await OtpCode.findOne({ email: normalized, purpose });
   if (!record) return { ok: false, error: 'No verification code found. Request a new one.' };
@@ -47,6 +47,8 @@ export async function verifyOtp(email, purpose, code) {
     return { ok: false, error: 'Invalid code. Try again.' };
   }
 
-  await OtpCode.deleteOne({ _id: record._id });
+  if (consume) {
+    await OtpCode.deleteOne({ _id: record._id });
+  }
   return { ok: true };
 }

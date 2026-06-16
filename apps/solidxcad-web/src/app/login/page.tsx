@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
-import { api, getToken, setStoredUser, setToken } from '@/lib/api';
+import { api, ApiError, getToken, setStoredUser, setToken } from '@/lib/api';
 import { finishAuth } from '@/lib/auth';
 
 function LoginForm() {
@@ -15,6 +15,7 @@ function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [googleHint, setGoogleHint] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -38,30 +39,40 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setGoogleHint(false);
     try {
       const { token, user } = await api.login({ email, password });
       setToken(token);
       setStoredUser(user);
       await finishAuth(router, user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      if (err instanceof ApiError && err.googleRequired) {
+        setGoogleHint(true);
+        setError('This account uses Google sign-in. Continue with Google below.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Login failed');
+      }
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in to continue to your studio">
+    <AuthShell title="Welcome back" subtitle="Sign in to your cloud CAD workbench">
       {error && (
         <div
           role="alert"
-          className="text-sm text-red-200 bg-red-500/10 border border-red-400/25 rounded-lg px-3.5 py-2.5 mb-5"
+          className={`text-sm rounded-lg px-3.5 py-2.5 mb-5 border ${
+            googleHint
+              ? 'text-amber-100 bg-amber-500/10 border-amber-400/25'
+              : 'text-red-200 bg-red-500/10 border-red-400/25'
+          }`}
         >
           {error}
         </div>
       )}
 
-      <div className="auth-oauth-wrap">
+      <div className={`auth-oauth-wrap ${googleHint ? 'ring-1 ring-amber-400/30 rounded-xl' : ''}`}>
         <GoogleSignInButton disabled={loading} onError={setError} />
       </div>
 

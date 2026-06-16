@@ -232,3 +232,7 @@ body {
 .landing-prompt-chip {
   @apply flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-[#071428]/80 px-4 py-2.5 text-sm text-gray-300 font-mono;
 }
+
+.auth-google-fallback {
+  @apply flex w-full items-center justify-center gap-3 rounded-lg border border-white/15 bg-white text-[#3c4043] text-sm font-medium py-2.5 px-4 shadow-sm hover:bg-gray-50 transition-colors no-underline;
+}

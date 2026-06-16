@@ -205,7 +205,7 @@ export default function HomePage() {
 
         <footer className="relative z-10 border-t border-white/5 py-8">
           <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-            <p>© {new Date().getFullYear()} SolidX CAD · equvinoxis</p>
+            <p>© {new Date().getFullYear()} SolidX CAD</p>
             <div className="flex items-center gap-6">
               <Link href="/pricing" className="hover:text-gray-300 transition-colors">
                 Pricing
@@ -218,6 +218,9 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+          <p className="text-center text-xs text-gray-600 mt-4">
+            Powered by Equvinoxis Technologies
+          </p>
         </footer>
       </div>
     </div>

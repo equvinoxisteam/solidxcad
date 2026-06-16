@@ -143,7 +143,7 @@ router.post('/otp/verify', async (req, res) => {
     if (!email || !purpose || !code) {
       return res.status(400).json({ error: 'Email, purpose, and code required' });
     }
-    const result = await verifyOtp(email, purpose, code);
+    const result = await verifyOtp(email, purpose, code, { consume: false });
     if (!result.ok) return res.status(400).json({ error: result.error });
     res.json({ ok: true, verified: true });
   } catch (err) {

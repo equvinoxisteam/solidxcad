@@ -6,6 +6,16 @@ const DIRECT_API_URL =
 
 const API_URL = typeof window !== 'undefined' ? '' : DIRECT_API_URL;
 
+export class ApiError extends Error {
+  googleRequired?: boolean;
+
+  constructor(message: string, extras?: { googleRequired?: boolean }) {
+    super(message);
+    this.name = 'ApiError';
+    this.googleRequired = extras?.googleRequired;
+  }
+}
+
 export function projectId(project: { _id?: string; id?: string }) {
   return project._id || project.id || '';
 }
@@ -59,8 +69,10 @@ async function request<T>(
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    if (res.status === 401) throw new Error(data.error || 'Please log in again');
-    throw new Error(data.error || `Request failed (${res.status})`);
+    if (res.status === 401) throw new ApiError(data.error || 'Please log in again');
+    throw new ApiError(data.error || `Request failed (${res.status})`, {
+      googleRequired: Boolean(data.googleRequired),
+    });
   }
   return data as T;
 }
