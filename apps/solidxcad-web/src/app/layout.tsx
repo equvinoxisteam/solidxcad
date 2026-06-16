@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL('https://solidxcad.equvinoxis.com'),
   title: {
-    default: 'SolidX CAD — Prompt to STEP in the Browser',
+    default: 'SolidX CAD — From design intent to production-ready STEP',
     template: '%s · SolidX CAD',
   },
   description:
@@ -21,15 +21,12 @@ export const metadata: Metadata = {
     'manufacturing',
   ],
   icons: {
-    icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/logo.png', type: 'image/png' },
-    ],
+    icon: [{ url: '/logo.png', type: 'image/png' }],
     apple: '/logo.png',
-    shortcut: '/favicon.svg',
+    shortcut: '/logo.png',
   },
   openGraph: {
-    title: 'SolidX CAD — AI Design Engine for Engineers',
+    title: 'SolidX CAD — From design intent to production-ready STEP',
     description:
       'Describe parts and assemblies in plain language. Get parametric STEP geometry, in-browser inspection, and manufacturing exports.',
     url: 'https://solidxcad.equvinoxis.com',
@@ -39,7 +36,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary',
-    title: 'SolidX CAD — Prompt to STEP in the Browser',
+    title: 'SolidX CAD — From design intent to production-ready STEP',
     description:
       'Cloud CAD for engineers. Text-to-STEP, assembly modeling, and export to STL, G-code, and URDF.',
     images: ['/logo.png'],
