@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, LogOut, Settings, Zap } from 'lucide-react';
+import { LogOut, Settings, Zap } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { clearToken, formatCredits } from '@/lib/api';
 import { useClientUser } from '@/hooks/useClientUser';
@@ -62,15 +62,7 @@ export function Navbar({ variant = 'app' }: NavbarProps) {
             >
               Pricing
             </Link>
-            {isAuthenticated ? (
-              <Link
-                href="/dashboard"
-                className="auth-btn-primary text-sm py-2 px-4 inline-flex items-center gap-2"
-              >
-                <LayoutDashboard className="w-4 h-4 shrink-0" />
-                Open studio
-              </Link>
-            ) : (
+            {!isAuthenticated && (
               <>
                 <Link href="/login" className="text-sm text-gray-400 hover:text-white px-2">
                   Sign in
