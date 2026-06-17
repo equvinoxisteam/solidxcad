@@ -31,7 +31,7 @@ COPY skills/gcode ./skills/gcode
 RUN python3 -m venv /opt/venv \
  && /opt/venv/bin/pip install --upgrade pip \
  && /opt/venv/bin/pip install -e ./packages/cadpy -e ./packages/cadpy_metadata \
- && /opt/venv/bin/pip install ezdxf trimesh build123d numpy
+ && /opt/venv/bin/pip install ezdxf trimesh build123d numpy shapely
 
 # implicit.js → STL/GLB export (optional mesh sidecars from chat)
 WORKDIR /app/repo/skills/implicit-cad/scripts/packages/implicitjs

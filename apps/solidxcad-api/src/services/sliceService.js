@@ -60,6 +60,18 @@ function slicerEnv() {
 
 function parseSliceToolError(stdout, stderr) {
   const blob = `${stdout || ''}\n${stderr || ''}`.trim();
+  for (const line of blob.split('\n').reverse()) {
+    const chunk = line.trim();
+    if (!chunk.startsWith('{')) continue;
+    try {
+      const parsed = JSON.parse(chunk);
+      if (typeof parsed.error === 'string' && parsed.error.trim()) {
+        return parsed.error.trim();
+      }
+    } catch {
+      // try next line
+    }
+  }
   if (/Slic3r::CLI::run found error/i.test(blob)) {
     return 'OrcaSlicer could not slice this mesh';
   }
@@ -84,7 +96,8 @@ function parseSliceToolError(stdout, stderr) {
       // try earlier chunk
     }
   }
-  return 'Slicing failed';
+  const tail = lines.filter((line) => line.trim() && !line.trim().startsWith('{')).pop();
+  return tail?.trim() || 'Slicing failed';
 }
 
 async function runPythonScript(python, scriptPath, cwd) {
@@ -113,8 +126,10 @@ async function exportBoundingBoxStl(python, meshPath, outStl) {
 try:
     import trimesh
     loaded = trimesh.load(r"${escIn}")
-    mesh = loaded.dump(concatenate=True) if hasattr(loaded, "dump") else loaded
-    bounds = mesh.bounds
+    if isinstance(loaded, trimesh.Scene):
+        meshes = [g for g in loaded.geometry.values() if isinstance(g, trimesh.Trimesh)]
+        loaded = trimesh.util.concatenate(meshes) if meshes else loaded
+    bounds = loaded.bounds
     extents = bounds[1] - bounds[0]
     center = (bounds[0] + bounds[1]) / 2
     box = trimesh.creation.box(extents=extents)
@@ -174,15 +189,23 @@ function safeGcodeName(meshFileName) {
 }
 
 async function findPython() {
-  if (config.pythonBin) return config.pythonBin;
-  const unix = path.join(config.textToCadRoot, '.venv', 'bin', 'python');
-  const win = path.join(config.textToCadRoot, '.venv', 'Scripts', 'python.exe');
-  try {
-    await fs.access(unix);
-    return unix;
-  } catch {
-    return win;
+  const candidates = [
+    config.pythonBin,
+    '/opt/venv/bin/python',
+    path.join(config.textToCadRoot, '.venv', 'bin', 'python'),
+    path.join(config.textToCadRoot, '.venv', 'Scripts', 'python.exe'),
+    'python3',
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      if (candidate === 'python3') return candidate;
+    }
   }
+  return 'python3';
 }
 
 async function downloadToTemp(fileDoc) {

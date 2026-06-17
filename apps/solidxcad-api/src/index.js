@@ -44,6 +44,8 @@ app.get('/health', (req, res) => {
     openrouter: Boolean(config.openrouter.apiKey),
     unlimitedCredits: config.credits.unlimited,
     pythonBin: config.pythonBin || null,
+    slicerBackend: config.slicerBackend,
+    builtinSlicer: config.slicerBackend === 'builtin',
     textToCadRoot: config.textToCadRoot,
     viewerCloudMode: config.viewerCloudMode,
     viewerUrl: config.viewerUrl,

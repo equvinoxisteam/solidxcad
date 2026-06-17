@@ -38,13 +38,10 @@ def section_paths(mesh: trimesh.Trimesh, z: float) -> list[np.ndarray]:
     section = mesh.section(plane_origin=[0.0, 0.0, z], plane_normal=[0.0, 0.0, 1.0])
     if section is None:
         return []
-    planar, _ = section.to_planar()
+    to_2d = getattr(section, "to_2D", None) or section.to_planar
+    planar, _ = to_2d()
     paths: list[np.ndarray] = []
-    for entity in planar.entities:
-        try:
-            pts = planar.discrete[entity.index]
-        except Exception:
-            continue
+    for pts in planar.discrete:
         if pts is None or len(pts) < 2:
             continue
         paths.append(np.asarray(pts, dtype=float))
