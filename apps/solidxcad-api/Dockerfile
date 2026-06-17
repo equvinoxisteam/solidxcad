@@ -1,9 +1,10 @@
 # SolidX CAD API — Node + Python CAD + generator skills + OrcaSlicer
 # Railway: dockerfilePath=apps/solidxcad-api/Dockerfile, build context = repo root
 
-FROM node:20-bookworm
+FROM node:20-noble
 
 ARG ORCA_SLICER_VERSION=v2.3.2
+ARG ORCA_APPIMAGE=OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.3.2.AppImage
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-venv \
@@ -22,7 +23,7 @@ ENV STORAGE_BACKEND=s3
 # OrcaSlicer (headless slice via Xvfb in docker-entrypoint.sh)
 RUN mkdir -p /opt/orcaslicer \
  && curl -fsSL -o /tmp/orca.AppImage \
-    "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/${ORCA_SLICER_VERSION}/OrcaSlicer_Linux_V2.3.2.AppImage" \
+    "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/${ORCA_SLICER_VERSION}/${ORCA_APPIMAGE}" \
  && chmod +x /tmp/orca.AppImage \
  && cd /opt/orcaslicer \
  && /tmp/orca.AppImage --appimage-extract \
