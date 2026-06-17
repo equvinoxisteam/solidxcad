@@ -10,6 +10,7 @@ import { ensureMeshSidecar } from './artifactPipeline.js';
 import { getObjectStream } from './s3.js';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
+import { writeTempSliceProfile } from './sliceProfile.js';
 
 const DEFAULT_PROFILE = {
   backend: 'auto',
@@ -162,13 +163,13 @@ function slicerProfilePath() {
   return '';
 }
 
-export async function executeSliceJob({ userId, projectId, fileId, profilePath }) {
+export async function executeSliceJob({ userId, projectId, fileId, profilePath, settings }) {
   const job = await Job.create({
     userId,
     projectId,
     type: 'slice',
     status: 'running',
-    input: { fileId, profilePath },
+    input: { fileId, profilePath, settings },
     startedAt: new Date(),
   });
 
@@ -193,14 +194,15 @@ export async function executeSliceJob({ userId, projectId, fileId, profilePath }
 
     const nativeConfig = profilePath || slicerProfilePath();
     let profileArg = nativeConfig;
-    if (!nativeConfig) {
-      profileArg = path.join(workDir, 'profile.json');
-      await fs.writeFile(profileArg, JSON.stringify(DEFAULT_PROFILE, null, 2));
+    if (settings && Object.keys(settings).length > 0) {
+      profileArg = await writeTempSliceProfile(workDir, settings);
+    } else if (!nativeConfig) {
+      profileArg = await writeTempSliceProfile(workDir, {});
     } else {
       try {
         await fs.access(nativeConfig);
       } catch {
-        throw new Error(`Slicer profile not found: ${nativeConfig}`);
+        profileArg = await writeTempSliceProfile(workDir, {});
       }
     }
 

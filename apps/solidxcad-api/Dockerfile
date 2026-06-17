@@ -25,6 +25,7 @@ COPY skills/urdf ./skills/urdf
 COPY skills/srdf ./skills/srdf
 COPY skills/sdf ./skills/sdf
 COPY skills/implicit-cad ./skills/implicit-cad
+COPY skills/gcode ./skills/gcode
 
 RUN python3 -m venv /opt/venv \
  && /opt/venv/bin/pip install --upgrade pip \

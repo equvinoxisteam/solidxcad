@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, Loader2, Package, Search, FolderTree } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Download, FileBox, Loader2, Package, Printer, Search, FolderTree } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { ProjectFile } from '@/lib/api';
 import { ProjectFilesList } from '@/components/ProjectFilesList';
+import { SliceModal } from '@/components/SliceModal';
+import { isSliceableMesh } from '@/lib/sliceSettings';
 
 type StepPart = {
   id?: string;
@@ -28,12 +30,28 @@ export function ToolsPanel({
   highlightFile,
   onRefresh,
   onStatus,
+  onHighlightFile,
 }: ToolsPanelProps) {
-  const [tab, setTab] = useState<'parts' | 'files'>('files');
+  const [tab, setTab] = useState<'parts' | 'files' | 'slice'>('files');
   const [query, setQuery] = useState('');
   const [parts, setParts] = useState<StepPart[]>([]);
   const [searching, setSearching] = useState(false);
   const [importing, setImporting] = useState('');
+  const [selectedMeshId, setSelectedMeshId] = useState('');
+  const [sliceModalOpen, setSliceModalOpen] = useState(false);
+
+  const sliceableFiles = useMemo(() => files.filter(isSliceableMesh), [files]);
+  const selectedMesh = sliceableFiles.find((f) => f._id === selectedMeshId) || sliceableFiles[0];
+
+  useEffect(() => {
+    if (!sliceableFiles.length) {
+      setSelectedMeshId('');
+      return;
+    }
+    if (!sliceableFiles.some((f) => f._id === selectedMeshId)) {
+      setSelectedMeshId(sliceableFiles[0]._id);
+    }
+  }, [sliceableFiles, selectedMeshId]);
 
   async function searchParts() {
     if (!query.trim()) return;
@@ -73,13 +91,19 @@ export function ToolsPanel({
     }
   }
 
+  function handleSliceSuccess(gcodeName: string) {
+    onHighlightFile?.(gcodeName);
+    setTab('files');
+    onRefresh();
+  }
+
   return (
     <aside className="w-60 border-l border-border bg-[#0d1a30] flex flex-col shrink-0 hidden lg:flex">
-      <div className="h-10 border-b border-border flex text-[11px] font-medium uppercase tracking-wide">
+      <div className="h-10 border-b border-border flex text-[10px] font-medium uppercase tracking-wide">
         <button
           type="button"
           onClick={() => setTab('files')}
-          className={`flex-1 flex items-center justify-center gap-1.5 ${
+          className={`flex-1 flex items-center justify-center gap-1 ${
             tab === 'files' ? 'text-white bg-brand/20 border-b-2 border-brand-light' : 'text-muted hover:text-white'
           }`}
         >
@@ -88,8 +112,18 @@ export function ToolsPanel({
         </button>
         <button
           type="button"
+          onClick={() => setTab('slice')}
+          className={`flex-1 flex items-center justify-center gap-1 ${
+            tab === 'slice' ? 'text-white bg-brand/20 border-b-2 border-brand-light' : 'text-muted hover:text-white'
+          }`}
+        >
+          <Printer className="w-3.5 h-3.5" />
+          Slice
+        </button>
+        <button
+          type="button"
           onClick={() => setTab('parts')}
-          className={`flex-1 flex items-center justify-center gap-1.5 ${
+          className={`flex-1 flex items-center justify-center gap-1 ${
             tab === 'parts' ? 'text-white bg-brand/20 border-b-2 border-brand-light' : 'text-muted hover:text-white'
           }`}
         >
@@ -142,10 +176,62 @@ export function ToolsPanel({
         </div>
       )}
 
+      {tab === 'slice' && (
+        <div className="flex-1 flex flex-col min-h-0 p-2.5 gap-2 overflow-y-auto">
+          <p className="text-[10px] text-muted px-0.5">
+            Slice STL or STEP to G-code. Output appears under Toolpaths.
+          </p>
+          {!sliceableFiles.length ? (
+            <div className="rounded-lg border border-dashed border-border bg-panel/50 p-3 text-[11px] text-muted space-y-2">
+              <FileBox className="w-5 h-5 text-muted/70" />
+              <p className="text-white font-medium">No CAD model yet</p>
+              <p>
+                Generate a CAD model in chat first. STEP and STL exports will appear here when ready to slice.
+              </p>
+            </div>
+          ) : (
+            <>
+              <label className="text-[10px] uppercase text-muted">Model to slice</label>
+              <select
+                value={selectedMesh?._id || ''}
+                onChange={(e) => setSelectedMeshId(e.target.value)}
+                className="w-full bg-panel border border-border rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-brand"
+              >
+                {sliceableFiles.map((file) => (
+                  <option key={file._id} value={file._id}>
+                    {file.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={!selectedMesh}
+                onClick={() => setSliceModalOpen(true)}
+                className="w-full bg-brand hover:bg-brand-hover disabled:opacity-50 text-white text-xs py-2 rounded-lg flex items-center justify-center gap-1.5"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                Configure &amp; slice
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {tab === 'files' && (
         <div className="flex-1 flex flex-col min-h-0 p-2.5 gap-2 overflow-y-auto">
           <ProjectFilesList files={files} highlightName={highlightFile} />
         </div>
+      )}
+
+      {selectedMesh && (
+        <SliceModal
+          open={sliceModalOpen}
+          projectId={projectId}
+          file={selectedMesh}
+          onClose={() => setSliceModalOpen(false)}
+          onSuccess={handleSliceSuccess}
+          onStatus={onStatus}
+        />
       )}
     </aside>
   );

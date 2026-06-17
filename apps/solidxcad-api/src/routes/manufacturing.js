@@ -21,7 +21,7 @@ async function fileDownloadUrl(s3Key) {
 }
 
 router.post('/slice', asyncHandler(async (req, res) => {
-  const { projectId, fileId, profilePath } = req.body;
+  const { projectId, fileId, profilePath, settings } = req.body;
   if (!projectId || !fileId) {
     return res.status(400).json({ error: 'projectId and fileId required' });
   }
@@ -44,6 +44,7 @@ router.post('/slice', asyncHandler(async (req, res) => {
     projectId: project._id.toString(),
     fileId,
     profilePath,
+    settings,
   });
 
   if (!result.ok) {

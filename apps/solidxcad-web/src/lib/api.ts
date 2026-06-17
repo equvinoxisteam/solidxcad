@@ -1,4 +1,6 @@
 // Browser: same-origin /api via Next rewrite. Long jobs (slice) can bypass proxy.
+import type { SliceSettings } from '@/lib/sliceSettings';
+
 const DIRECT_API_URL =
   typeof window !== 'undefined'
     ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')
@@ -151,7 +153,7 @@ export const api = {
   importPart: (body: { projectId: string; partId?: string; partUrl?: string; name?: string }) =>
     request<{ file: ProjectFile }>('/api/manufacturing/parts/import', { method: 'POST', body: JSON.stringify(body) }),
 
-  sliceModel: (body: { projectId: string; fileId: string; profilePath?: string }) =>
+  sliceModel: (body: { projectId: string; fileId: string; profilePath?: string; settings?: SliceSettings }) =>
     request<{ ok: boolean; file?: ProjectFile; error?: string }>(
       '/api/manufacturing/slice',
       { method: 'POST', body: JSON.stringify(body) },
