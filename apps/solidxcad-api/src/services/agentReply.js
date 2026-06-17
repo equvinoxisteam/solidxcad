@@ -1,7 +1,5 @@
 import { stripAgentMarkers } from './agentBehavior.js';
 
-import { stripAgentMarkers } from './agentBehavior.js';
-
 function stripFileReferencesFromReply(text = '') {
   let out = text;
   out = out.replace(
