@@ -7,6 +7,7 @@ import {
 } from "cadjs/lib/step/stepTree";
 import { resolveStepModuleNumberControlStep } from "@/workbench/stepModuleParameterControls";
 import { useStepAnimationElapsed } from "@/workbench/stepAnimationStore";
+import { isViewerEmbedMode } from "@/workbench/embedMode.js";
 import {
   Accordion
 } from "../ui/accordion";
@@ -193,6 +194,7 @@ export default function StepFileSheet({
   openSectionIds = [],
   onOpenSectionIdsChange
 }) {
+  const embedMode = isViewerEmbedMode();
   const rowRefs = useRef(new Map());
   const treeSelectClickTimerRef = useRef(null);
   const selectedIds = Array.isArray(selectedPartIds) ? selectedPartIds : [];
@@ -336,7 +338,7 @@ export default function StepFileSheet({
                   }
                 }}
               >
-              {viewerLoading && !visibleRows.length ? (
+              {!embedMode && viewerLoading && !visibleRows.length ? (
                 <p className="px-1.5 py-2 text-xs text-[var(--ui-text-muted)]">
                   Loading STEP tree...
                 </p>

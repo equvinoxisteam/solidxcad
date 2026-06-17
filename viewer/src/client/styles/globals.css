@@ -129,37 +129,38 @@
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
+  /* SolidX blueprint dark palette (match apps/solidxcad-web) */
+  --background: rgb(7 20 40);
+  --foreground: rgb(229 231 235);
+  --card: rgb(10 22 40);
+  --card-foreground: rgb(229 231 235);
+  --popover: rgb(13 26 48);
+  --popover-foreground: rgb(229 231 235);
+  --primary: rgb(16 58 142);
+  --primary-foreground: rgb(255 255 255);
+  --secondary: rgb(15 31 56);
+  --secondary-foreground: rgb(229 231 235);
+  --muted: rgb(15 31 56);
+  --muted-foreground: rgb(143 163 188);
+  --accent: rgb(16 58 142 / 22%);
+  --accent-foreground: rgb(219 234 254);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.552 0.016 285.938);
+  --border: rgb(30 58 95);
+  --input: rgb(30 58 95);
+  --ring: rgb(16 58 142 / 45%);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.552 0.016 285.938);
+  --sidebar: rgb(10 22 40);
+  --sidebar-foreground: rgb(229 231 235);
+  --sidebar-primary: rgb(16 58 142);
+  --sidebar-primary-foreground: rgb(255 255 255);
+  --sidebar-accent: rgb(16 58 142 / 18%);
+  --sidebar-accent-foreground: rgb(219 234 254);
+  --sidebar-border: rgb(30 58 95);
+  --sidebar-ring: rgb(16 58 142 / 45%);
 
   --ui-warning-bg: oklch(0.269 0.077 45.635);
   --ui-warning-text: oklch(0.879 0.169 91.605);
@@ -168,11 +169,11 @@
   --ui-success-bg: oklch(0.262 0.051 172.552);
   --ui-success-text: oklch(0.871 0.15 154.449);
 
-  --ui-glass-surface: rgb(22 22 25 / 82%);
-  --ui-glass-popover: rgb(24 24 27 / 86%);
-  --ui-glass-control: rgb(13 13 16 / 64%);
-  --ui-loading-overlay: rgb(5 6 10 / 34%);
-  --ui-loading-overlay-strong: rgb(5 6 10 / 72%);
+  --ui-glass-surface: rgb(10 22 40 / 82%);
+  --ui-glass-popover: rgb(13 26 48 / 88%);
+  --ui-glass-control: rgb(7 20 40 / 64%);
+  --ui-loading-overlay: rgb(7 20 40 / 34%);
+  --ui-loading-overlay-strong: rgb(7 20 40 / 72%);
 }
 
 :root:not(.dark)[data-glass-tone="light"],

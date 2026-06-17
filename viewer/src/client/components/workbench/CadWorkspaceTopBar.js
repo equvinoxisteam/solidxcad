@@ -1354,21 +1354,23 @@ export default function CadWorkspaceTopBar({
             </Button>
           ) : null}
 
-          <ThemePresetDropdown
-            themePresets={themePresets}
-            themeSettings={themeSettings}
-            themePresetId={themePresetId}
-            updateThemeSettings={updateThemeSettings}
-            handleResetThemeSettings={handleResetThemeSettings}
-            handleSaveCustomThemePreset={handleSaveCustomThemePreset}
-            handleUpdateThemePresetSettings={handleUpdateThemePresetSettings}
-            handleDeleteCustomThemePreset={handleDeleteCustomThemePreset}
-            handleEditThemePreset={handleEditThemePreset}
-            handleResetThemePresetToDefault={handleResetThemePresetToDefault}
-            handleRestoreDefaultThemePresets={handleRestoreDefaultThemePresets}
-            triggerClassName={topBarIconButtonClasses}
-            iconClassName={topBarIconClasses}
-          />
+          {!embedMode ? (
+            <ThemePresetDropdown
+              themePresets={themePresets}
+              themeSettings={themeSettings}
+              themePresetId={themePresetId}
+              updateThemeSettings={updateThemeSettings}
+              handleResetThemeSettings={handleResetThemeSettings}
+              handleSaveCustomThemePreset={handleSaveCustomThemePreset}
+              handleUpdateThemePresetSettings={handleUpdateThemePresetSettings}
+              handleDeleteCustomThemePreset={handleDeleteCustomThemePreset}
+              handleEditThemePreset={handleEditThemePreset}
+              handleResetThemePresetToDefault={handleResetThemePresetToDefault}
+              handleRestoreDefaultThemePresets={handleRestoreDefaultThemePresets}
+              triggerClassName={topBarIconButtonClasses}
+              iconClassName={topBarIconClasses}
+            />
+          ) : null}
 
           {false && showThemeColorModeToggle ? (
             <Button

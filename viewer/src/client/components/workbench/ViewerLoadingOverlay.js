@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { isViewerEmbedMode } from "@/workbench/embedMode.js";
 
 // Extracted from the published Claude spinner verb list the user linked.
 const CLAUDE_CODE_LOADING_VERBS = Object.freeze([
@@ -203,6 +204,7 @@ export default function ViewerLoadingOverlay({
   viewerLoading,
   previewMode
 }) {
+  const embedMode = useMemo(() => isViewerEmbedMode(), []);
   const [loadingVerbs, setLoadingVerbs] = useState(() => shuffledLoadingVerbs());
   const [activeWordIndex, setActiveWordIndex] = useState(0);
   const [spinnerFrameIndex, setSpinnerFrameIndex] = useState(0);
@@ -214,6 +216,19 @@ export default function ViewerLoadingOverlay({
   useEffect(() => {
     if (!viewerLoading || previewMode) {
       return undefined;
+    }
+
+    if (embedMode) {
+      setLoadingVerbs(["Loading"]);
+      setActiveWordIndex(0);
+      setSpinnerFrameIndex(0);
+      setEllipsisFrameIndex(0);
+      const ellipsisIntervalId = window.setInterval(() => {
+        setEllipsisFrameIndex((current) => (current + 1) % ASCII_ELLIPSIS_FRAMES.length);
+      }, 360);
+      return () => {
+        window.clearInterval(ellipsisIntervalId);
+      };
     }
 
     const nextLoadingVerbs = shuffledLoadingVerbs();
@@ -239,14 +254,14 @@ export default function ViewerLoadingOverlay({
       window.clearInterval(spinnerIntervalId);
       window.clearInterval(ellipsisIntervalId);
     };
-  }, [previewMode, viewerLoading]);
+  }, [embedMode, previewMode, viewerLoading]);
 
   if (!viewerLoading || previewMode) {
     return null;
   }
 
-  const activeVerb = loadingVerbs[activeWordIndex] || CLAUDE_CODE_LOADING_VERBS[0];
-  const spinnerFrame = ASCII_SPINNER_FRAMES[spinnerFrameIndex];
+  const activeVerb = embedMode ? "Loading" : (loadingVerbs[activeWordIndex] || CLAUDE_CODE_LOADING_VERBS[0]);
+  const spinnerFrame = embedMode ? "" : ASCII_SPINNER_FRAMES[spinnerFrameIndex];
   const ellipsis = ASCII_ELLIPSIS_FRAMES[ellipsisFrameIndex];
 
   return (
@@ -260,8 +275,12 @@ export default function ViewerLoadingOverlay({
         >
           <span className="sr-only">{activeVerb}</span>
           <span className="inline-flex w-[24ch] items-start justify-start text-left sm:w-[26ch]">
-            <span className="inline-block w-[2ch]">{spinnerFrame}</span>
-            <span className="inline-block w-[1ch]"> </span>
+            {!embedMode ? (
+              <>
+                <span className="inline-block w-[2ch]">{spinnerFrame}</span>
+                <span className="inline-block w-[1ch]"> </span>
+              </>
+            ) : null}
             <span>{activeVerb}</span>
             <span className="inline-block w-[3ch]">{ellipsis}</span>
           </span>

@@ -18,6 +18,7 @@ import {
   GCODE_PREVIEW_DETAIL_MIN
 } from "cadjs/lib/gcode/buildPreviewMesh";
 import FileStatusSection from "./FileStatusSection";
+import { isViewerEmbedMode } from "@/workbench/embedMode.js";
 const fieldLabelClasses = FILE_SHEET_FIELD_LABEL_CLASSES;
 const compactNumberBadgeClasses = "h-4 rounded-sm px-1.5 py-0 text-[10px] font-medium leading-none";
 
@@ -163,6 +164,7 @@ export default function GcodeFileSheet({
   openSectionIds = [],
   onOpenSectionIdsChange
 }) {
+  const embedMode = isViewerEmbedMode();
   const layers = Array.isArray(gcodeData?.layers) ? gcodeData.layers : [];
   const stats = gcodeData?.stats || {};
   const features = Array.isArray(gcodeData?.features) ? gcodeData.features : [];
@@ -214,7 +216,7 @@ export default function GcodeFileSheet({
 
         <FileSheetSection value="toolpath" title="Toolpath">
             <div>
-              {!hasGcodeData ? (
+              {!embedMode && !hasGcodeData ? (
                 <p className="px-3 py-2 text-xs text-muted-foreground">Loading G-code...</p>
               ) : null}
 
