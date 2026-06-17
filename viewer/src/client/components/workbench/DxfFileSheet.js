@@ -20,7 +20,6 @@ import FileSheet, {
   FileSheetSection,
   FileSheetSectionBody
 } from "./FileSheet";
-import FileMetadataSection from "./FileMetadataSection";
 import FileStatusSection from "./FileStatusSection";
 
 const compactInputClasses = FILE_SHEET_COMPACT_NUMERIC_INPUT_CLASSES;
@@ -262,15 +261,7 @@ export default function DxfFileSheet({
           </FileSheetSectionBody>
         </FileSheetSection>
         {themeSections}
-        <FileMetadataSection
-          entry={selectedEntry}
-          fileDownloadAvailable={fileDownloadAvailable}
-          viewerServerInfo={viewerServerInfo}
-          localFileOpenAvailable={localFileOpenAvailable}
-          fileAccessBusyKey={fileAccessBusyKey}
-          onOpenFileAsset={onOpenFileAsset}
-          suppressDynamicStatus={suppressDynamicMetadataStatus}
-        />
+
       </Accordion>
     </FileSheet>
   );

@@ -222,10 +222,53 @@ export type User = {
   onboarding?: { useCase?: string; experience?: string; goal?: string };
 };
 
+export type BillingConfig = {
+  keyId: string;
+  unlimitedCredits?: boolean;
+  plan: { name: string; amountUsd: number; credits: number | string };
+  freeCredits: number | string;
+};
+
+export function isUnlimitedUser(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return Boolean(user.unlimitedCredits || user.credits >= 999_999);
+}
+
+export function formatCreditCount(value: number): string {
+  return Number(value || 0).toLocaleString();
+}
+
 export function formatCredits(user: User | null | undefined): string {
   if (!user) return '0';
-  if (user.unlimitedCredits || user.credits >= 999999) return 'Unlimited';
-  return String(user.credits);
+  if (isUnlimitedUser(user)) return 'Unlimited';
+  return formatCreditCount(user.credits);
+}
+
+export function creditPlanLimit(
+  user: User | null | undefined,
+  billing: BillingConfig | null | undefined,
+): number | null {
+  if (!user || isUnlimitedUser(user)) return null;
+  if (user.plan === 'pro') {
+    const pro = billing?.plan?.credits;
+    return typeof pro === 'number' ? pro : 500;
+  }
+  const free = billing?.freeCredits;
+  return typeof free === 'number' ? free : 100;
+}
+
+export function creditUsageSummary(
+  user: User | null | undefined,
+  billing: BillingConfig | null | undefined,
+) {
+  const remaining = user?.credits ?? 0;
+  const unlimited = isUnlimitedUser(user);
+  const limit = creditPlanLimit(user, billing);
+  const used = limit != null ? Math.max(0, limit - remaining) : 0;
+  const percentRemaining = unlimited || limit == null
+    ? 100
+    : Math.min(100, Math.max(0, (remaining / limit) * 100));
+  return { remaining, unlimited, limit, used, percentRemaining };
 }
 
 export type Project = {
@@ -277,12 +320,6 @@ export type ViewerSyncResult = {
   workspaceDir: string;
   files: { id: string; file: string; name: string; kind: string }[];
   viewerUrl: string;
-};
-
-export type BillingConfig = {
-  keyId: string;
-  plan: { name: string; amountUsd: number; credits: number };
-  freeCredits: number;
 };
 
 export async function streamChat(

@@ -32,7 +32,6 @@ import FileSheet, {
   FileSheetToggleRow,
   parseFileSheetNumberInput
 } from "./FileSheet";
-import FileMetadataSection from "./FileMetadataSection";
 import FileStatusSection from "./FileStatusSection";
 
 const compactButtonClasses = FILE_SHEET_COMPACT_BUTTON_CLASSES;
@@ -782,15 +781,7 @@ export default function StepFileSheet({
         ) : null}
 
         {themeSections}
-        <FileMetadataSection
-          entry={selectedEntry}
-          fileDownloadAvailable={fileDownloadAvailable}
-          viewerServerInfo={viewerServerInfo}
-          localFileOpenAvailable={localFileOpenAvailable}
-          fileAccessBusyKey={fileAccessBusyKey}
-          onOpenFileAsset={onOpenFileAsset}
-          suppressDynamicStatus={suppressDynamicMetadataStatus}
-        />
+
       </Accordion>
     </FileSheet>
   );

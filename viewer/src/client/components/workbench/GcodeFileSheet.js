@@ -7,7 +7,6 @@ import FileSheet, {
   FileSheetToggleRow,
   parseFileSheetNumberInput
 } from "./FileSheet";
-import FileMetadataSection from "./FileMetadataSection";
 import {
   Accordion
 } from "../ui/accordion";
@@ -413,15 +412,7 @@ export default function GcodeFileSheet({
         </FileSheetSection>
 
         {themeSections}
-        <FileMetadataSection
-          entry={selectedEntry}
-          fileDownloadAvailable={fileDownloadAvailable}
-          viewerServerInfo={viewerServerInfo}
-          localFileOpenAvailable={localFileOpenAvailable}
-          fileAccessBusyKey={fileAccessBusyKey}
-          onOpenFileAsset={onOpenFileAsset}
-          suppressDynamicStatus={suppressDynamicMetadataStatus}
-        />
+
       </Accordion>
     </FileSheet>
   );

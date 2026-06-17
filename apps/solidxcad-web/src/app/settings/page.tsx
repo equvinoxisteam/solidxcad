@@ -7,6 +7,8 @@ import { Check, CreditCard, Loader2, User } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import {
   api,
+  creditUsageSummary,
+  formatCreditCount,
   formatCredits,
   getToken,
   setStoredUser,
@@ -99,6 +101,7 @@ export default function SettingsPage() {
   }
 
   const nameChanged = user && name.trim() !== (user.name || '');
+  const usage = user ? creditUsageSummary(user, billing) : null;
 
   return (
     <div className="dashboard-scene min-h-screen flex flex-col relative overflow-hidden">
@@ -180,6 +183,52 @@ export default function SettingsPage() {
                 </form>
               </section>
 
+              <section className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/85 p-6 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-semibold text-white">Credits</h2>
+                  <span className="text-xs font-medium uppercase tracking-wide text-brand-muted">
+                    {user.plan} plan
+                  </span>
+                </div>
+
+                {usage && (
+                  <>
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <p className="text-3xl font-semibold text-white tabular-nums tracking-tight">
+                          {formatCreditCount(usage.remaining)}
+                        </p>
+                        <p className="text-sm text-gray-400 mt-1">credits remaining</p>
+                      </div>
+                      {usage.unlimited ? (
+                        <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-brand/15 border border-brand/30 text-brand-muted">
+                          No monthly cap
+                        </span>
+                      ) : usage.limit != null ? (
+                        <p className="text-sm text-gray-400 tabular-nums text-right">
+                          of {formatCreditCount(usage.limit)}
+                          <span className="block text-xs text-gray-500">monthly allowance</span>
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-brand to-brand-light transition-all"
+                          style={{ width: `${usage.percentRemaining}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {usage.unlimited
+                          ? 'Unlimited usage is enabled on this workspace. Credits are shown for reference.'
+                          : `${formatCreditCount(usage.used)} used · ${formatCreditCount(usage.remaining)} left this cycle`}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </section>
+
               <section className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/85 p-6 space-y-3">
                 <h2 className="font-semibold text-white">Subscription</h2>
                 <div className="flex items-center justify-between py-2 border-b border-white/5">
@@ -187,9 +236,9 @@ export default function SettingsPage() {
                   <span className="text-sm font-medium text-white uppercase">{user.plan}</span>
                 </div>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-400">Credits</span>
+                  <span className="text-sm text-gray-400">Billing status</span>
                   <span className="text-sm font-medium text-blue-200">
-                    {formatCredits(user)} remaining
+                    {usage?.unlimited ? 'Unlimited access' : `${formatCredits(user)} remaining`}
                   </span>
                 </div>
               </section>

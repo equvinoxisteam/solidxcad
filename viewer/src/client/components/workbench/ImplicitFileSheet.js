@@ -2,7 +2,6 @@ import {
   Accordion
 } from "../ui/accordion";
 import FileSheet from "./FileSheet";
-import FileMetadataSection from "./FileMetadataSection";
 import FileStatusSection from "./FileStatusSection";
 import ImplicitGraphicsSection from "./ImplicitGraphicsSection";
 import ParameterControlsSection from "./ParameterControlsSection";
@@ -56,15 +55,7 @@ export default function ImplicitFileSheet({
         />
         <ImplicitGraphicsSection runtime={graphicsRuntime} />
         {themeSections}
-        <FileMetadataSection
-          entry={selectedEntry}
-          fileDownloadAvailable={fileDownloadAvailable}
-          viewerServerInfo={viewerServerInfo}
-          localFileOpenAvailable={localFileOpenAvailable}
-          fileAccessBusyKey={fileAccessBusyKey}
-          onOpenFileAsset={onOpenFileAsset}
-          suppressDynamicStatus={suppressDynamicMetadataStatus}
-        />
+
       </Accordion>
     </FileSheet>
   );

@@ -11,7 +11,6 @@ import {
   Settings,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
-import { formatCredits } from '@/lib/api';
 import type { User } from '@/lib/api';
 
 export type StudioViewMode = 'mesh' | 'viewer';
@@ -55,7 +54,6 @@ export function StudioTopBar({
   onToggleChat,
   showWorkspace,
   onToggleWorkspace,
-  user,
 }: StudioTopBarProps) {
   return (
     <header className="h-11 border-b border-border bg-[#0a1628] flex items-center gap-2 px-2 sm:px-3 shrink-0 z-20">
@@ -133,12 +131,6 @@ export function StudioTopBar({
           )}
         </button>
       </div>
-
-      {user && (
-        <span className="hidden 2xl:inline text-[11px] text-muted whitespace-nowrap">
-          {formatCredits(user)} credits
-        </span>
-      )}
 
       <Link
         href="/settings"

@@ -25,7 +25,6 @@ import FileSheet, {
   FileSheetSubsection,
   parseFileSheetNumberInput
 } from "./FileSheet";
-import FileMetadataSection from "./FileMetadataSection";
 import FileStatusSection from "./FileStatusSection";
 
 const fieldLabelClasses = FILE_SHEET_FIELD_LABEL_CLASSES;
@@ -800,15 +799,7 @@ export default function UrdfFileSheet({
         </FileSheetSection>
         ) : null}
         {themeSections}
-        <FileMetadataSection
-          entry={selectedEntry}
-          fileDownloadAvailable={fileDownloadAvailable}
-          viewerServerInfo={viewerServerInfo}
-          localFileOpenAvailable={localFileOpenAvailable}
-          fileAccessBusyKey={fileAccessBusyKey}
-          onOpenFileAsset={onOpenFileAsset}
-          suppressDynamicStatus={suppressDynamicMetadataStatus}
-        />
+
       </Accordion>
     </FileSheet>
   );

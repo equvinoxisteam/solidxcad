@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogOut, Settings } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
-import { clearToken, formatCredits, type User } from '@/lib/api';
+import { clearToken, type User } from '@/lib/api';
 import { useClientUser } from '@/hooks/useClientUser';
 
 function iconBtnClass(active = false) {
@@ -16,13 +16,7 @@ function iconBtnClass(active = false) {
 }
 
 function planBadgeText(user: User) {
-  const isPro = user.plan === 'pro';
-  const unlimited = user.unlimitedCredits || user.credits >= 999999;
-
-  if (isPro && unlimited) return 'Pro Plan';
-  if (isPro) return `Pro Plan · ${formatCredits(user)} credits`;
-  if (unlimited) return 'Free Plan · Unlimited';
-  return `Free Plan · ${formatCredits(user)} credits`;
+  return user.plan === 'pro' ? 'Pro plan' : 'Free plan';
 }
 
 type NavbarProps = {
