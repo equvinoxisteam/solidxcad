@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
 import { config } from '../config.js';
 import { ProjectFile } from '../models/ProjectFile.js';
@@ -10,7 +11,35 @@ import { ensureMeshSidecar } from './artifactPipeline.js';
 import { getObjectStream } from './s3.js';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
-import { writeTempSliceProfile } from './sliceProfile.js';
+import { writeTempSliceProfile, defaultSliceSettings } from './sliceProfile.js';
+
+function builtinSliceScript() {
+  return path.join(path.dirname(fileURLToPath(import.meta.url)), '../../scripts/mesh_slice.py');
+}
+
+function useBuiltinSlicer() {
+  const mode = config.slicerBackend;
+  if (mode === 'builtin') return true;
+  if (mode === 'external') return false;
+  const orcaBin = config.orcaSlicerBin || process.env.ORCASLICER_BIN || '';
+  const prusaBin = config.prusaSlicerBin || process.env.PRUSASLICER_BIN || '';
+  return !orcaBin && !prusaBin;
+}
+
+async function runBuiltinSlice(python, meshPath, outputPath, settings, workDir) {
+  const scriptPath = builtinSliceScript();
+  const settingsPath = path.join(workDir, 'slice-settings.json');
+  await fs.writeFile(
+    settingsPath,
+    JSON.stringify({ ...defaultSliceSettings(), ...(settings || {}) }),
+    'utf8',
+  );
+  await runProcess(
+    python,
+    [scriptPath, '--input', meshPath, '--output', outputPath, '--settings', settingsPath],
+    workDir,
+  );
+}
 
 const DEFAULT_PROFILE = {
   backend: 'auto',
@@ -196,41 +225,56 @@ export async function executeSliceJob({ userId, projectId, fileId, profilePath, 
     workDir = temp.workDir;
     const { meshPath } = temp;
     const outputPath = path.join(workDir, 'slice_output.gcode');
-    const gcodeTool = path.join(config.textToCadRoot, 'skills', 'gcode', 'scripts', 'gcode_tool.py');
     const python = await findPython();
-
-    const nativeConfig = profilePath || slicerProfilePath();
-    let profileArg = nativeConfig;
-    if (settings && Object.keys(settings).length > 0) {
-      profileArg = await writeTempSliceProfile(workDir, settings);
-    } else if (!nativeConfig) {
-      profileArg = await writeTempSliceProfile(workDir, {});
-    } else {
-      try {
-        await fs.access(nativeConfig);
-      } catch {
-        profileArg = await writeTempSliceProfile(workDir, {});
-      }
-    }
-
-    const orcaBin = config.orcaSlicerBin || process.env.ORCASLICER_BIN || '';
-    const prusaBin = config.prusaSlicerBin || process.env.PRUSASLICER_BIN || '';
-    if (!orcaBin && !prusaBin) {
-      throw new Error(
-        'Slicing is not available on this server yet. Redeploy the API Docker image (includes OrcaSlicer) or set ORCASLICER_BIN on the API service.',
-      );
-    }
+    const mergedSettings = { ...defaultSliceSettings(), ...(settings || {}) };
 
     console.log(`[slice] slicing ${meshFile.name} → ${safeGcodeName(meshFile.name)}`);
     let usedBboxFallback = false;
-    try {
-      await runSliceCommand(python, gcodeTool, meshPath, outputPath, profileArg, workDir);
-    } catch (primaryErr) {
-      console.warn('[slice] primary mesh failed, trying bounding-box solid…', primaryErr.message);
-      const bboxStl = path.join(workDir, 'slice_bbox.stl');
-      await exportBoundingBoxStl(python, meshPath, bboxStl);
-      await runSliceCommand(python, gcodeTool, bboxStl, outputPath, profileArg, workDir);
-      usedBboxFallback = true;
+
+    if (useBuiltinSlicer()) {
+      console.log('[slice] using SolidX built-in mesh slicer');
+      try {
+        await runBuiltinSlice(python, meshPath, outputPath, mergedSettings, workDir);
+      } catch (primaryErr) {
+        console.warn('[slice] built-in mesh failed, trying bounding-box solid…', primaryErr.message);
+        const bboxStl = path.join(workDir, 'slice_bbox.stl');
+        await exportBoundingBoxStl(python, meshPath, bboxStl);
+        await runBuiltinSlice(python, bboxStl, outputPath, mergedSettings, workDir);
+        usedBboxFallback = true;
+      }
+    } else {
+      const gcodeTool = path.join(config.textToCadRoot, 'skills', 'gcode', 'scripts', 'gcode_tool.py');
+      const nativeConfig = profilePath || slicerProfilePath();
+      let profileArg = nativeConfig;
+      if (settings && Object.keys(settings).length > 0) {
+        profileArg = await writeTempSliceProfile(workDir, settings);
+      } else if (!nativeConfig) {
+        profileArg = await writeTempSliceProfile(workDir, {});
+      } else {
+        try {
+          await fs.access(nativeConfig);
+        } catch {
+          profileArg = await writeTempSliceProfile(workDir, {});
+        }
+      }
+
+      const orcaBin = config.orcaSlicerBin || process.env.ORCASLICER_BIN || '';
+      const prusaBin = config.prusaSlicerBin || process.env.PRUSASLICER_BIN || '';
+      if (!orcaBin && !prusaBin) {
+        throw new Error(
+          'External slicer not configured. Set ORCASLICER_BIN or use SLICER_BACKEND=builtin.',
+        );
+      }
+
+      try {
+        await runSliceCommand(python, gcodeTool, meshPath, outputPath, profileArg, workDir);
+      } catch (primaryErr) {
+        console.warn('[slice] primary mesh failed, trying bounding-box solid…', primaryErr.message);
+        const bboxStl = path.join(workDir, 'slice_bbox.stl');
+        await exportBoundingBoxStl(python, meshPath, bboxStl);
+        await runSliceCommand(python, gcodeTool, bboxStl, outputPath, profileArg, workDir);
+        usedBboxFallback = true;
+      }
     }
 
     let gcodePath = outputPath;

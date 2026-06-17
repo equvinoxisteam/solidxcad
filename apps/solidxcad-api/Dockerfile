@@ -1,16 +1,12 @@
-# SolidX CAD API — Node + Python CAD + generator skills + OrcaSlicer
+# SolidX CAD API — Node + Python CAD + built-in mesh slicer (no external GitHub downloads)
 # Railway: dockerfilePath=apps/solidxcad-api/Dockerfile, build context = repo root
 
-FROM node:20-noble
-
-ARG ORCA_SLICER_VERSION=v2.3.2
-ARG ORCA_APPIMAGE=OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.3.2.AppImage
+FROM node:20-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-venv \
     libgl1 libglib2.0-0 libgomp1 libxrender1 libsm6 libxext6 \
-    libfuse2 libgtk-3-0 libnotify4 libnss3 libxss1 libasound2 \
-    xvfb curl ca-certificates \
+    curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 ENV TEXT_TO_CAD_ROOT=/app/repo
@@ -19,20 +15,7 @@ ENV NODE_ENV=production
 ENV AUTO_START_VIEWER=false
 ENV VIEWER_CLOUD_MODE=true
 ENV STORAGE_BACKEND=s3
-
-# OrcaSlicer (headless slice via Xvfb in docker-entrypoint.sh)
-RUN mkdir -p /opt/orcaslicer \
- && curl -fsSL -o /tmp/orca.AppImage \
-    "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/${ORCA_SLICER_VERSION}/${ORCA_APPIMAGE}" \
- && chmod +x /tmp/orca.AppImage \
- && cd /opt/orcaslicer \
- && /tmp/orca.AppImage --appimage-extract \
- && mv squashfs-root app \
- && rm /tmp/orca.AppImage
-
-ENV ORCASLICER_BIN=/opt/orcaslicer/app/AppRun
-ENV ORCASLICER_ROOT=/opt/orcaslicer/app
-ENV SLICER_PROFILE_PATH=/app/api/config/orcaslicer-ender3-pla.json
+ENV SLICER_BACKEND=builtin
 
 WORKDIR /app/repo
 
@@ -48,7 +31,7 @@ COPY skills/gcode ./skills/gcode
 RUN python3 -m venv /opt/venv \
  && /opt/venv/bin/pip install --upgrade pip \
  && /opt/venv/bin/pip install -e ./packages/cadpy -e ./packages/cadpy_metadata \
- && /opt/venv/bin/pip install ezdxf trimesh build123d
+ && /opt/venv/bin/pip install ezdxf trimesh build123d numpy
 
 # implicit.js → STL/GLB export (optional mesh sidecars from chat)
 WORKDIR /app/repo/skills/implicit-cad/scripts/packages/implicitjs
@@ -61,6 +44,7 @@ RUN npm ci --omit=dev
 
 COPY apps/solidxcad-api/src ./src
 COPY apps/solidxcad-api/config ./config
+COPY apps/solidxcad-api/scripts ./scripts
 COPY apps/solidxcad-api/docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

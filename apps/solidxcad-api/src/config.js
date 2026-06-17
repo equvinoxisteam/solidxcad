@@ -120,6 +120,7 @@ export const config = {
     return isProd && !isLocalViewer && process.env.AUTO_START_VIEWER === 'false';
   })(),
   slicerProfilePath: process.env.SLICER_PROFILE_PATH || '',
+  slicerBackend: (process.env.SLICER_BACKEND || 'builtin').toLowerCase(),
   orcaSlicerBin: process.env.ORCASLICER_BIN || '',
   prusaSlicerBin: process.env.PRUSASLICER_BIN || '',
   // local | s3 — development may use local; production defaults to s3 when bucket is set
