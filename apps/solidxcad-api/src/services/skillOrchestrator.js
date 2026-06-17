@@ -170,7 +170,7 @@ export async function runSkillPipeline({
       if (partResult.ok) {
         partsResult = partResult;
         result = partResult;
-        stepEmit(`✓ Imported parts/${partResult.file?.name || 'part'}`, 'step-parts', 'done');
+        stepEmit('✓ Catalog part imported to workspace', 'step-parts', 'done');
       } else {
         stepEmit(`✗ ${partResult.error}`, 'step-parts', 'error');
       }
@@ -205,7 +205,7 @@ export async function runSkillPipeline({
         error: sliceResult.error,
       };
       if (sliceResult.ok) {
-        stepEmit(`✓ G-code saved slices/${sliceResult.file?.name || 'part.gcode'}`, 'gcode', 'done');
+        stepEmit('✓ G-code saved to workspace', 'gcode', 'done');
       }
     } else {
       emit(res, 'No STL/STEP in project — generate a part first', 'gcode', 'error');
@@ -318,7 +318,7 @@ export async function runSkillPipeline({
         result = cadResult;
         if (cadResult?.ok) {
           const note = cadResult.fallback ? ' (reliable fallback solid)' : '';
-          stepEmit(`✓ CAD saved models/${cadResult.file?.name || 'part.step'}${note}`, 'cad', 'done');
+          stepEmit(`✓ Solid model saved to workspace${note}`, 'cad', 'done');
         } else if (cadResult?.error) {
           stepEmit('Adjusting design — using tested fallback…', 'cad', 'running');
         }
@@ -350,7 +350,7 @@ export async function runSkillPipeline({
       if (sliceResult?.ok) {
         cadResult = { ...cadResult, sliceResult, skill: 'cad' };
         result = cadResult;
-        stepEmit(`✓ G-code saved slices/${sliceResult.file?.name || 'part.gcode'}`, 'gcode', 'done');
+        stepEmit('✓ G-code saved to workspace', 'gcode', 'done');
       } else if (sliceResult?.error) {
         stepEmit(`✗ Slice failed: ${sliceResult.error}`, 'gcode', 'error');
       }

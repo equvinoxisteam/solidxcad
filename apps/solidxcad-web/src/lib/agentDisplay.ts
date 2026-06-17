@@ -14,8 +14,25 @@ export function stripCodeFromDisplay(text: string) {
   return out;
 }
 
+/** Remove CAD artifact paths and filenames from user-visible chat text. */
+export function stripFileReferencesFromDisplay(text: string) {
+  let out = text;
+  out = out.replace(
+    /^Files?:\s*[`'"]?[\w.-]+\.(?:step|stp|stl|glb|py|gcode|urdf|srdf|sdf)[`'"]?(?:\s*,\s*[`'"]?[\w.-]+\.\w+[`'"]?)*/gim,
+    'Design saved to workspace.',
+  );
+  out = out.replace(/`[\w.-]+\.(?:step|stp|stl|glb|py|gcode|urdf|srdf|sdf)`/gi, '');
+  out = out.replace(/\b(?:models|parts|slices)\/[\w.-]+\.\w+/gi, 'workspace');
+  out = out.replace(
+    /\b[\w.-]+\.(?:step|stp|stl|glb|py|gcode|urdf|srdf|sdf)\b/gi,
+    '',
+  );
+  out = out.replace(/,\s*,/g, ',').replace(/:\s*,/g, ':').replace(/\s{2,}/g, ' ').trim();
+  return out;
+}
+
 export function sanitizeAssistantForDisplay(text: string) {
-  const stripped = stripCodeFromDisplay(text);
+  const stripped = stripFileReferencesFromDisplay(stripCodeFromDisplay(text));
   if (stripped) return stripped;
   if (/```/.test(text) || /def gen_/i.test(text)) {
     return 'Design prepared — see workspace for generated files.';

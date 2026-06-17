@@ -53,7 +53,7 @@ Robotic arms (mechanical STEP, not URDF):
 Rules:
 - gen_step() returns final solid; no export_step/export_stl (pipeline writes files)
 - Under ~120 lines; split helpers inside the same file
-- List output artifacts in prose: part_*.step, part_*.stl, part_*.glb, part_*.py`;
+- Do not list output filenames in chat prose`;
 
 const URDF_SYSTEM_PROMPT = `You are SolidX CAD — generate runnable URDF via Python gen_urdf() for the skills/urdf skill.
 

@@ -27,6 +27,7 @@ import {
   isUserVisibleFile,
   resolveMentionedFileIds,
   sanitizeAssistantForDisplay,
+  stripFileReferencesFromDisplay,
 } from '@/lib/agentDisplay';
 
 type AgentStep = { message: string; skill?: string; status?: string };
@@ -41,7 +42,7 @@ type AgentPhase =
   | 'waiting'
   | 'searching';
 
-type GeneratedFile = { name: string; skill?: string };
+type GeneratedItem = { id: string; skill?: string; label: string };
 
 const ASSEMBLY_STEP1 = 'Import M3 socket head cap screw from step.parts';
 const ASSEMBLY_STEP2 =
@@ -83,6 +84,11 @@ const FALLBACK_MODELS: ChatModel[] = [
   { id: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4', tier: 'quality', description: 'Strong quality' },
 ];
 
+function activityLabel(msg: string) {
+  const cleaned = stripFileReferencesFromDisplay(msg).trim();
+  return cleaned || 'Working…';
+}
+
 function friendlyError() {
   return 'Adjusting approach — resend your message or try a simpler prompt.';
 }
@@ -109,7 +115,7 @@ export function ChatPanel({
   const [selectedModel, setSelectedModel] = useState('');
   const [modelAuto, setModelAuto] = useState(true);
   const [webSearch, setWebSearch] = useState(false);
-  const [generatedFiles, setGeneratedFiles] = useState<GeneratedFile[]>([]);
+  const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
   const [assemblyHint, setAssemblyHint] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [mentionOpen, setMentionOpen] = useState(false);
@@ -153,7 +159,7 @@ export function ChatPanel({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, liveReply, agentSteps, agentPhase, generatedFiles]);
+  }, [messages, liveReply, agentSteps, agentPhase, generatedItems]);
 
   function onModelChange(modelId: string) {
     setSelectedModel(modelId);
@@ -270,10 +276,12 @@ export function ChatPanel({
             { message: 'Reply in chat to continue the build', skill: 'agent', status: 'asking' },
           ]);
         } else if (cadResult && !cadResult.deferred && cadResult.ok) {
-          const name = cadResult.file?.name;
-          if (name) {
-            setGeneratedFiles((prev) => [{ name, skill: cadResult.skill }, ...prev].slice(0, 12));
-          }
+          const skill = cadResult.skill || 'cad';
+          const label = SKILL_LABELS[skill] || 'Design';
+          setGeneratedItems((prev) => [
+            { id: `${Date.now()}-${skill}`, skill, label: `${label} saved to workspace` },
+            ...prev,
+          ].slice(0, 8));
           onCadGenerated(cadResult);
         }
       },
@@ -289,11 +297,11 @@ export function ChatPanel({
         else if (status === 'exploring') setAgentPhase('exploring');
         else if (status === 'asking') setAgentPhase('asking');
         else if (status === 'running' || status === 'done') setAgentPhase('executing');
-        setAgentSteps((steps) => [...steps, { message: msg, skill, status }]);
+        setAgentSteps((steps) => [...steps, { message: activityLabel(msg), skill, status }]);
       },
       (phase, msg) => {
         setAgentPhase(phase as AgentPhase);
-        setAgentSteps((steps) => [...steps, { message: msg, skill: 'agent', status: phase }]);
+        setAgentSteps((steps) => [...steps, { message: activityLabel(msg), skill: 'agent', status: phase }]);
       },
       {
         contextFileIds,
@@ -391,17 +399,14 @@ export function ChatPanel({
           </div>
         )}
 
-        {generatedFiles.length > 0 && (
+        {generatedItems.length > 0 && (
           <div className="rounded-xl border border-brand/40 bg-brand/10 p-3 mr-1 space-y-2">
-            <div className="text-[10px] uppercase text-brand-muted font-semibold">Generated files</div>
+            <div className="text-[10px] uppercase text-brand-muted font-semibold">Generated</div>
             <ul className="space-y-1.5">
-              {generatedFiles.map((g) => (
-                <li key={g.name} className="flex items-center gap-2 text-[12px] text-white/90 min-w-0">
+              {generatedItems.map((g) => (
+                <li key={g.id} className="flex items-center gap-2 text-[12px] text-white/90 min-w-0">
                   <Box className="w-3.5 h-3.5 text-brand-muted shrink-0" />
-                  <span className="truncate font-mono">{g.name}</span>
-                  <span className="text-[10px] text-muted shrink-0">
-                    {SKILL_LABELS[g.skill || 'cad'] || g.skill}
-                  </span>
+                  <span className="truncate">{g.label}</span>
                 </li>
               ))}
             </ul>

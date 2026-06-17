@@ -1,11 +1,26 @@
 import { stripAgentMarkers } from './agentBehavior.js';
 
+import { stripAgentMarkers } from './agentBehavior.js';
+
+function stripFileReferencesFromReply(text = '') {
+  let out = text;
+  out = out.replace(
+    /^Files?:\s*[`'"]?[\w.-]+\.(?:step|stp|stl|glb|py|gcode|urdf|srdf|sdf)[`'"]?(?:\s*,\s*[`'"]?[\w.-]+\.\w+[`'"]?)*/gim,
+    'Design saved to workspace.',
+  );
+  out = out.replace(/`[\w.-]+\.(?:step|stp|stl|glb|py|gcode|urdf|srdf|sdf)`/gi, '');
+  out = out.replace(/\b(?:models|parts|slices)\/[\w.-]+\.\w+/gi, 'workspace');
+  out = out.replace(/\b[\w.-]+\.(?:step|stp|stl|glb|py|gcode|urdf|srdf|sdf)\b/gi, '');
+  return out.replace(/,\s*,/g, ',').replace(/\s{2,}/g, ' ').trim();
+}
+
 /** Strip fenced code and long script blocks from assistant text shown in chat UI. */
 export function stripCodeFromReply(text = '') {
   let out = stripAgentMarkers(text);
   out = out.replace(/```[\s\S]*?```/g, '').trim();
   out = out.replace(/^\s*import\s+[\w.]+.*$/gm, '').trim();
   out = out.replace(/^\s*def\s+gen_\w+.*$/gm, '').trim();
+  out = stripFileReferencesFromReply(out);
   return out.replace(/\n{3,}/g, '\n\n').trim();
 }
 
