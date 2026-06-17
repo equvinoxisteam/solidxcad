@@ -1,16 +1,14 @@
 import { config } from '../config.js';
-import { CHAT_MODELS } from './models.js';
+import { CHAT_MODELS, ALLOWED_CHAT_MODEL_IDS } from './chatModels.js';
 
 const VISION_MODEL = 'openai/gpt-4o';
 const FAST_MODEL = 'anthropic/claude-3.5-haiku';
 const WEB_MODEL = 'google/gemini-2.0-flash-001';
 const QUALITY_MODEL = 'anthropic/claude-sonnet-4';
 
-const allowedIds = new Set(CHAT_MODELS.map((m) => m.id));
-
 function defaultCadModel() {
   const id = config.openrouter?.modelCad;
-  return allowedIds.has(id) ? id : QUALITY_MODEL;
+  return ALLOWED_CHAT_MODEL_IDS.has(id) ? id : QUALITY_MODEL;
 }
 
 /**
