@@ -1,7 +1,7 @@
 import { config } from '../config.js';
 import { AGENT_CORE_PROMPT } from './agentBehavior.js';
 import { normalizeAssistantReply } from './agentReply.js';
-import { detectComplexCadRequest } from './cadPythonPresets.js';
+import { detectComplexCadRequest, detectFromScratchBuild } from './cadPythonPresets.js';
 
 export { normalizeAssistantReply };
 import { buildRichProjectContext } from './projectAgentContext.js';
@@ -66,7 +66,11 @@ Rules:
 
 const URDF_SYSTEM_PROMPT = `You are SolidX CAD — generate runnable URDF via Python gen_urdf() for the skills/urdf skill.
 
-Use ONLY xml.etree.ElementTree (stdlib). Define a top-level zero-argument gen_urdf() that returns the robot root Element.
+Use ONLY xml.etree.ElementTree (stdlib). Define gen_urdf() returning the robot root Element.
+
+Physics: include realistic link lengths, joint axis/limits (effort, velocity), and inertial tags (mass, inertia) when building from scratch. Meters unless user specifies mm.
+
+For multi-DOF arms: base_link → serial links → end_effector; revolute joints with plausible limits.
 
 Template:
 \`\`\`python
@@ -90,30 +94,32 @@ def gen_urdf():
 
 Rules:
 - ALWAYS return Python with gen_urdf() — never raw XML-only blocks
-- Meters for URDF units unless user specifies otherwise
-- Keep under 120 lines; start simple for hands (palm + 2-3 finger links)
-- Brief explanation outside the code block
-- For complex hands: palm link + revolute finger joints, no mesh files required (use box/cylinder geometry)`;
+- State plan in [AGENT_PLAN] then full code same turn with [AGENT_PHASE: execute]
+- Up to ~250 lines for complex manipulators; use helper functions in-file
+- Brief explanation outside the code block`;
 
 const SRDF_SYSTEM_PROMPT = `You are SolidX CAD — generate MoveIt SRDF via Python gen_srdf() for skills/srdf.
 
-Define gen_srdf() returning the robot root Element (xml.etree.ElementTree). Include planning groups, disable collisions, and end-effector groups when appropriate.
+Define gen_srdf() returning the robot root Element (xml.etree.ElementTree). Include planning groups, disable_collisions between adjacent links, and end-effector groups.
+
+When a URDF is provided in context, match link names exactly.
 
 \`\`\`python
 import xml.etree.ElementTree as ET
 
 def gen_srdf():
     robot = ET.Element("robot", name="my_robot")
-    # groups, disable_collisions, etc.
     return robot
 \`\`\`
 
 Rules:
 - ALWAYS Python with gen_srdf() — not raw XML only
-- Assume a matching URDF exists in the same project
-- Keep under 120 lines`;
+- Plan + execute same turn for from-scratch requests
+- Up to ~200 lines`;
 
 const SDF_SYSTEM_PROMPT = `You are SolidX CAD — generate SDFormat models via Python gen_sdf() for skills/sdf.
+
+Physics: include inertial, collision, and visual elements; use realistic masses. Meters unless stated.
 
 \`\`\`python
 import xml.etree.ElementTree as ET
@@ -126,7 +132,8 @@ def gen_sdf():
 
 Rules:
 - ALWAYS Python with gen_sdf()
-- Meters for SDF unless user specifies otherwise`;
+- Plan + execute same turn for from-scratch builds
+- Up to ~250 lines`;
 
 const IMPLICIT_SYSTEM_PROMPT = `You are SolidX CAD — generate implicit CAD as ES module .implicit.js for CAD Viewer.
 
@@ -148,7 +155,7 @@ vec3 color(vec3 p, vec3 normal) {
 Rules:
 - Use implicit_* GLSL helpers only
 - Millimeters in geometry
-- One complete export default block`;
+- Plan + execute same turn; one complete export default block`;
 
 const GCODE_SYSTEM_PROMPT = `You help users slice existing project meshes to G-code. Do not write Python. Tell them slicing runs via OrcaSlicer on the server after they have an STL/STEP part. Suggest: "Slice tab → Generate G-code" or ask to slice an existing part.`;
 
@@ -314,6 +321,69 @@ export async function generateCadCodeFromPlan({
   return extractPythonCode(reply);
 }
 
+const GENERATOR_FROM_PLAN = {
+  urdf: 'Write complete Python with def gen_urdf() returning xml.etree.ElementTree robot root. Meters. Include links, joints, limits, inertial when known. Output one fenced python block only.',
+  srdf: 'Write complete Python with def gen_srdf() returning SRDF robot Element. Match URDF link names from context. Output one fenced python block only.',
+  sdf: 'Write complete Python with def gen_sdf() returning SDFormat sdf Element. Meters. Output one fenced python block only.',
+};
+
+export async function generateGeneratorCodeFromPlan({
+  skillId = 'urdf',
+  userMessage = '',
+  assistantText = '',
+  conversationContext = '',
+  urdfContext = '',
+} = {}) {
+  const instruction = GENERATOR_FROM_PLAN[skillId] || GENERATOR_FROM_PLAN.urdf;
+  const reply = await chatCompletion(
+    [{
+      role: 'user',
+      content: [
+        instruction,
+        '',
+        `User request:\n${userMessage}`,
+        conversationContext ? `\nContext:\n${conversationContext}` : '',
+        urdfContext ? `\nExisting URDF in project:\n${urdfContext.slice(0, 12000)}` : '',
+        `\nAssistant plan:\n${assistantText}`,
+      ].filter(Boolean).join('\n'),
+    }],
+    {
+      model: config.openrouter.modelCad,
+      maxTokens: 6144,
+      system: PROMPTS[skillId] || URDF_SYSTEM_PROMPT,
+    },
+  );
+  return extractPythonCode(reply);
+}
+
+const IMPLICIT_FROM_PLAN_PROMPT = 'Write a complete implicit.js module with export default { schema: "implicit.js/0.1.0", name, glsl }. Millimeters. One fenced javascript block only.';
+
+export async function generateImplicitCodeFromPlan({
+  userMessage = '',
+  assistantText = '',
+  conversationContext = '',
+} = {}) {
+  const reply = await chatCompletion(
+    [{
+      role: 'user',
+      content: [
+        'Write the complete implicit CAD module.',
+        '',
+        `User request:\n${userMessage}`,
+        conversationContext ? `\nContext:\n${conversationContext}` : '',
+        `\nAssistant plan:\n${assistantText}`,
+      ].filter(Boolean).join('\n'),
+    }],
+    {
+      model: config.openrouter.modelCad,
+      maxTokens: 4096,
+      system: IMPLICIT_FROM_PLAN_PROMPT,
+    },
+  );
+  const match = reply.match(/```(?:javascript|js|mjs)?\s*([\s\S]*?)```/i);
+  return match ? match[1].trim() : null;
+}
+
 export function extractPythonCode(text) {
   const match = text.match(/```(?:python)?\s*([\s\S]*?)```/i);
   return match ? match[1].trim() : null;
@@ -338,11 +408,11 @@ export async function getSystemPromptForSkill(skillId, { projectFiles } = {}) {
 }
 
 export function maxTokensForSkill(skillId, { userMessage = '' } = {}) {
-  if (['urdf', 'srdf', 'sdf', 'implicit-cad'].includes(skillId)) return 2048;
-  if (skillId === 'cad') {
-    const msg = [userMessage].filter(Boolean).join('\n');
-    return detectComplexCadRequest(msg) ? 8192 : 4096;
-  }
+  const msg = [userMessage].filter(Boolean).join('\n');
+  const complex = detectComplexCadRequest(msg) || detectFromScratchBuild(msg);
+  if (['urdf', 'srdf', 'sdf'].includes(skillId)) return complex ? 6144 : 4096;
+  if (skillId === 'implicit-cad') return complex ? 4096 : 3072;
+  if (skillId === 'cad') return complex ? 8192 : 4096;
   return undefined;
 }
 

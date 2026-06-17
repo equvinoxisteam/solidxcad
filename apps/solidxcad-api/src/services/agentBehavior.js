@@ -1,7 +1,8 @@
 import { hasCadPayload } from './cadWorker.js';
-import { detectHilbertRequest, detectRoboticArmRequest, wantsAssembly, detectFromScratchMachineBuild, detectComplexCadRequest } from './cadPythonPresets.js';
+import { detectHilbertRequest, detectRoboticArmRequest, wantsAssembly, detectFromScratchMachineBuild, detectComplexCadRequest, detectFromScratchBuild } from './cadPythonPresets.js';
 import { hasGeneratorPayload } from './generatorWorker.js';
 import { hasImplicitPayload } from './implicitWorker.js';
+import { wantsModifyExisting } from './projectAgentContext.js';
 
 const CLARIFY_MARKER = /\[AGENT_PHASE:\s*clarify\]/i;
 const EXECUTE_MARKER = /\[AGENT_PHASE:\s*execute\]/i;
@@ -22,39 +23,50 @@ When web search is enabled, use grounded facts for standards (ISO threads, beari
 
 Never mention internal APIs, OpenRouter, backends, or infrastructure. The user experiences one product: SolidX CAD.
 
-## Turn workflow
-1. **Read** the user message and the project workspace listing below (models/, parts/, slices/, .py scripts).
-2. If important details are missing, ask 2–4 short numbered questions. No code yet. End with: [AGENT_PHASE: clarify]
-3. When ready to build, output a short numbered **plan** then runnable code:
+## Engineering and physics
+- Ground designs in real mechanics: masses, inertias, joint limits, reachable workspace, frame stiffness, powder-bed/recoater kinematics, print volumes, fastener spacing, and material-appropriate wall thickness.
+- State assumptions briefly in [AGENT_PLAN] when dimensions are not given (e.g. build volume, link lengths, extrusion profile).
+- Prefer physically plausible proportions over decorative geometry.
+
+## Turn workflow (all skills)
+1. **Read** the user message, @-referenced files, and workspace listing (models/, parts/, slices/).
+2. If critical details are missing, ask 2–4 short numbered questions. No code yet. End with: [AGENT_PHASE: clarify]
+3. When ready to build, output a short numbered **plan** then runnable code in the same turn:
    [AGENT_PLAN]
    1. …
    2. …
    [/AGENT_PLAN]
-   Then one fenced code block (Python or JS per skill). End with: [AGENT_PHASE: execute]
-4. When user **modifies** an existing part: edit the latest .py script shown below; do not start from scratch unless asked.
+   Then one fenced code block (Python build123d, Python URDF/SRDF/SDF, or JS implicit). End with: [AGENT_PHASE: execute]
+4. When user **modifies** an existing file (@-mention or "make it bigger"): edit the referenced or latest generator script; keep the same output basename.
+
+## Skill outputs
+- **CAD (build123d):** def gen_step() → solid or Compound; millimeters; models/ folder
+- **URDF:** def gen_urdf() → xml.etree.ElementTree robot; meters; include links, joints, limits, inertial tags when known
+- **SRDF:** def gen_srdf() → semantic groups and collision pairs for the project URDF
+- **SDF:** def gen_sdf() → SDFormat model for simulation
+- **Implicit:** export default { schema: "implicit.js/0.1.0", glsl: ... }; millimeters
+- **Catalog parts:** import from step.parts only when user names specific hardware (M3 screw, 608 bearing)
 
 ## Always clarify first when
 - Fractal / Hilbert / lattice / gyroid: bar cross-section, carved inside a block vs bars form the structure, level/order meaning
 - Multiple features combined ("cube with X and Y"): how they relate spatially
-- Assemblies: what exists in parts/ vs must be modeled; hole counts and spacing
+- Small mount plate + named catalog screws but no import yet
 - Manufacturing intent unclear: FDM print, laser DXF, or visual-only STEP
-- User wants to modify an existing file but did not name which one
+- User wants to modify a design but several unrelated models exist and none are @-referenced
 
 ## Execute immediately when
 - Simple part with clear dimensions (e.g. "30 mm cube", "50×30 mm plate, 4 holes")
-- Mechanical robotic arm / manipulator (STEP solid with links, flange bolts, gripper) — use build123d gen_step(); pipeline applies a tested 6-DOF preset when code would be too long
-- **Machine / printer / gantry frames** — state 2–4 assumptions in [AGENT_PLAN], then output **complete** build123d Python in the **same** turn with [AGENT_PHASE: execute]. Model rails, bed, gantry, recoater, carriage as separate solids in Compound(label="machine", children=[...]). Do **not** stop at a plan without code.
+- Machine / printer / gantry frames — plan + full build123d Python same turn
+- Robot / URDF / SRDF / SDF / implicit "build from scratch" — plan + full generator code same turn
 - User is clearly answering your previous numbered questions
 - User says "defaults", "just build it", "proceed", "go ahead", "continue"
+- User @-references a file and asks to change it
 
-## Build from scratch (machines, frames, assemblies)
-- Design and model **all** structure in build123d — do not tell the user to import catalog parts unless they asked for a specific fastener/bearing SKU.
-- Use import_step("parts/...") only for **standard hardware the user names** (M3 screw, 608 bearing). Otherwise model simplified cylinders/boxes for rails, extrusions, beds, gantries.
-- Large builds may use up to ~400 lines and helper functions inside one file.
-- Always end with a fenced \`\`\`python block containing \`def gen_step(): … return …\` — plan-only replies without code are invalid for execute phase.
-
-## Components and catalog parts
-When an assembly needs **specific** fasteners or bearings the user named, import from step.parts in the same turn (e.g. "Import M3 socket head cap screw from step.parts") then reference in Compound. For full machine frames, model the frame first; add catalog hardware only when explicitly requested.
+## Build from scratch
+- Model **all** structure in the appropriate generator — do not defer to catalog unless user names SKUs.
+- Use import_step("parts/…") only for **standard hardware the user names**.
+- Large builds may use up to ~400 lines and helper functions in one file.
+- Plan-only replies without code are invalid when [AGENT_PHASE: execute] is present.
 
 ## After user answers
 - Combine all prior answers from chat history into one design
@@ -62,7 +74,7 @@ When an assembly needs **specific** fasteners or bearings the user named, import
 - Do not list output filenames in chat — the workspace updates automatically
 
 ## Reference images
-When the user attaches an image, infer shape and approximate dimensions from the image. Prefer executing with reasonable estimates and [AGENT_PHASE: execute] rather than long question lists. Ask at most 1–2 critical questions only when scale or feature count is truly ambiguous.
+When the user attaches an image, infer shape and approximate dimensions from the image. Prefer executing with reasonable estimates and [AGENT_PHASE: execute] rather than long question lists.
 
 Be concise. No filler. Questions should be specific and actionable.`;
 
@@ -96,7 +108,7 @@ export function assemblyNeedsCatalogParts({
   return false;
 }
 
-export function hasExecutablePayload(assistantText = '', skill = 'cad') {
+export function hasExecutablePayload(assistantText = '', skill = 'cad', conversationContext = '') {
   if (EXECUTE_MARKER.test(assistantText) && extractAnyCodeBlock(assistantText)) {
     return true;
   }
@@ -106,7 +118,7 @@ export function hasExecutablePayload(assistantText = '', skill = 'cad') {
   if (skill === 'urdf') return hasGeneratorPayload(assistantText, 'urdf');
   if (skill === 'srdf') return hasGeneratorPayload(assistantText, 'srdf');
   if (skill === 'sdf') return hasGeneratorPayload(assistantText, 'sdf');
-  if (skill === 'cad') return hasCadPayload(assistantText);
+  if (skill === 'cad') return hasCadPayload(assistantText, conversationContext);
   if (['gcode', 'sendcutsend'].includes(skill)) return true;
   if (skill === 'step-parts') return /\b(import|from step\.parts)\b/i.test(assistantText);
   return false;
@@ -135,7 +147,7 @@ export function isAmbiguousRequest(userMessage = '', skill = 'cad') {
     return true;
   }
 
-  if (detectComplexCadRequest(msg) || detectFromScratchMachineBuild(msg)) {
+  if (detectComplexCadRequest(msg) || detectFromScratchMachineBuild(msg) || detectFromScratchBuild(msg)) {
     return false;
   }
 
@@ -162,17 +174,19 @@ export function shouldDeferPipeline({
   history = [],
   conversationContext = '',
   hasImage = false,
+  focusedFileCount = 0,
 }) {
   if (['gcode', 'sendcutsend'].includes(skill)) return false;
 
+  const context = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
+
   if (hasImage) {
-    if (EXECUTE_MARKER.test(assistantText) && hasExecutablePayload(assistantText, skill)) return false;
-    if (hasExecutablePayload(assistantText, skill) && !CLARIFY_MARKER.test(assistantText)) return false;
+    if (EXECUTE_MARKER.test(assistantText) && hasExecutablePayload(assistantText, skill, context)) return false;
+    if (hasExecutablePayload(assistantText, skill, context) && !CLARIFY_MARKER.test(assistantText)) return false;
     if (CLARIFY_MARKER.test(assistantText)) return true;
     if (userProvidedFollowUp(userMessage, history)) return false;
   }
 
-  const context = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
   if (detectHilbertRequest(context) && userProvidedFollowUp(userMessage, history)) {
     return false;
   }
@@ -180,13 +194,25 @@ export function shouldDeferPipeline({
     return false;
   }
 
-  if (EXECUTE_MARKER.test(assistantText) && hasExecutablePayload(assistantText, skill)) {
+  if (EXECUTE_MARKER.test(assistantText) && hasExecutablePayload(assistantText, skill, context)) {
     return false;
   }
 
   if (CLARIFY_MARKER.test(assistantText)) return true;
 
-  if (hasExecutablePayload(assistantText, skill)) {
+  if (wantsModifyExisting(userMessage) && focusedFiles.length === 0 && CLARIFY_MARKER.test(assistantText)) {
+    return true;
+  }
+
+  if (wantsModifyExisting(userMessage) && (focusedFileCount > 0 || !CLARIFY_MARKER.test(assistantText))) {
+    return false;
+  }
+
+  if (detectFromScratchBuild(context) && !CLARIFY_MARKER.test(assistantText)) {
+    return false;
+  }
+
+  if (hasExecutablePayload(assistantText, skill, context)) {
     if (isAmbiguousRequest(userMessage, skill) && !userProvidedFollowUp(userMessage, history)) {
       const questionCount = (assistantText.match(/\?/g) || []).length;
       if (questionCount >= 1) return true;
@@ -200,6 +226,7 @@ export function shouldDeferPipeline({
 
   if (detectComplexCadRequest(context) && EXECUTE_MARKER.test(assistantText)) return false;
   if (detectFromScratchMachineBuild(userMessage) && !CLARIFY_MARKER.test(assistantText)) return false;
+  if (detectFromScratchBuild(userMessage) && !CLARIFY_MARKER.test(assistantText)) return false;
 
   if (!hasCode && (looksLikeClarification || questionCount >= 2)) return true;
   if (!hasCode && questionCount >= 1 && isAmbiguousRequest(userMessage, skill)) return true;

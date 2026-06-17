@@ -52,5 +52,5 @@ export function modelLabel(modelId) {
 export function inferWebSearchNeeded(message = '') {
   const msg = String(message).trim();
   if (!msg) return false;
-  return /\b(iso|din|ansi|astm|standard|specification|bearing|fastener|m[2-8]|socket.?head|cap screw|nema|arduino|raspberry|datasheet|catalog|step\.parts|lookup|search (the )?web|current (model|version|spec)|product dimensions?|real.?world|off.?the.?shelf|commercial|sand\s*print|binder\s*jet|inkjet|ink\s*jet|powder\s*bed|recoater|corexy|gantry|linear\s*rail|2020\s*extrusion|aluminum\s*extrusion)\b/i.test(msg);
+  return /\b(iso|din|ansi|astm|standard|specification|bearing|fastener|m[2-8]|socket.?head|cap screw|nema|arduino|raspberry|datasheet|catalog|step\.parts|lookup|search (the )?web|current (model|version|spec)|product dimensions?|real.?world|off.?the.?shelf|commercial|sand\s*print|binder\s*jet|inkjet|ink\s*jet|powder\s*bed|recoater|corexy|gantry|linear\s*rail|2020\s*extrusion|aluminum\s*extrusion|urdf|moveit|joint\s*limit|inertia|dh\s*param|robot\s*arm|manipulator|workspace)\b/i.test(msg);
 }

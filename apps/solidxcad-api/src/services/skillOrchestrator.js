@@ -10,7 +10,7 @@ import {
   skillMeta,
 } from './skillRegistry.js';
 import { executeCadGeneration, hasCadPayload } from './cadWorker.js';
-import { detectHilbertRequest, detectRoboticArmRequest, detectComplexCadRequest } from './cadPythonPresets.js';
+import { detectHilbertRequest, detectRoboticArmRequest, detectComplexCadRequest, detectFromScratchBuild } from './cadPythonPresets.js';
 import { executeGeneratorSkill, hasGeneratorPayload } from './generatorWorker.js';
 import { executeImplicitGeneration, hasImplicitPayload } from './implicitWorker.js';
 import { executeSendCutSendPreflight } from './sendcutsendWorker.js';
@@ -19,7 +19,7 @@ import { executeSliceJob } from './sliceService.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 import { CREDIT_COSTS, chargeCredits } from './credits.js';
 import { ASSEMBLY_PARTS_HINT, assemblyNeedsCatalogParts, extractAgentPlan } from './agentBehavior.js';
-import { groupProjectFiles } from './projectAgentContext.js';
+import { groupProjectFiles, resolvePipelineOutputBase, wantsModifyExisting, loadLatestProjectUrdf } from './projectAgentContext.js';
 
 function emit(res, message, skill, status = 'info') {
   if (res?.write) {
@@ -125,6 +125,7 @@ export async function runSkillPipeline({
   assistantText,
   project,
   conversationContext = '',
+  focusedFiles = [],
 }) {
   const skill = resolveSkillFromChat(userMessage, assistantText);
   const cadContext = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
@@ -133,6 +134,7 @@ export async function runSkillPipeline({
   const stepEmit = createStepEmitter(res, totalSteps);
   const meta = skillMeta(skill);
   const plan = extractAgentPlan(assistantText);
+  const modifyIntent = wantsModifyExisting(userMessage) || focusedFiles.length > 0;
   if (plan.length) {
     emit(res, 'Plan', 'agent', 'planning');
     for (const item of plan) {
@@ -156,6 +158,13 @@ export async function runSkillPipeline({
   let partsResult = null;
   let cadResult = null;
   const ts = Date.now();
+  const outputBase = resolvePipelineOutputBase({
+    focusedFiles,
+    skill,
+    fallbackTs: ts,
+    modifyIntent,
+  });
+  const urdfContext = await loadLatestProjectUrdf(projectFiles);
 
   // Pre-step: import catalog parts when requested
   if (wantsPartsImport(userMessage)) {
@@ -212,57 +221,66 @@ export async function runSkillPipeline({
       emit(res, 'No STL/STEP in project — generate a part first', 'gcode', 'error');
       result = { ok: false, skill: 'gcode', error: 'No mesh to slice' };
     }
-  } else if (skill === 'implicit-cad' && (hasCode || hasImplicitPayload(assistantText))) {
+  } else if (skill === 'implicit-cad' && (hasCode || hasImplicitPayload(assistantText) || detectFromScratchBuild(cadContext))) {
     try {
       await chargeCredits(userId, CREDIT_COSTS.cad_generate, 'implicit_generate', { projectId });
       result = await executeImplicitGeneration({
         userId: userId.toString(),
         projectId: projectId.toString(),
+        userMessage,
         assistantText,
-        modelName: `implicit_${ts}`,
+        conversationContext: cadContext,
+        modelName: outputBase,
         exportFormats: implicitExportFormats(userMessage),
         onProgress: (msg) => emit(res, msg, 'implicit-cad'),
       });
     } catch (err) {
       result = { ok: false, skill: 'implicit-cad', error: err.message };
     }
-  } else if (skill === 'srdf' && (hasCode || hasGeneratorPayload(assistantText, 'srdf'))) {
+  } else if (skill === 'srdf' && (hasCode || hasGeneratorPayload(assistantText, 'srdf') || detectFromScratchBuild(cadContext))) {
     try {
       await chargeCredits(userId, CREDIT_COSTS.cad_generate, 'srdf_generate', { projectId });
       result = await executeGeneratorSkill({
         skillId: 'srdf',
         userId: userId.toString(),
         projectId: projectId.toString(),
+        userMessage,
         assistantText,
-        outputBaseName: `robot_${ts}`,
+        conversationContext: cadContext,
+        urdfContext,
+        outputBaseName: outputBase,
         onProgress: (msg) => emit(res, msg, 'srdf'),
       });
     } catch (err) {
       result = { ok: false, skill: 'srdf', error: err.message };
     }
-  } else if (skill === 'sdf' && (hasCode || hasGeneratorPayload(assistantText, 'sdf'))) {
+  } else if (skill === 'sdf' && (hasCode || hasGeneratorPayload(assistantText, 'sdf') || detectFromScratchBuild(cadContext))) {
     try {
       await chargeCredits(userId, CREDIT_COSTS.cad_generate, 'sdf_generate', { projectId });
       result = await executeGeneratorSkill({
         skillId: 'sdf',
         userId: userId.toString(),
         projectId: projectId.toString(),
+        userMessage,
         assistantText,
-        outputBaseName: `model_${ts}`,
+        conversationContext: cadContext,
+        outputBaseName: outputBase,
         onProgress: (msg) => emit(res, msg, 'sdf'),
       });
     } catch (err) {
       result = { ok: false, skill: 'sdf', error: err.message };
     }
-  } else if (skill === 'urdf' && (hasCode || hasGeneratorPayload(assistantText, 'urdf'))) {
+  } else if (skill === 'urdf' && (hasCode || hasGeneratorPayload(assistantText, 'urdf') || detectFromScratchBuild(cadContext))) {
     try {
       await chargeCredits(userId, CREDIT_COSTS.cad_generate, 'urdf_generate', { projectId });
       result = await executeGeneratorSkill({
         skillId: 'urdf',
         userId: userId.toString(),
         projectId: projectId.toString(),
+        userMessage,
         assistantText,
-        outputBaseName: `robot_${ts}`,
+        conversationContext: cadContext,
+        outputBaseName: outputBase,
         onProgress: (msg) => emit(res, msg, 'urdf'),
       });
     } catch (err) {
@@ -311,7 +329,7 @@ export async function runSkillPipeline({
           userMessage,
           assistantText,
           conversationContext: cadContext,
-          partName: `part_${ts}`,
+          partName: outputBase,
           exportOptions: {
             dxf: wantsDxfExport(userMessage),
             threeMf: wants3mfExport(userMessage),
@@ -373,8 +391,11 @@ export async function runSkillPipeline({
         skillId: 'srdf',
         userId: userId.toString(),
         projectId: projectId.toString(),
+        userMessage,
         assistantText,
-        outputBaseName: `robot_${ts}`,
+        conversationContext: cadContext,
+        urdfContext,
+        outputBaseName: outputBase,
         onProgress: (msg) => emit(res, msg, 'srdf'),
       });
       if (srdfResult.ok) result = { ...result, srdfResult };

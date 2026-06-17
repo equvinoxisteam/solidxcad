@@ -193,6 +193,7 @@ router.post('/chat', async (req, res) => {
           history: historyForAgent,
           conversationContext,
           hasImage,
+          focusedFileCount: focusedFiles.length,
         })) {
           pipelineDeferred = true;
           res.write(`data: ${JSON.stringify({
@@ -221,6 +222,7 @@ router.post('/chat', async (req, res) => {
             assistantText: full,
             project,
             conversationContext,
+            focusedFiles,
           });
           cadResult = normalizePipelineResult(pipeline.result);
           if (cadResult && pipeline.skill) cadResult.skill = cadResult.skill || pipeline.skill;
@@ -279,6 +281,7 @@ router.post('/chat', async (req, res) => {
         history: historyForAgent,
         conversationContext,
         hasImage,
+        focusedFileCount: focusedFiles.length,
       })) {
         pipelineDeferred = true;
         cadResult = { ok: true, skill: 'agent', deferred: true, hint: 'clarify' };
@@ -290,6 +293,7 @@ router.post('/chat', async (req, res) => {
           assistantText: reply,
           project,
           conversationContext,
+          focusedFiles,
         });
         cadResult = normalizePipelineResult(pipeline.result);
         skill = pipeline.skill;

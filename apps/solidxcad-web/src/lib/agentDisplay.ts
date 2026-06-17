@@ -41,20 +41,32 @@ export function sanitizeAssistantForDisplay(text: string) {
 }
 
 export function isUserVisibleFile(name: string, kind?: string) {
-  if (/\.py$/i.test(name)) return false;
+  if (/\.implicit\.js$/i.test(name)) return true;
+  if (/\.py$/i.test(name)) return true;
   const k = (kind || '').toLowerCase();
-  if (k === 'python' || k === 'script' || k === 'py') return false;
+  if (k === 'python' || k === 'script' || k === 'py') return true;
   return true;
 }
 
 export type MentionFile = { _id: string; name: string; kind?: string };
 
+function baseName(name: string) {
+  return name.replace(/\.[^.]+$/, '');
+}
+
 /** Parse @filename tokens from user input and resolve to file ids. */
 export function resolveMentionedFileIds(text: string, files: MentionFile[]) {
   const ids: string[] = [];
+  const seen = new Set<string>();
   for (const file of files) {
-    const token = `@${file.name}`;
-    if (text.includes(token)) ids.push(file._id);
+    const full = `@${file.name}`;
+    const short = `@${baseName(file.name)}`;
+    if (text.includes(full) || text.includes(short)) {
+      if (!seen.has(file._id)) {
+        seen.add(file._id);
+        ids.push(file._id);
+      }
+    }
   }
   return ids;
 }

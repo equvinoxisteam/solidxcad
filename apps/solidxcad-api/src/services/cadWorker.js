@@ -512,24 +512,28 @@ export async function executeCadGeneration({
       const stepUpload = await uploadFile(stepKey, stepFile, 'application/step');
       onProgress(`Saved ${stepName}`);
 
-      const fileDoc = await ProjectFile.create({
+      const stepStat = await fs.stat(stepFile);
+      const fileDoc = await upsertProjectFile({
         projectId,
         userId,
         name: stepName,
         s3Key: stepUpload.key,
         mimeType: 'application/step',
         kind: 'step',
+        sizeBytes: stepStat.size,
       });
 
+      const scriptStat = await fs.stat(scriptPath);
       const scriptKey = buildS3Key(userId, projectId, `models/${scriptName}`);
       const scriptUpload = await uploadFile(scriptKey, scriptPath, 'text/x-python');
-      await ProjectFile.create({
+      await upsertProjectFile({
         projectId,
         userId,
         name: scriptName,
         s3Key: scriptUpload.key,
         mimeType: 'text/x-python',
         kind: 'other',
+        sizeBytes: scriptStat.size,
       });
       onProgress(`Saved ${scriptName} (generator sidecar)`);
 

@@ -349,6 +349,16 @@ def gen_step():
 `;
 }
 
+export function detectFromScratchBuild(text = '') {
+  const t = String(text || '');
+  if (detectComplexCadRequest(t)) return true;
+  if (/\b(urdf|srdf|sdf|robot|manipulator|gripper|implicit)\b/i.test(t)
+    && /\b(from scratch|build|design|create|make|full|complete)\b/i.test(t)) {
+    return true;
+  }
+  return /\b(from scratch|end[\s-]to[\s-]end|fully\s+working|build\s+everything)\b/i.test(t);
+}
+
 export function detectFromScratchMachineBuild(text = '') {
   const t = String(text || '');
   return /\b(sand\s*print|binder\s*jet|ink\s*jet|inkjet|powder\s*bed|recoater|corexy|gantry|print\s*head|machine\s*frame|printer\s*frame|industrial\s*printer|3d\s*printer\s*frame)\b/i.test(t)

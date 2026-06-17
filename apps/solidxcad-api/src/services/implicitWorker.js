@@ -5,6 +5,37 @@ import { buildS3Key, uploadFile } from './s3.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 import { skillMeta } from './skillRegistry.js';
 import { exportImplicitFormat, uploadSidecarIfExists } from './cadExportService.js';
+import { generateImplicitCodeFromPlan } from './openrouter.js';
+import { detectFromScratchBuild } from './cadPythonPresets.js';
+
+async function upsertProjectFile({
+  projectId,
+  userId,
+  name,
+  s3Key,
+  mimeType,
+  kind,
+  sizeBytes,
+}) {
+  const existing = await ProjectFile.findOne({ projectId, userId, name });
+  if (existing) {
+    existing.s3Key = s3Key;
+    existing.mimeType = mimeType;
+    existing.kind = kind;
+    if (sizeBytes != null) existing.sizeBytes = sizeBytes;
+    await existing.save();
+    return existing;
+  }
+  return ProjectFile.create({
+    projectId,
+    userId,
+    name,
+    s3Key,
+    mimeType,
+    kind,
+    sizeBytes,
+  });
+}
 
 function extractImplicitModule(text) {
   const blocks = [...text.matchAll(/```(?:javascript|js|mjs)?\s*([\s\S]*?)```/gi)];
@@ -27,10 +58,30 @@ export function hasImplicitPayload(text = '') {
     || /signed[- ]distance|sdf\s*\(\s*vec3/i.test(text);
 }
 
+async function resolveImplicitModuleAsync({
+  assistantText = '',
+  userMessage = '',
+  conversationContext = '',
+  onProgress = () => {},
+}) {
+  const extracted = extractImplicitModule(assistantText);
+  if (extracted) return extracted;
+
+  const combined = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
+  if (!detectFromScratchBuild(combined) && !/\[AGENT_PHASE:\s*execute\]/i.test(assistantText)) {
+    return null;
+  }
+
+  onProgress('Generating full implicit.js module from design plan…');
+  return generateImplicitCodeFromPlan({ userMessage, assistantText, conversationContext });
+}
+
 export async function executeImplicitGeneration({
   userId,
   projectId,
+  userMessage = '',
   assistantText,
+  conversationContext = '',
   modelName = 'implicit_model',
   exportFormats = ['glb', 'stl'],
   onProgress = () => {},
@@ -38,7 +89,12 @@ export async function executeImplicitGeneration({
   const meta = skillMeta('implicit-cad');
   onProgress(`Skill: ${meta.label} (${meta.dir})`);
 
-  const code = extractImplicitModule(assistantText);
+  const code = await resolveImplicitModuleAsync({
+    assistantText,
+    userMessage,
+    conversationContext,
+    onProgress,
+  });
   if (!code) {
     return {
       ok: false,
@@ -56,13 +112,15 @@ export async function executeImplicitGeneration({
     const key = buildS3Key(userId, projectId, `models/${fileName}`);
     const upload = await uploadFile(key, filePath, 'text/javascript');
 
-    const fileDoc = await ProjectFile.create({
+    const fileStat = await fs.stat(filePath);
+    const fileDoc = await upsertProjectFile({
       projectId,
       userId,
       name: fileName,
       s3Key: upload.key,
       mimeType: 'text/javascript',
       kind: 'implicit',
+      sizeBytes: fileStat.size,
     });
 
     onProgress(`Saved ${fileName} — open in CAD Viewer (implicit raymarch)`);

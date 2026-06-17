@@ -6,10 +6,11 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { config } from '../config.js';
-import { extractPythonCode } from './openrouter.js';
+import { extractPythonCode, generateGeneratorCodeFromPlan } from './openrouter.js';
 import { buildS3Key, uploadFile } from './s3.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 import { skillMeta } from './skillRegistry.js';
+import { detectFromScratchBuild } from './cadPythonPresets.js';
 
 const GENERATOR_SKILLS = {
   urdf: {
@@ -110,6 +111,35 @@ def ${genFn}():
 `;
 }
 
+async function upsertProjectFile({
+  projectId,
+  userId,
+  name,
+  s3Key,
+  mimeType,
+  kind,
+  sizeBytes,
+}) {
+  const existing = await ProjectFile.findOne({ projectId, userId, name });
+  if (existing) {
+    existing.s3Key = s3Key;
+    existing.mimeType = mimeType;
+    existing.kind = kind;
+    if (sizeBytes != null) existing.sizeBytes = sizeBytes;
+    await existing.save();
+    return existing;
+  }
+  return ProjectFile.create({
+    projectId,
+    userId,
+    name,
+    s3Key,
+    mimeType,
+    kind,
+    sizeBytes,
+  });
+}
+
 export function hasGeneratorPayload(text = '', skillId = 'urdf') {
   const cfg = GENERATOR_SKILLS[skillId];
   if (!cfg) return false;
@@ -156,6 +186,34 @@ export function extractGeneratorSource(text, skillId = 'urdf') {
   return extractPythonCode(text);
 }
 
+async function resolveGeneratorSourceAsync({
+  skillId,
+  userMessage = '',
+  assistantText = '',
+  conversationContext = '',
+  urdfContext = '',
+  onProgress = () => {},
+}) {
+  const extracted = extractGeneratorSource(assistantText, skillId);
+  if (extracted) return extracted;
+
+  const combined = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
+  const shouldGenerate = detectFromScratchBuild(combined)
+    || (/\b(urdf|srdf|sdf|robot|manipulator)\b/i.test(combined)
+      && /\[AGENT_PHASE:\s*execute\]/i.test(assistantText));
+
+  if (!shouldGenerate) return null;
+
+  onProgress(`Generating full ${skillId.toUpperCase()} script from design plan…`);
+  return generateGeneratorCodeFromPlan({
+    skillId,
+    userMessage,
+    assistantText,
+    conversationContext,
+    urdfContext,
+  });
+}
+
 function ensureGenFn(code, skillId) {
   const cfg = GENERATOR_SKILLS[skillId];
   const fnRe = new RegExp(`def\\s+${cfg.genFn}\\s*\\(`, 'm');
@@ -174,7 +232,10 @@ export async function executeGeneratorSkill({
   skillId,
   userId,
   projectId,
+  userMessage = '',
   assistantText,
+  conversationContext = '',
+  urdfContext = '',
   outputBaseName,
   onProgress = () => {},
 }) {
@@ -184,7 +245,14 @@ export async function executeGeneratorSkill({
   const meta = skillMeta(skillId);
   onProgress(`Skill: ${meta.label} (${meta.dir})`);
 
-  let pythonCode = extractGeneratorSource(assistantText, skillId);
+  let pythonCode = await resolveGeneratorSourceAsync({
+    skillId,
+    userMessage,
+    assistantText,
+    conversationContext,
+    urdfContext,
+    onProgress,
+  });
   if (!pythonCode) {
     return { ok: false, skill: skillId, error: `No ${cfg.ext.toUpperCase()} code in AI response` };
   }
@@ -207,27 +275,31 @@ export async function executeGeneratorSkill({
     await fs.writeFile(scriptPath, pythonCode, 'utf8');
     await runGeneratorSkill(skillId, python, scriptPath, outPath);
 
+    const outStat = await fs.stat(outPath);
+    const scriptStat = await fs.stat(scriptPath);
     const outKey = buildS3Key(userId, projectId, `models/${outName}`);
     const outUpload = await uploadFile(outKey, outPath, cfg.mime);
     const scriptKey = buildS3Key(userId, projectId, `models/${scriptName}`);
     const scriptUpload = await uploadFile(scriptKey, scriptPath, 'text/x-python');
 
-    const fileDoc = await ProjectFile.create({
+    const fileDoc = await upsertProjectFile({
       projectId,
       userId,
       name: outName,
       s3Key: outUpload.key,
       mimeType: cfg.mime,
       kind: cfg.kind,
+      sizeBytes: outStat.size,
     });
 
-    await ProjectFile.create({
+    await upsertProjectFile({
       projectId,
       userId,
       name: scriptName,
       s3Key: scriptUpload.key,
       mimeType: 'text/x-python',
       kind: 'other',
+      sizeBytes: scriptStat.size,
     });
 
     onProgress(`Saved ${outName} — open CAD Viewer`);
