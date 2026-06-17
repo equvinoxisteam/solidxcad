@@ -1,6 +1,5 @@
 import {
   Camera,
-  Copy,
   Crosshair,
   MousePointer2,
   Play,
@@ -108,7 +107,7 @@ function DesktopFloatingToolBar({
 
           {!dxfMode ? (
             <ToolbarButton
-              label="Open orbit preview"
+              label="Orbit preview"
               onClick={handleEnterPreviewMode}
               disabled={viewerLoading || !renderReady}
             >
@@ -116,25 +115,17 @@ function DesktopFloatingToolBar({
             </ToolbarButton>
           ) : null}
 
-          <ToolbarButton
-            label="Copy screenshot to clipboard"
-            onClick={() => {
-              void handleScreenshotCopy();
-            }}
-            disabled={captureDisabled}
-          >
-            <Copy className="size-3.5" strokeWidth={2} aria-hidden="true" />
-          </ToolbarButton>
-
-          <ToolbarButton
-            label="Download screenshot"
-            onClick={() => {
-              void handleScreenshotDownload();
-            }}
-            disabled={captureDisabled}
-          >
-            <Camera className="size-3.5" strokeWidth={2} aria-hidden="true" />
-          </ToolbarButton>
+          {!dxfMode ? (
+            <ToolbarButton
+              label="Screenshot"
+              onClick={() => {
+                void handleScreenshotCopy();
+              }}
+              disabled={captureDisabled}
+            >
+              <Camera className="size-3.5" strokeWidth={2} aria-hidden="true" />
+            </ToolbarButton>
+          ) : null}
         </div>
       </TooltipProvider>
 

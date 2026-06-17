@@ -8,9 +8,6 @@ import {
   Globe,
   Loader2,
   Paperclip,
-  RotateCcw,
-  ThumbsDown,
-  ThumbsUp,
 } from 'lucide-react';
 import {
   api,
@@ -21,7 +18,6 @@ import {
   streamChat,
 } from '@/lib/api';
 import type { CadResult, ChatMessage, ChatModel } from '@/lib/api';
-import { BrandLogo } from '@/components/BrandLogo';
 
 type AgentStep = { message: string; skill?: string; status?: string };
 type AgentPhase = 'idle' | 'reading' | 'thinking' | 'planning' | 'exploring' | 'asking' | 'executing' | 'waiting' | 'searching';
@@ -207,10 +203,7 @@ export function ChatPanel({
   return (
     <aside className="w-full lg:w-[380px] border-0 lg:border-l border-border bg-[#0d1a30] flex flex-col shrink-0 flex-1 min-h-0">
       <div className="bg-gradient-to-r from-brand to-brand-light text-white px-4 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 font-semibold text-sm">
-          <BrandLogo size={22} showName={false} href={undefined} className="pointer-events-none" />
-          Agent Window
-        </div>
+        <div className="font-semibold text-sm">Agent</div>
         <span className="text-[10px] font-medium bg-white/15 px-2 py-0.5 rounded-full flex items-center gap-1.5">
           <span className={`w-1.5 h-1.5 rounded-full ${streaming ? 'bg-amber-300 animate-pulse' : 'bg-emerald-300'}`} />
           {streaming ? phaseLabel || 'Working' : 'Ready'}
@@ -219,8 +212,12 @@ export function ChatPanel({
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
         {!messages.length && !streamText && (
-          <div className="space-y-2">
-            <p className="text-xs text-muted">SolidX CAD can model parts, assemblies, robots, and more. Try:</p>
+          <div className="space-y-3">
+            <p className="text-xs text-white/80 leading-relaxed">
+              We build what you describe — parts, assemblies, URDF, implicit shapes, and catalog imports.
+              Review dimensions and filenames before manufacturing; the agent can misread tight tolerances or assembly order.
+            </p>
+            <p className="text-[11px] text-muted">Try a prompt:</p>
             {PROMPTS.map((p) => (
               <button
                 key={p}
@@ -372,8 +369,9 @@ export function ChatPanel({
             </button>
           </div>
         </div>
-        <p className="text-[10px] text-muted mt-2 px-1">
+        <p className="text-[10px] text-muted mt-2 px-1 leading-relaxed">
           We build what you describe — parts, assemblies, URDF, implicit shapes, and catalog imports.
+          Always verify critical dimensions before printing or machining.
           {webSearch && ' Web search is on for standards and reference data.'}
         </p>
       </div>

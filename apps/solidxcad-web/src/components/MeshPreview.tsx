@@ -93,9 +93,11 @@ export function MeshPreview({ projectId, fileId, fileName, kind }: MeshPreviewPr
           const geometry = loader.parse(buffer);
           geometry.computeVertexNormals();
           const material = new THREE.MeshStandardMaterial({
-            color: 0x4ec9b0,
-            metalness: 0.15,
-            roughness: 0.65,
+            color: 0x5b9fd4,
+            metalness: 0.2,
+            roughness: 0.55,
+            emissive: 0x1a3a5c,
+            emissiveIntensity: 0.15,
           });
           object = new THREE.Mesh(geometry, material);
         } else {

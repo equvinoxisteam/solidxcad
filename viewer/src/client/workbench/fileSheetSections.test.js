@@ -29,20 +29,18 @@ test("rendered file sheet sections include closed-by-default sections", () => {
     "stats",
     "bounds",
     "display",
-    "appearance",
-    "metadata"
+    "appearance"
   ]);
   assert.deepEqual(renderedFileSheetSectionIds("step", { hasFileStatus: true, hasStepModulePanel: true }), [
     "status",
     "tree",
     "parameters",
     "display",
-    "appearance",
-    "metadata"
+    "appearance"
   ]);
-  assert.deepEqual(renderedFileSheetSectionIds("mesh"), ["display", "appearance", "metadata"]);
-  assert.deepEqual(renderedFileSheetSectionIds("implicit"), ["graphics", "display", "appearance", "metadata"]);
-  assert.deepEqual(renderedFileSheetSectionIds("implicit", { hasImplicitParameterPanel: true }), ["parameters", "graphics", "display", "appearance", "metadata"]);
+  assert.deepEqual(renderedFileSheetSectionIds("mesh"), ["display", "appearance"]);
+  assert.deepEqual(renderedFileSheetSectionIds("implicit"), ["graphics", "display", "appearance"]);
+  assert.deepEqual(renderedFileSheetSectionIds("implicit", { hasImplicitParameterPanel: true }), ["parameters", "graphics", "display", "appearance"]);
 });
 
 test("viewer-origin selection reveals do not open the file sheet on mobile", () => {

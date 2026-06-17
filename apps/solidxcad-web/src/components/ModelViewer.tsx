@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Box, Download } from 'lucide-react';
+import { Box } from 'lucide-react';
 import type { ProjectFile } from '@/lib/api';
 import { MeshPreview } from '@/components/MeshPreview';
 import { CadViewerFrame } from '@/components/CadViewerFrame';
@@ -43,9 +43,6 @@ export function ModelViewer({
 }) {
   const mesh = useMemo(() => previewMeshFile(files), [files]);
   const viewerRef = useMemo(() => viewerPrimaryRef(files), [files]);
-  const downloadFile = useMemo(() => {
-    return files.find((f) => f.kind === 'step' || f.kind === 'urdf' || f.kind === 'stl') || files[0];
-  }, [files]);
 
   return (
     <div className="flex-1 flex flex-col bg-base relative min-h-0 studio-viewport">
@@ -78,23 +75,6 @@ export function ModelViewer({
           )
         )}
       </div>
-
-      {downloadFile?.downloadUrl && (
-        <div className="border-t border-border bg-[#0a1628]/90 px-3 py-1.5 flex items-center justify-between shrink-0">
-          <span className="text-[10px] text-muted font-mono truncate">
-            {mode === 'viewer' ? 'CAD Workbench' : 'Mesh'} · {downloadFile.name}
-          </span>
-          <a
-            href={downloadFile.downloadUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs flex items-center gap-1.5 py-1 px-2 rounded-md text-brand-muted hover:text-white hover:bg-brand/20 transition-colors"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Download
-          </a>
-        </div>
-      )}
     </div>
   );
 }

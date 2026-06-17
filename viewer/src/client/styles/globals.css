@@ -355,4 +355,23 @@
     background: var(--accent);
     color: var(--accent-foreground);
   }
+
+  .viewer-embed {
+    --background: #0a1628;
+    --foreground: #e8eef7;
+    --card: #0d1a30;
+    --sidebar: #0d1a30;
+    --sidebar-foreground: #e8eef7;
+    --sidebar-border: rgba(91, 159, 212, 0.22);
+    --border: rgba(91, 159, 212, 0.18);
+    --accent: #5b9fd4;
+    --accent-foreground: #0a1628;
+    --muted: #8fa3bc;
+    --muted-foreground: #8fa3bc;
+  }
+
+  .viewer-embed .cad-glass-surface {
+    background: color-mix(in srgb, #0d1a30 92%, transparent);
+    border-color: rgba(91, 159, 212, 0.2);
+  }
 }

@@ -108,8 +108,6 @@ const FLOOR_MODE_OPTIONS = [
 ];
 
 const COLOR_MODE_OPTIONS = [
-  { value: THEME_COLOR_MODES.SYSTEM, label: "System" },
-  { value: THEME_COLOR_MODES.LIGHT, label: "Light" },
   { value: THEME_COLOR_MODES.DARK, label: "Dark" }
 ];
 
@@ -127,9 +125,7 @@ const SLIDER_COMMIT_DELAY_MS = 120;
 const AXIS_OPTIONS = Object.freeze(["x", "y", "z"]);
 const EDGE_CLASS_CONTROLS = Object.freeze([
   Object.freeze({ id: "feature", label: "Feature", defaultOpacity: 1, defaultThickness: 1.15 }),
-  Object.freeze({ id: "tangent", label: "Tangent", defaultOpacity: 0.5, defaultThickness: 1.15 }),
-  Object.freeze({ id: "seam", label: "Seam", defaultOpacity: 0.85, defaultThickness: 1.15 }),
-  Object.freeze({ id: "degenerate", label: "Degenerate", defaultOpacity: 1, defaultThickness: 0 })
+  Object.freeze({ id: "seam", label: "Seam", defaultOpacity: 0.85, defaultThickness: 1.15 })
 ]);
 
 function normalizeEdgeAvailability(value) {
@@ -1278,9 +1274,9 @@ function ThemeAppearanceSection({
           </Select>
         </Field>
 
-        <Field label="Color mode">
+        <Field label="Color mode" className="hidden">
           <SegmentedControl
-            value={colorMode}
+            value={THEME_COLOR_MODES.DARK}
             options={COLOR_MODE_OPTIONS}
             onChange={handleColorModeChange}
           />
@@ -1562,18 +1558,6 @@ export function DisplaySettingsSection({
 
           <FileSheetControlRow>
             <div className="flex flex-wrap gap-1.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={compactButtonClasses}
-                onClick={() => setClip({ invert: !normalizedClipSettings.invert })}
-                aria-pressed={normalizedClipSettings.invert}
-                title="Flip clip side"
-              >
-                <FlipHorizontal2 className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-                <span>Flip</span>
-              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -1867,7 +1851,7 @@ export function ThemeSettingsSections({
         </ControlSubsection>
       ) : null}
 
-      {showEdgeDetailControls ? (
+      {false && showEdgeDetailControls ? (
         <ControlSubsection title="Highlight">
           <ColorField
             label="Color"

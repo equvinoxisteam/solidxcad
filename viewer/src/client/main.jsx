@@ -4,6 +4,7 @@ import CadWorkspace from "./components/CadWorkspace";
 import faviconUrl from "./assets/favicon.ico";
 import "./styles/globals.css";
 import { getCadManifestSnapshot, subscribeCadManifest } from "./workbench/cadManifestStore.js";
+import { applyViewerEmbedChrome } from "./workbench/embedMode.js";
 
 const ROOT_ID = "root";
 const ROOT_CACHE_KEY = "__cadViewerRoot";
@@ -36,6 +37,9 @@ function bootstrap() {
   }
   ensureFavicon();
   const embedMode = new URLSearchParams(window.location.search).get("embed") === "1";
+  if (embedMode) {
+    applyViewerEmbedChrome();
+  }
   document.title = embedMode ? "SolidX CAD Workbench" : "CAD Viewer";
   const cachedRoot = globalThis[ROOT_CACHE_KEY];
   const root = cachedRoot?.element === rootElement && cachedRoot?.root

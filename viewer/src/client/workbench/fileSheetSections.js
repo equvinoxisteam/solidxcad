@@ -43,8 +43,7 @@ export function renderedFileSheetSectionIds(kind, options = {}) {
         ...(options.hasFileStatus ? [FILE_SHEET_SECTION_IDS.FILE_STATUS] : []),
         FILE_SHEET_SECTION_IDS.DXF_PLATE,
         FILE_SHEET_SECTION_IDS.DXF_BENDS,
-        ...THEME_SECTION_IDS,
-        FILE_SHEET_SECTION_IDS.FILE_METADATA
+        ...THEME_SECTION_IDS
       ];
     case "gcode":
       return [
@@ -53,16 +52,14 @@ export function renderedFileSheetSectionIds(kind, options = {}) {
         FILE_SHEET_SECTION_IDS.GCODE_FEATURES,
         FILE_SHEET_SECTION_IDS.GCODE_STATS,
         FILE_SHEET_SECTION_IDS.GCODE_BOUNDS,
-        ...THEME_SECTION_IDS,
-        FILE_SHEET_SECTION_IDS.FILE_METADATA
+        ...THEME_SECTION_IDS
       ];
     case "step":
       return [
         ...(options.hasFileStatus ? [FILE_SHEET_SECTION_IDS.FILE_STATUS] : []),
         FILE_SHEET_SECTION_IDS.STEP_TREE,
         ...(options.hasStepModulePanel ? [FILE_SHEET_SECTION_IDS.STEP_PARAMETERS] : []),
-        ...THEME_SECTION_IDS,
-        FILE_SHEET_SECTION_IDS.FILE_METADATA
+        ...THEME_SECTION_IDS
       ];
     case "urdf":
     case "srdf":
@@ -72,22 +69,19 @@ export function renderedFileSheetSectionIds(kind, options = {}) {
         ...(isSdf ? [FILE_SHEET_SECTION_IDS.ROBOT_SDF] : []),
         ...(options.motionEnabled ? [FILE_SHEET_SECTION_IDS.ROBOT_MOTION] : []),
         ...(showJoints ? [FILE_SHEET_SECTION_IDS.ROBOT_JOINTS] : []),
-        ...THEME_SECTION_IDS,
-        FILE_SHEET_SECTION_IDS.FILE_METADATA
+        ...THEME_SECTION_IDS
       ];
     case "mesh":
       return [
         ...(options.hasFileStatus ? [FILE_SHEET_SECTION_IDS.FILE_STATUS] : []),
-        ...THEME_SECTION_IDS,
-        FILE_SHEET_SECTION_IDS.FILE_METADATA
+        ...THEME_SECTION_IDS
       ];
     case "implicit":
       return [
         ...(options.hasFileStatus ? [FILE_SHEET_SECTION_IDS.FILE_STATUS] : []),
         ...(options.hasImplicitParameterPanel ? [FILE_SHEET_SECTION_IDS.STEP_PARAMETERS] : []),
         FILE_SHEET_SECTION_IDS.IMPLICIT_GRAPHICS,
-        ...THEME_SECTION_IDS,
-        FILE_SHEET_SECTION_IDS.FILE_METADATA
+        ...THEME_SECTION_IDS
       ];
     default:
       return [];

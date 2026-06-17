@@ -1202,7 +1202,7 @@ export default function CadWorkspaceTopBar({
         />
       ) : null}
 
-      {embedMode ? (
+      {false && embedMode ? (
         <a
           href={import.meta.env.VIEWER_BRAND_URL || 'https://solidxcad.equvinoxis.com'}
           target="_blank"
@@ -1370,7 +1370,7 @@ export default function CadWorkspaceTopBar({
             iconClassName={topBarIconClasses}
           />
 
-          {showThemeColorModeToggle ? (
+          {false && showThemeColorModeToggle ? (
             <Button
               type="button"
               variant="ghost"

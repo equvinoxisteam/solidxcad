@@ -3,15 +3,14 @@
 import Link from 'next/link';
 import {
   ArrowLeft,
+  Bot,
   Box,
   FolderTree,
   Monitor,
   PanelRightClose,
-  PanelRightOpen,
   Settings,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
-import { DeleteProjectButton } from '@/components/DeleteProjectButton';
 import { formatCredits } from '@/lib/api';
 import type { User } from '@/lib/api';
 
@@ -31,16 +30,23 @@ type StudioTopBarProps = {
   onDeleted: () => void;
 };
 
-function panelToggle(active: boolean) {
-  return `flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+function viewToggle(active: boolean) {
+  return `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
     active
       ? 'bg-brand text-white border-brand-light shadow-sm'
       : 'bg-panel/80 text-muted border-border hover:text-white hover:border-brand/40'
   }`;
 }
 
+function iconToggle(active: boolean) {
+  return `p-2 rounded-lg border transition-colors ${
+    active
+      ? 'bg-brand text-white border-brand-light'
+      : 'bg-panel/80 text-muted border-border hover:text-white hover:border-brand/40'
+  }`;
+}
+
 export function StudioTopBar({
-  projectId,
   projectName,
   status,
   viewMode,
@@ -50,31 +56,26 @@ export function StudioTopBar({
   showWorkspace,
   onToggleWorkspace,
   user,
-  onDeleted,
 }: StudioTopBarProps) {
   return (
     <header className="h-11 border-b border-border bg-[#0a1628] flex items-center gap-2 px-2 sm:px-3 shrink-0 z-20">
       <Link
         href="/dashboard"
-        className="flex items-center gap-1.5 text-muted hover:text-white text-xs px-2 py-1 rounded-lg hover:bg-panel/60"
+        className="p-2 rounded-lg text-muted hover:text-white hover:bg-panel/60 border border-transparent hover:border-border"
         title="Back to projects"
+        aria-label="Back to projects"
       >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Projects</span>
+        <ArrowLeft className="w-4 h-4" />
       </Link>
 
-      <div className="w-px h-5 bg-border hidden sm:block" />
+      <BrandLogo href="/dashboard" size={28} showName={false} className="shrink-0" />
 
-      <BrandLogo href="/dashboard" size={26} showName={false} className="shrink-0" />
-      <div className="min-w-0 flex flex-col leading-tight">
-        <span className="text-[10px] uppercase tracking-wider text-brand-muted font-medium">Studio</span>
-        <span className="text-sm text-white font-medium truncate max-w-[120px] sm:max-w-[200px]">
-          {projectName}
-        </span>
-      </div>
+      <span className="text-sm text-white font-semibold truncate max-w-[140px] sm:max-w-[220px]">
+        {projectName}
+      </span>
 
       {status && (
-        <span className="hidden lg:inline text-[11px] text-brand-muted truncate max-w-[280px] ml-1">
+        <span className="hidden xl:inline text-[11px] text-brand-muted truncate max-w-[240px]">
           {status}
         </span>
       )}
@@ -85,72 +86,65 @@ export function StudioTopBar({
         <button
           type="button"
           onClick={() => onViewModeChange('mesh')}
-          className={panelToggle(viewMode === 'mesh')}
-          title="Quick mesh preview"
+          className={viewToggle(viewMode === 'mesh')}
+          title="Mesh preview"
         >
           <Box className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Mesh</span>
+          <span>Mesh</span>
         </button>
         <button
           type="button"
           data-viewer-tab=""
           onClick={() => onViewModeChange('viewer')}
-          className={panelToggle(viewMode === 'viewer')}
-          title="Full CAD workbench"
+          className={viewToggle(viewMode === 'viewer')}
+          title="CAD Workbench"
         >
           <Monitor className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">CAD Workbench</span>
+          <span className="sm:hidden">CAD</span>
         </button>
       </div>
 
-      <div className="w-px h-5 bg-border mx-1 hidden md:block" />
+      <div className="w-px h-5 bg-border mx-0.5 hidden sm:block" />
 
       <div className="flex items-center gap-1">
         <button
           type="button"
           onClick={onToggleWorkspace}
-          className={panelToggle(showWorkspace)}
-          title="Project files & parts catalog"
+          className={iconToggle(showWorkspace)}
+          title="Workspace files"
+          aria-label="Workspace"
+          aria-pressed={showWorkspace}
         >
-          <FolderTree className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">Workspace</span>
+          <FolderTree className="w-4 h-4" />
         </button>
         <button
           type="button"
           onClick={onToggleChat}
-          className={panelToggle(showChat)}
-          title={showChat ? 'Hide agent window' : 'Show agent window'}
-          aria-label={showChat ? 'Hide agent window' : 'Show agent window'}
+          className={iconToggle(showChat)}
+          title={showChat ? 'Hide agent' : 'Show agent'}
+          aria-label={showChat ? 'Hide agent' : 'Show agent'}
           aria-pressed={showChat}
         >
           {showChat ? (
-            <PanelRightClose className="w-3.5 h-3.5" />
+            <PanelRightClose className="w-4 h-4" />
           ) : (
-            <PanelRightOpen className="w-3.5 h-3.5" />
+            <Bot className="w-4 h-4" />
           )}
-          <span className="hidden md:inline">Agent</span>
         </button>
       </div>
 
-      <div className="w-px h-5 bg-border mx-1" />
-
       {user && (
-        <span className="hidden xl:inline text-[11px] text-muted whitespace-nowrap">
+        <span className="hidden 2xl:inline text-[11px] text-muted whitespace-nowrap">
           {formatCredits(user)} credits
         </span>
       )}
-
-      <DeleteProjectButton
-        projectId={projectId}
-        projectName={projectName}
-        variant="header"
-        onDeleted={onDeleted}
-      />
 
       <Link
         href="/settings"
         className="p-2 rounded-lg text-muted hover:text-white hover:bg-panel/60 border border-transparent hover:border-border"
         title="Settings"
+        aria-label="Settings"
       >
         <Settings className="w-4 h-4" />
       </Link>

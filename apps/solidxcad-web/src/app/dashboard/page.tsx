@@ -13,7 +13,6 @@ import {
   Search,
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
-import { DeleteProjectButton } from '@/components/DeleteProjectButton';
 import { ProjectSortMenu, type ProjectSortKey } from '@/components/ProjectSortMenu';
 import { api, getToken, projectId, type Project } from '@/lib/api';
 
@@ -214,17 +213,17 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/85 overflow-hidden">
-              <div className="hidden lg:grid grid-cols-[minmax(0,1.4fr)_140px_140px_88px] gap-4 px-5 py-3 border-b border-white/5 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <div className="hidden lg:grid grid-cols-[minmax(0,1.4fr)_140px_140px_48px] gap-4 px-5 py-3 border-b border-white/5 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 <span>Project</span>
                 <span>Last updated</span>
                 <span>Created</span>
-                <span className="text-right">Actions</span>
+                <span className="text-right">Open</span>
               </div>
 
               <ul className="divide-y divide-white/5">
                 {visibleProjects.map((p) => (
                   <li key={p._id}>
-                    <div className="group grid grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1.4fr)_140px_140px_88px] gap-3 lg:gap-4 items-center px-4 sm:px-5 py-3.5 hover:bg-white/[0.03] transition-colors">
+                    <div className="group grid grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1.4fr)_140px_140px_48px] gap-3 lg:gap-4 items-center px-4 sm:px-5 py-3.5 hover:bg-white/[0.03] transition-colors">
                       <Link
                         href={`/projects/${p._id}`}
                         className="flex min-w-0 items-center gap-3 no-underline"
@@ -250,14 +249,7 @@ export default function DashboardPage() {
                         {formatDate(p.createdAt)}
                       </p>
 
-                      <div className="flex items-center justify-end gap-1 shrink-0">
-                        <DeleteProjectButton
-                          projectId={p._id}
-                          projectName={p.name}
-                          onDeleted={load}
-                          variant="icon"
-                          className="!p-2 !rounded-lg opacity-70 group-hover:opacity-100"
-                        />
+                      <div className="flex items-center justify-end shrink-0">
                         <Link
                           href={`/projects/${p._id}`}
                           className="p-2 rounded-lg text-gray-500 hover:text-brand-muted hover:bg-brand/10 transition-colors"
