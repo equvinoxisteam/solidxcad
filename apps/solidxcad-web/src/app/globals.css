@@ -532,8 +532,8 @@ body {
 }
 
 .dashboard-project-name {
-  color: #f3f4f6;
-  font-weight: 500;
+  color: #ffffff !important;
+  font-weight: 600;
 }
 
 .dashboard-project-link {
@@ -542,5 +542,130 @@ body {
 }
 
 .dashboard-project-link:hover .dashboard-project-name {
-  color: #dbeafe;
+  color: #dbeafe !important;
+}
+
+/* Studio — mobile chat drawer + viewer stack */
+.studio-main {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+@media (min-width: 1024px) {
+  .studio-main {
+    flex-direction: row;
+  }
+}
+
+.studio-viewer-pane {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 1023px) {
+  .studio-viewer-pane {
+    min-height: 42vh;
+  }
+
+  .studio-main.chat-open .studio-viewer-pane {
+    min-height: 38vh;
+  }
+}
+
+.studio-chat-pane {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #0d1a30;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 1023px) {
+  .studio-chat-pane {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    max-height: min(52vh, 28rem);
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .studio-chat-pane::before {
+    content: '';
+    display: block;
+    width: 2.5rem;
+    height: 0.25rem;
+    margin: 0.5rem auto 0;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+@media (min-width: 1024px) {
+  .studio-chat-pane {
+    width: 380px;
+    border-top: 0;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .studio-chat-pane::before {
+    display: none;
+  }
+}
+
+.studio-workspace-pane {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #0d1a30;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 1023px) {
+  .studio-workspace-pane {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 35;
+    max-height: min(58vh, 32rem);
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@media (min-width: 1024px) {
+  .studio-workspace-pane {
+    width: 15rem;
+    border-top: 0;
+    border-left: 1px solid var(--border);
+    box-shadow: none;
+  }
+}
+
+.studio-mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+@media (min-width: 1024px) {
+  .studio-mobile-backdrop {
+    display: none;
+  }
 }

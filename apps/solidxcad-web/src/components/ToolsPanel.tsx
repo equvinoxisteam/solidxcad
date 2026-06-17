@@ -98,7 +98,7 @@ export function ToolsPanel({
   }
 
   return (
-    <aside className="w-60 border-l border-border bg-[#0d1a30] flex flex-col shrink-0 hidden lg:flex">
+    <aside className="w-full lg:w-60 border-0 lg:border-l border-border bg-[#0d1a30] flex flex-col shrink-0 flex-1 min-h-0">
       <div className="h-10 border-b border-border flex text-[10px] font-medium uppercase tracking-wide">
         <button
           type="button"

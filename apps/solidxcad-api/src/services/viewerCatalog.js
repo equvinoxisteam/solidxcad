@@ -79,14 +79,16 @@ async function contentUrlForFile(file, {
   catalogToken = '',
 }) {
   const rel = fileRefForDoc(file);
+  // Tokenized catalog is loaded by the hosted CAD viewer on another origin;
+  // always proxy through the API so S3 bucket CORS is not required.
+  if (catalogToken) {
+    return publicContentUrlForFile(rel, { apiBase, catalogToken });
+  }
   const canPresign = usePresignedUrls
     && file.s3Key
     && !isLocalStorageKey(file.s3Key);
   if (canPresign) {
     return getSignedDownloadUrl(file.s3Key, 3600);
-  }
-  if (catalogToken) {
-    return publicContentUrlForFile(rel, { apiBase, catalogToken });
   }
   return `${apiBase}/api/viewer/projects/${projectId}/content?file=${encodeURIComponent(rel)}`;
 }

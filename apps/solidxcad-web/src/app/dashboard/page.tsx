@@ -131,7 +131,7 @@ export default function DashboardPage() {
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />
 
-        <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <main className="flex-1 w-full max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {error && (
             <div className="mb-4 text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-lg p-3">
               {error}
@@ -224,35 +224,33 @@ export default function DashboardPage() {
               <ul className="divide-y divide-white/5">
                 {visibleProjects.map((p) => (
                   <li key={p._id}>
-                    <div className="group flex items-center gap-3 px-4 sm:px-5 py-3.5 hover:bg-white/[0.03] transition-colors">
+                    <div className="group grid grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1.4fr)_140px_140px_88px] gap-3 lg:gap-4 items-center px-4 sm:px-5 py-3.5 hover:bg-white/[0.03] transition-colors">
                       <Link
                         href={`/projects/${p._id}`}
-                        className="dashboard-project-link flex min-w-0 flex-1 items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1.4fr)_140px_140px] lg:gap-4"
+                        className="flex min-w-0 items-center gap-3 no-underline"
                       >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="dashboard-project-icon">
-                            <FolderOpen className="w-4 h-4 text-brand" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="dashboard-project-name text-sm sm:text-base truncate">
-                              {p.name}
-                            </p>
-                            <p className="text-xs text-gray-400 flex items-center gap-1.5 lg:hidden mt-0.5">
-                              <Calendar className="w-3.5 h-3.5 shrink-0" />
-                              <span className="truncate">Updated {formatDate(p.updatedAt)}</span>
-                            </p>
-                          </div>
+                        <div className="dashboard-project-icon">
+                          <FolderOpen className="w-4 h-4 text-brand" />
                         </div>
-
-                        <p className="hidden lg:block text-sm text-gray-300 truncate tabular-nums">
-                          {formatDate(p.updatedAt)}
-                        </p>
-                        <p className="hidden lg:block text-sm text-gray-400 truncate tabular-nums">
-                          {formatDate(p.createdAt)}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="dashboard-project-name text-sm sm:text-base font-semibold truncate">
+                            {p.name || 'Untitled project'}
+                          </p>
+                          <p className="text-xs text-gray-400 flex items-center gap-1.5 lg:hidden mt-0.5">
+                            <Calendar className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">Updated {formatDate(p.updatedAt)}</span>
+                          </p>
+                        </div>
                       </Link>
 
-                      <div className="flex items-center gap-1 shrink-0">
+                      <p className="hidden lg:block text-sm text-gray-300 truncate tabular-nums">
+                        {formatDate(p.updatedAt)}
+                      </p>
+                      <p className="hidden lg:block text-sm text-gray-400 truncate tabular-nums">
+                        {formatDate(p.createdAt)}
+                      </p>
+
+                      <div className="flex items-center justify-end gap-1 shrink-0">
                         <DeleteProjectButton
                           projectId={p._id}
                           projectName={p.name}

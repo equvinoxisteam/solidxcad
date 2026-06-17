@@ -29,6 +29,8 @@ async function sendProjectFileContent(res, match, { cacheSeconds = 300 } = {}) {
   const stream = await getObjectStream(match.s3Key);
   res.setHeader('content-type', match.mimeType || 'application/octet-stream');
   res.setHeader('cache-control', `private, max-age=${cacheSeconds}`);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   await pipeline(stream, res);
 }
 
@@ -79,10 +81,11 @@ router.get('/public/catalog', asyncHandler(async (req, res) => {
     projectId: project._id.toString(),
     apiBase: config.apiUrl,
     catalogToken: token,
-    usePresignedUrls: config.viewerCloudMode,
+    usePresignedUrls: false,
   });
 
   res.setHeader('cache-control', 'private, max-age=30');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.json(catalog);
 }));
 

@@ -176,32 +176,50 @@ export default function StudioPage() {
         </div>
       )}
 
-      <div className="flex-1 flex min-h-0">
-        <ModelViewer
-          projectId={id}
-          files={files}
-          mode={viewMode}
-          onModeChange={setViewMode}
-        />
-
-        {showWorkspace && (
-          <ToolsPanel
-            projectId={id}
-            files={files}
-            highlightFile={highlightFile}
-            onRefresh={() => refresh().catch(() => {})}
-            onStatus={setStatus}
-            onHighlightFile={setHighlightFile}
+      <div className={`studio-main flex-1 min-h-0 ${showChat || showWorkspace ? 'chat-open' : ''}`}>
+        {(showChat || showWorkspace) && (
+          <button
+            type="button"
+            className="studio-mobile-backdrop lg:hidden"
+            aria-label="Close panel"
+            onClick={() => {
+              if (showChat) toggleChat();
+              else if (showWorkspace) toggleWorkspace();
+            }}
           />
         )}
 
-        {showChat && (
-          <ChatPanel
+        <div className="studio-viewer-pane">
+          <ModelViewer
             projectId={id}
-            messages={messages}
-            onMessagesChange={refresh}
-            onCadGenerated={onCadGenerated}
+            files={files}
+            mode={viewMode}
+            onModeChange={setViewMode}
           />
+        </div>
+
+        {showWorkspace && (
+          <div className="studio-workspace-pane">
+            <ToolsPanel
+              projectId={id}
+              files={files}
+              highlightFile={highlightFile}
+              onRefresh={() => refresh().catch(() => {})}
+              onStatus={setStatus}
+              onHighlightFile={setHighlightFile}
+            />
+          </div>
+        )}
+
+        {showChat && (
+          <div className="studio-chat-pane">
+            <ChatPanel
+              projectId={id}
+              messages={messages}
+              onMessagesChange={refresh}
+              onCadGenerated={onCadGenerated}
+            />
+          </div>
         )}
       </div>
     </div>

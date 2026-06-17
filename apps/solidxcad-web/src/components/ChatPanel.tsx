@@ -205,7 +205,7 @@ export function ChatPanel({
   const phaseLabel = PHASE_LABELS[agentPhase] || '';
 
   return (
-    <aside className="w-full lg:w-[380px] border-l border-border bg-[#0d1a30] flex flex-col shrink-0">
+    <aside className="w-full lg:w-[380px] border-0 lg:border-l border-border bg-[#0d1a30] flex flex-col shrink-0 flex-1 min-h-0">
       <div className="bg-gradient-to-r from-brand to-brand-light text-white px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 font-semibold text-sm">
           <BrandLogo size={22} showName={false} href={undefined} className="pointer-events-none" />
