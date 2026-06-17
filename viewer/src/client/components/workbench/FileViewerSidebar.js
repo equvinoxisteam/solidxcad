@@ -61,6 +61,7 @@ import {
   listSidebarItems,
   sidebarLabelForEntry
 } from "@/workbench/sidebar";
+import { embedStudioEmptyCopy, isViewerEmbedMode } from "@/workbench/embedMode.js";
 import FileAccessContextMenu from "./FileAccessContextMenu";
 
 const DESKTOP_FILE_VIEWER_MIN_WIDTH = 150;
@@ -490,6 +491,7 @@ function FileViewerContents({
   const hasEntries = catalogEntries.length > 0;
   const catalogErrorMessage = String(catalogError || "").trim();
   const catalogLoading = !catalogHydrated || (catalogRefreshing && !hasEntries);
+  const embedCopy = isViewerEmbedMode() ? embedStudioEmptyCopy() : null;
 
   return (
     <>
@@ -501,7 +503,7 @@ function FileViewerContents({
         />
         <SidebarInput
           type="search"
-          placeholder="Search files, ids, or paths..."
+          placeholder={embedCopy?.searchPlaceholder || "Search files, ids, or paths..."}
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           aria-label="Search CAD files"
@@ -582,6 +584,8 @@ function FileViewerContents({
                 <p className="px-2 py-3 text-xs text-muted-foreground">Loading CAD catalog...</p>
               ) : hasEntries ? (
                 <p className="px-2 py-3 text-xs text-muted-foreground">No CAD entries match this filter.</p>
+              ) : embedCopy ? (
+                <p className="px-2 py-3 text-xs text-muted-foreground leading-relaxed">{embedCopy.sidebar}</p>
               ) : (
                 <p className="px-2 py-3 text-xs text-muted-foreground">No CAD entries found.</p>
               )}

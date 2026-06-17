@@ -184,7 +184,10 @@ export function ToolsPanel({
           {!sliceableFiles.length ? (
             <div className="rounded-lg border border-dashed border-border bg-panel/50 p-3 text-[11px] text-muted space-y-2">
               <FileBox className="w-5 h-5 text-muted/70" />
-              <p className="text-white font-medium">No CAD model yet</p>
+              <p className="text-white font-medium">What do you want to build?</p>
+              <p className="text-[10px] text-muted mt-1 leading-relaxed">
+                Ask the Agent to generate a part — it will appear here and in Files.
+              </p>
               <p>
                 Generate a CAD model in chat first. STEP and STL exports will appear here when ready to slice.
               </p>

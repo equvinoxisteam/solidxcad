@@ -67,6 +67,7 @@ import {
   entryIconKind
 } from "@/workbench/entryIconKind";
 import { entryIconStatus } from "@/workbench/entryIconStatus";
+import { viewerEmptyHeading } from "@/workbench/embedMode.js";
 import { ThemePresetDropdown } from "./ThemeSettingsPopover";
 import FileAccessContextMenu from "./FileAccessContextMenu";
 import {
@@ -1155,7 +1156,7 @@ export default function CadWorkspaceTopBar({
 
   const selectedFileLabel = selectedEntry && typeof sidebarLabelForEntry === "function"
     ? sidebarLabelForEntry(selectedEntry)
-    : "Select a file";
+    : viewerEmptyHeading();
   const selectedFileTitle = selectedEntry
     ? String(selectedEntry.file || selectedEntry.id || selectedFileLabel)
     : selectedFileLabel;
