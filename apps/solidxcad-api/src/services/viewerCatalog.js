@@ -167,7 +167,6 @@ export async function buildProjectCatalog(files, {
         const glbUrl = await contentUrlForFile(glbFile, {
           projectId, apiBase, usePresignedUrls, catalogToken,
         });
-        const hasPythonCompanion = Boolean(companionPythonRelForStep(rel, fileByRel));
         entries.push({
           file: rel,
           kind: 'part',
@@ -179,7 +178,7 @@ export async function buildProjectCatalog(files, {
             file: rel,
             url,
           },
-          ...(catalogToken && hasPythonCompanion
+          ...(catalogToken
             ? { moduleUrl: publicStepModuleUrl(rel, { apiBase, catalogToken }) }
             : {}),
           artifact: {

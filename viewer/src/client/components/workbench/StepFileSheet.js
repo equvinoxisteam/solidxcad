@@ -538,9 +538,12 @@ export default function StepFileSheet({
         {stepModuleDefinition || stepModuleStatus === "loading" || stepModuleError || embedMode ? (
           <FileSheetSection value="parameters" title="Parameters">
               <FileSheetSectionBody>
+                {embedMode && stepModuleStatus === "loading" ? (
+                  <p className="px-3 py-2 text-xs text-[var(--ui-text-muted)]">Loading parameters from generator script…</p>
+                ) : null}
                 {embedMode && !stepModuleDefinition && stepModuleStatus !== "loading" && !stepModuleError ? (
                   <p className="px-3 py-2 text-xs text-[var(--ui-text-muted)] leading-relaxed">
-                    Describe dimension or feature changes in the Agent — for example resize holes, add fillets, or adjust gear teeth. Regenerate to update this model.
+                    No editable parameters for this file yet. Ask the Agent to regenerate with a parametric script, or select a STEP with a Python sidecar.
                   </p>
                 ) : null}
                 {stepModuleDefinition ? (
@@ -758,7 +761,20 @@ export default function StepFileSheet({
                 })}
                 {stepModuleDefinition && stepModuleParameters.length ? (
                   <FileSheetControlRow className="pt-2">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
+                      {embedMode ? (
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          className={cn(compactButtonClasses, "justify-center w-full")}
+                          onClick={() => stepModule?.onApplyParameters?.()}
+                          disabled={!stepModuleEnabled}
+                        >
+                          <span>Apply &amp; regenerate model</span>
+                        </Button>
+                      ) : null}
+                      <div className="grid grid-cols-2 gap-2">
                       <Button
                         type="button"
                         variant="outline"
@@ -785,6 +801,7 @@ export default function StepFileSheet({
                         <ClipboardPaste className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
                         <span>Paste parameters</span>
                       </Button>
+                    </div>
                     </div>
                   </FileSheetControlRow>
                 ) : null}

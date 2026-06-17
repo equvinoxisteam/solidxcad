@@ -415,6 +415,25 @@ export async function regeneratePartFromPython({
   }
 }
 
+export async function regeneratePartWithParameters({
+  userId,
+  projectId,
+  partName,
+  pythonCode,
+  parameterValues = {},
+  onProgress = () => {},
+}) {
+  const { patchPythonParameterValues } = await import('./stepModuleFromPython.js');
+  const patched = patchPythonParameterValues(pythonCode, parameterValues);
+  return regeneratePartFromPython({
+    userId,
+    projectId,
+    partName,
+    pythonCode: patched,
+    onProgress,
+  });
+}
+
 export async function executeCadGeneration({
   userId,
   projectId,

@@ -1612,6 +1612,17 @@ export default function CadWorkspace({
     }));
   }, [selectedStepModuleDefinition]);
 
+  const handleApplyStepModuleParameters = useCallback(() => {
+    if (!isViewerEmbedMode() || !selectedEntry?.file) {
+      return;
+    }
+    window.parent.postMessage({
+      type: "solidxcad-regenerate-step",
+      stepFile: selectedEntry.file,
+      parameters: stepModuleParameterValuesRef.current
+    }, "*");
+  }, [selectedEntry]);
+
   const handleCopyStepModuleParams = useCallback(async () => {
     setScreenshotStatus("");
     if (!selectedStepModuleDefinition?.parameters?.length) {
@@ -7079,7 +7090,8 @@ export default function CadWorkspace({
                   onAnimationSpeedChange: handleStepModuleAnimationSpeedChange,
                   onEnabledChange: handleStepModuleEnabledChange,
                   onCopyParams: handleCopyStepModuleParams,
-                  onPasteParams: handlePasteStepModuleParams
+                  onPasteParams: handlePasteStepModuleParams,
+                  onApplyParameters: handleApplyStepModuleParameters
                 }}
                 fileDownloadAvailable={fileLinkCopyAvailable}
                 viewerServerInfo={viewerServerInfo}

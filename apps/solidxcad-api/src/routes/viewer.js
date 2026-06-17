@@ -18,6 +18,8 @@ import {
   buildStepModuleScript,
   extractPythonNumericParams,
 } from '../services/stepModuleFromPython.js';
+import { resolvePythonSourceForStep } from '../services/stepPythonResolver.js';
+import { regeneratePartWithParameters } from '../services/cadWorker.js';
 
 const router = Router();
 
@@ -136,16 +138,32 @@ router.get('/public/step-module', asyncHandler(async (req, res) => {
     userId: payload.userId,
     name: pyName,
   });
-  if (!pyMatch?.s3Key) {
+
+  let source = '';
+  if (pyMatch?.s3Key) {
+    try {
+      const stream = await getObjectStream(pyMatch.s3Key);
+      const chunks = [];
+      for await (const chunk of stream) chunks.push(chunk);
+      source = Buffer.concat(chunks).toString('utf8');
+    } catch {
+      source = '';
+    }
+  }
+
+  if (!source) {
+    const resolved = await resolvePythonSourceForStep({
+      projectId: project._id,
+      userId: payload.userId,
+      stepFileName: stepMatch.name,
+    });
+    source = resolved.source || '';
+  }
+
+  if (!source) {
     return res.status(404).json({ error: 'STEP module not available for this file' });
   }
 
-  const stream = await getObjectStream(pyMatch.s3Key);
-  const chunks = [];
-  for await (const chunk of stream) {
-    chunks.push(chunk);
-  }
-  const source = Buffer.concat(chunks).toString('utf8');
   const parameters = extractPythonNumericParams(source);
   const cadPath = path.posix.basename(stepRef, path.extname(stepRef));
   const script = buildStepModuleScript({ cadPath, parameters });
@@ -216,6 +234,96 @@ router.get('/public/content', asyncHandler(async (req, res) => {
   }
 }));
 
+async function runStepParameterRegenerate({
+  userId,
+  projectId,
+  stepRef,
+  parameterValues = {},
+}) {
+  const stepBaseName = path.posix.basename(stepRef);
+  const stepMatch = await ProjectFile.findOne({
+    projectId,
+    userId,
+    name: stepBaseName,
+  });
+  if (!stepMatch || !/\.(step|stp)$/i.test(stepMatch.name)) {
+    return { ok: false, status: 404, error: 'STEP file not found' };
+  }
+
+  const resolved = await resolvePythonSourceForStep({
+    projectId,
+    userId,
+    stepFileName: stepMatch.name,
+  });
+  if (!resolved.source) {
+    return { ok: false, status: 404, error: 'No generator script found for this part' };
+  }
+
+  const result = await regeneratePartWithParameters({
+    userId: userId.toString(),
+    projectId: projectId.toString(),
+    partName: resolved.partName,
+    pythonCode: resolved.source,
+    parameterValues,
+  });
+
+  if (!result.ok) {
+    return { ok: false, status: 500, error: result.error || 'Regeneration failed' };
+  }
+
+  try {
+    const { syncProjectWorkspace } = await import('../services/projectWorkspace.js');
+    await syncProjectWorkspace({ userId: userId.toString(), projectId: projectId.toString() });
+  } catch {
+    // non-fatal
+  }
+
+  return {
+    ok: true,
+    file: result.stepDoc,
+    partName: resolved.partName,
+  };
+}
+
+router.post('/public/regenerate-step', asyncHandler(async (req, res) => {
+  const token = String(req.query.token || '').trim();
+  const stepRef = String(req.query.step || req.body?.step || '').trim();
+  if (!token) return res.status(400).json({ error: 'token query required' });
+  if (!stepRef) return res.status(400).json({ error: 'step query required' });
+
+  let payload;
+  try {
+    payload = verifyViewerCatalogToken(token);
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired viewer token' });
+  }
+
+  const project = await Project.findOne({ _id: payload.projectId, userId: payload.userId });
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+
+  const parameterValues = req.body?.parameters && typeof req.body.parameters === 'object'
+    ? req.body.parameters
+    : {};
+
+  const result = await runStepParameterRegenerate({
+    userId: payload.userId,
+    projectId: project._id,
+    stepRef,
+    parameterValues,
+  });
+
+  if (!result.ok) {
+    return res.status(result.status || 500).json({ error: result.error });
+  }
+
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.json({
+    ok: true,
+    file: { name: result.file?.name, kind: result.file?.kind },
+    partName: result.partName,
+  });
+}));
+
 router.use(requireAuth);
 
 router.post('/projects/:id/sync', validateObjectId('id'), asyncHandler(async (req, res) => {
@@ -232,6 +340,35 @@ router.post('/projects/:id/sync', validateObjectId('id'), asyncHandler(async (re
     workspaceDir: root,
     files,
     viewerUrl,
+  });
+}));
+
+router.post('/projects/:id/regenerate-step', validateObjectId('id'), asyncHandler(async (req, res) => {
+  const project = await Project.findOne({ _id: req.params.id, userId: req.user._id });
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+
+  const stepRef = String(req.body?.step || req.body?.stepFile || '').trim();
+  if (!stepRef) return res.status(400).json({ error: 'step required' });
+
+  const parameterValues = req.body?.parameters && typeof req.body.parameters === 'object'
+    ? req.body.parameters
+    : {};
+
+  const result = await runStepParameterRegenerate({
+    userId: req.user._id,
+    projectId: project._id,
+    stepRef,
+    parameterValues,
+  });
+
+  if (!result.ok) {
+    return res.status(result.status || 500).json({ error: result.error });
+  }
+
+  res.json({
+    ok: true,
+    file: result.file,
+    partName: result.partName,
   });
 }));
 

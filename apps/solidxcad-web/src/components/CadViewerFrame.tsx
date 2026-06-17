@@ -14,6 +14,25 @@ export function CadViewerFrame({ projectId, fileRef }: CadViewerFrameProps) {
   const [viewerLink, setViewerLink] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const handler = async (event: MessageEvent) => {
+      const data = event.data;
+      if (!data || data.type !== 'solidxcad-regenerate-step') return;
+      const stepFile = String(data.stepFile || '').trim();
+      const parameters = data.parameters && typeof data.parameters === 'object' ? data.parameters : {};
+      if (!stepFile) return;
+      try {
+        await api.regenerateStepParameters(projectId, { step: stepFile, parameters });
+        setReloadKey((k) => k + 1);
+      } catch {
+        // parent stays on current model; viewer can retry
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [projectId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +62,7 @@ export function CadViewerFrame({ projectId, fileRef }: CadViewerFrameProps) {
     return () => {
       cancelled = true;
     };
-  }, [projectId, fileRef]);
+  }, [projectId, fileRef, reloadKey]);
 
   if (loading) {
     return (
@@ -69,6 +88,7 @@ export function CadViewerFrame({ projectId, fileRef }: CadViewerFrameProps) {
   return (
     <div className="absolute inset-0">
       <iframe
+        key={`${viewerLink}:${reloadKey}`}
         title="SolidX CAD Workbench"
         src={viewerLink}
         className="w-full h-full border-0 bg-base"

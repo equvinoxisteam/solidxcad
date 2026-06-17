@@ -425,7 +425,6 @@ export function buildGearFallbackGenStep(text = '') {
   const moduleMatch = text.match(/module\s*[:=]?\s*(\d+(?:\.\d+)?)/i);
   const teeth = parseInt(teethMatch?.[1] || teethMatch?.[2] || '20', 10);
   const module = moduleMatch ? parseFloat(moduleMatch[1]) : 2;
-  const pitchD = teeth * module;
   const hMatch = text.match(/(?:thick(?:ness)?|height)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*mm/i);
   const height = hMatch ? parseFloat(hMatch[1]) : Math.max(8, module * 4);
   const boreMatch = text.match(/(?:bore|hole)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*mm/i);
@@ -433,13 +432,18 @@ export function buildGearFallbackGenStep(text = '') {
   return `from build123d import *
 
 def gen_step():
-    outer_r = ${(pitchD / 2).toFixed(2)}
-    height = ${height.toFixed(2)}
-    bore_r = ${(bore / 2).toFixed(2)}
+    # --- viewer parameters ---
+    teeth = ${teeth}
+    module_mm = ${module}
+    height_mm = ${height}
+    bore_mm = ${bore}
+    outer_r = teeth * module_mm / 2
+    bore_r = bore_mm / 2
+    # ---
     with BuildPart() as bp:
-        Cylinder(radius=outer_r, height=height, align=(Align.CENTER, Align.CENTER, Align.MIN))
+        Cylinder(radius=outer_r, height=height_mm, align=(Align.CENTER, Align.CENTER, Align.MIN))
         with Locations((0, 0, 0)):
-            Hole(radius=bore_r, depth=height + 1)
+            Hole(radius=bore_r, depth=height_mm + 1)
     return bp.part
 `;
 }

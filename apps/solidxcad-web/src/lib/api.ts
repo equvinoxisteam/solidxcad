@@ -174,6 +174,16 @@ export const api = {
   getViewerCatalog: (projectId: string) =>
     request<{ schemaVersion: number; entries: unknown[] }>(`/api/viewer/projects/${projectId}/catalog`),
 
+  regenerateStepParameters: (
+    projectId: string,
+    body: { step: string; parameters: Record<string, number | boolean | string> },
+  ) =>
+    request<{ ok: boolean; file?: ProjectFile; partName?: string; error?: string }>(
+      `/api/viewer/projects/${projectId}/regenerate-step`,
+      { method: 'POST', body: JSON.stringify(body) },
+      true,
+    ),
+
   getChatModels: () => request<ChatModelsResponse>('/api/agent/models'),
 };
 
