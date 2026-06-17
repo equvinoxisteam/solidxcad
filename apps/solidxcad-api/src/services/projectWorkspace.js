@@ -93,6 +93,27 @@ export function fileRefForDoc(fileDoc) {
   return relativeFilePath(fileDoc);
 }
 
+export function storageFolderForFile(fileDoc) {
+  const s3Key = String(fileDoc?.s3Key || '');
+  if (s3Key.includes('/parts/')) return 'parts';
+  if (s3Key.includes('/slices/')) return 'slices';
+  return 'models';
+}
+
+export function stepGlbRelCandidates(stepRel) {
+  const dir = path.posix.dirname(stepRel);
+  const base = path.posix.basename(stepRel, path.extname(stepRel));
+  const fileName = path.posix.basename(stepRel);
+  const sidecar = dir === '.'
+    ? `.${fileName}.glb`
+    : path.posix.join(dir, `.${fileName}.glb`);
+  const plain = dir === '.' ? `${base}.glb` : path.posix.join(dir, `${base}.glb`);
+  // Legacy sidecars were uploaded under models/ even for parts/ STEP files.
+  const modelsSidecar = path.posix.join('models', `.${fileName}.glb`);
+  const modelsPlain = path.posix.join('models', `${base}.glb`);
+  return [sidecar, plain, modelsSidecar, modelsPlain];
+}
+
 async function repairUrdfGeneratorSidecar(workspaceRoot, urdfOnDisk) {
   const pyBeside = urdfOnDisk.replace(/\.urdf$/i, '.py');
   try {

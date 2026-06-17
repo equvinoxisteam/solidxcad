@@ -146,7 +146,14 @@ function safeGcodeName(meshFileName) {
 
 async function findPython() {
   if (config.pythonBin) return config.pythonBin;
-  return path.join(config.textToCadRoot, '.venv', 'Scripts', 'python.exe');
+  const unix = path.join(config.textToCadRoot, '.venv', 'bin', 'python');
+  const win = path.join(config.textToCadRoot, '.venv', 'Scripts', 'python.exe');
+  try {
+    await fs.access(unix);
+    return unix;
+  } catch {
+    return win;
+  }
 }
 
 async function downloadToTemp(fileDoc) {
@@ -210,7 +217,7 @@ export async function executeSliceJob({ userId, projectId, fileId, profilePath, 
     const prusaBin = config.prusaSlicerBin || process.env.PRUSASLICER_BIN || '';
     if (!orcaBin && !prusaBin) {
       throw new Error(
-        'No slicer configured. Set ORCASLICER_BIN in apps/solidxcad-api/.env and restart the API.',
+        'Slicing is not available on this server yet. Redeploy the API Docker image (includes OrcaSlicer) or set ORCASLICER_BIN on the API service.',
       );
     }
 

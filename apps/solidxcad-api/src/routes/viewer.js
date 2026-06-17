@@ -76,7 +76,18 @@ router.get('/public/catalog', asyncHandler(async (req, res) => {
     projectId: project._id.toString(),
   });
 
-  const files = await ProjectFile.find({ projectId: project._id }).sort({ createdAt: 1 });
+  let files = await ProjectFile.find({ projectId: project._id }).sort({ createdAt: 1 });
+  try {
+    const { ensureGlbSidecarsForSteps } = await import('../services/artifactPipeline.js');
+    files = await ensureGlbSidecarsForSteps({
+      userId: payload.userId,
+      projectId: project._id.toString(),
+      files,
+    });
+  } catch (err) {
+    console.warn('[viewer] GLB sidecar ensure:', err.message);
+  }
+
   const catalog = await buildProjectCatalog(files, {
     projectId: project._id.toString(),
     apiBase: config.apiUrl,

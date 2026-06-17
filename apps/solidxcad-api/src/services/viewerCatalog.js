@@ -1,5 +1,5 @@
 import path from 'path';
-import { fileRefForDoc } from './projectWorkspace.js';
+import { fileRefForDoc, stepGlbRelCandidates } from './projectWorkspace.js';
 import { getSignedDownloadUrl, isLocalStorageKey } from './s3.js';
 
 const KIND_MAP = {
@@ -32,10 +32,7 @@ function glbSidecarRelForStep(stepRel) {
 }
 
 function glbRelCandidatesForStep(stepRel) {
-  const dir = path.posix.dirname(stepRel);
-  const base = path.posix.basename(stepRel, path.extname(stepRel));
-  const plain = dir === '.' ? `${base}.glb` : path.posix.join(dir, `${base}.glb`);
-  return [glbSidecarRelForStep(stepRel), plain];
+  return stepGlbRelCandidates(stepRel);
 }
 
 function isInlineStepGlbSidecar(fileDoc, rel) {

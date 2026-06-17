@@ -42,6 +42,39 @@ function resolveNativeConfigPaths() {
   return { profilePath: bundledProfile, machineJson };
 }
 
+async function attachOrcaBundledProfiles(profile, machineJson) {
+  const orcaRoot = process.env.ORCASLICER_ROOT || '';
+  profile.native_config = machineJson;
+  profile.native_settings = [machineJson];
+  if (!orcaRoot) return profile;
+
+  const processJson = path.join(
+    orcaRoot,
+    'resources/profiles/Creality/process/0.20mm Standard @Creality Ender3 0.4.json',
+  );
+  const filamentJson = path.join(
+    orcaRoot,
+    'resources/profiles/Creality/filament/Creality Generic PLA.json',
+  );
+
+  try {
+    await fs.access(processJson);
+    profile.native_settings = [machineJson, processJson];
+    profile.backend = 'orcaslicer';
+  } catch {
+    // machine json only
+  }
+
+  try {
+    await fs.access(filamentJson);
+    profile.native_filaments = [filamentJson];
+  } catch {
+    delete profile.native_filaments;
+  }
+
+  return profile;
+}
+
 export async function buildSliceProfileJson(settings = {}) {
   const merged = { ...defaultSliceSettings(), ...settings };
   const { profilePath, machineJson } = resolveNativeConfigPaths();
@@ -50,7 +83,10 @@ export async function buildSliceProfileJson(settings = {}) {
     try {
       const raw = await fs.readFile(config.slicerProfilePath, 'utf8');
       const base = JSON.parse(raw);
-      return patchProfileWithSettings(base, merged, machineJson);
+      return attachOrcaBundledProfiles(
+        patchProfileWithSettings(base, merged, machineJson),
+        machineJson,
+      );
     } catch {
       // fall through to generated profile
     }
@@ -107,7 +143,7 @@ export async function buildSliceProfileJson(settings = {}) {
     }
   }
 
-  return profile;
+  return attachOrcaBundledProfiles(profile, machineJson);
 }
 
 function patchProfileWithSettings(base, merged, machineJson) {

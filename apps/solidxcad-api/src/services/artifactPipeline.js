@@ -5,7 +5,7 @@ import { spawn } from 'child_process';
 import { config } from '../config.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 import { buildS3Key, uploadFile, getObjectStream } from './s3.js';
-import { fileRefForDoc, projectWorkspaceDir } from './projectWorkspace.js';
+import { fileRefForDoc, projectWorkspaceDir, storageFolderForFile, stepGlbRelCandidates } from './projectWorkspace.js';
 
 async function findPython() {
   if (config.pythonBin) return config.pythonBin;
@@ -129,7 +129,8 @@ export async function ensureMeshSidecar({ userId, projectId, stepFileDoc, stepLo
 
     await exportStlFromStep(localStep, localStl);
 
-    const stlKey = buildS3Key(userId, projectId, `models/${stlName}`);
+    const stlFolder = storageFolderForFile(stepFileDoc);
+    const stlKey = buildS3Key(userId, projectId, `${stlFolder}/${stlName}`);
     const stlUpload = await uploadFile(stlKey, localStl, 'model/stl');
 
     return ProjectFile.create({
@@ -199,7 +200,8 @@ export async function ensureGlbSidecar({
   if (existing) return existing;
 
   try {
-    const glbKey = buildS3Key(userId, projectId, `models/${glbName}`);
+    const glbFolder = storageFolderForFile(stepFileDoc);
+    const glbKey = buildS3Key(userId, projectId, `${glbFolder}/${glbName}`);
     const glbUpload = await uploadFile(glbKey, glbPath, 'model/gltf-binary');
     return ProjectFile.create({
       projectId,
@@ -213,4 +215,31 @@ export async function ensureGlbSidecar({
     console.warn('[glb] metadata upload failed (viewer file is on disk):', err.message);
     return { name: glbName, kind: 'glb', onDisk: true };
   }
+}
+
+export async function ensureGlbSidecarsForSteps({ userId, projectId, files }) {
+  const fileByRel = new Map(files.map((f) => [fileRefForDoc(f), f]));
+  const out = [...files];
+
+  for (const file of files) {
+    if (file.kind !== 'step' && !/\.(step|stp)$/i.test(file.name)) continue;
+    const rel = fileRefForDoc(file);
+    const hasGlb = stepGlbRelCandidates(rel).some((candidate) => fileByRel.has(candidate));
+    if (hasGlb) continue;
+    try {
+      const glbDoc = await ensureGlbSidecar({
+        userId,
+        projectId,
+        stepFileDoc: file,
+      });
+      if (glbDoc?._id) {
+        out.push(glbDoc);
+        fileByRel.set(fileRefForDoc(glbDoc), glbDoc);
+      }
+    } catch (err) {
+      console.warn(`[glb] sidecar for ${file.name}:`, err.message);
+    }
+  }
+
+  return out;
 }

@@ -5,7 +5,7 @@ import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import { ProjectFile } from '../models/ProjectFile.js';
 import { buildS3Key, uploadFile } from './s3.js';
-import { ensureMeshSidecar } from './artifactPipeline.js';
+import { ensureMeshSidecar, ensureGlbSidecar } from './artifactPipeline.js';
 
 const STEP_PARTS_ORIGIN = 'https://api.step.parts';
 
@@ -64,6 +64,17 @@ export async function importStepPart({ userId, projectId, partId, partUrl, name 
       });
     } catch (stlErr) {
       console.warn('[parts] STL sidecar failed:', stlErr.message);
+    }
+
+    try {
+      await ensureGlbSidecar({
+        userId,
+        projectId,
+        stepFileDoc: fileDoc,
+        stepLocalPath: localPath,
+      });
+    } catch (glbErr) {
+      console.warn('[parts] GLB sidecar failed:', glbErr.message);
     }
 
     return fileDoc;
