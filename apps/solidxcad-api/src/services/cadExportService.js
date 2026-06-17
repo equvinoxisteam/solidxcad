@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { config } from '../config.js';
-import { buildS3Key, uploadFile } from './s3.js';
+import { buildS3Key, uploadFile, storageObjectExists } from './s3.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 
 export async function findPython() {
@@ -132,11 +132,22 @@ export async function registerExportedFile({
   mimeType,
   kind,
 }) {
+  const stat = await fs.stat(localPath);
   const existing = await ProjectFile.findOne({ projectId, userId, name, kind });
-  if (existing) return existing;
+  if (existing && await storageObjectExists(existing.s3Key)) {
+    return existing;
+  }
 
   const key = buildS3Key(userId, projectId, `models/${name}`);
   const upload = await uploadFile(key, localPath, mimeType);
+  if (existing) {
+    existing.s3Key = upload.key;
+    existing.mimeType = mimeType;
+    existing.kind = kind;
+    existing.sizeBytes = stat.size;
+    await existing.save();
+    return existing;
+  }
   return ProjectFile.create({
     projectId,
     userId,
@@ -144,6 +155,7 @@ export async function registerExportedFile({
     s3Key: upload.key,
     mimeType,
     kind,
+    sizeBytes: stat.size,
   });
 }
 

@@ -2,6 +2,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   DeleteObjectCommand,
   DeleteObjectsCommand,
@@ -82,7 +83,14 @@ async function writeLocalFile(key, body) {
   await fsp.writeFile(dest, body);
 }
 
+function disallowLocalUploadInProduction() {
+  return config.nodeEnv === 'production' && config.storageBackend === 's3';
+}
+
 async function uploadLocal(key, body) {
+  if (disallowLocalUploadInProduction()) {
+    throw new Error('S3 upload required in production but local storage was requested');
+  }
   const storageKey = toLocalKey(key);
   await writeLocalFile(storageKey, body);
   console.log(`[storage] saved locally: ${storageKey}`);
@@ -250,8 +258,34 @@ export async function deleteProjectStorage(userId, projectId) {
   }));
 }
 
-function s3ObjectKey(key) {
+export function s3ObjectKey(key) {
   return isLocalStorageKey(key) ? key.slice(LOCAL_KEY_PREFIX.length) : key;
+}
+
+export async function storageObjectExists(key) {
+  if (!key) return false;
+
+  if (isLocalStorageKey(key) || shouldUseLocalStorageOnly()) {
+    try {
+      await fsp.access(localPathForKey(isLocalStorageKey(key) ? key : toLocalKey(key)));
+      return true;
+    } catch {
+      // fall through to S3 check when configured
+    }
+  }
+
+  if (!config.aws.bucket) return false;
+
+  try {
+    await client.send(new HeadObjectCommand({
+      Bucket: config.aws.bucket,
+      Key: s3ObjectKey(key),
+    }));
+    return true;
+  } catch (err) {
+    if (isMissingObjectError(err)) return false;
+    throw err;
+  }
 }
 
 function isMissingObjectError(err) {

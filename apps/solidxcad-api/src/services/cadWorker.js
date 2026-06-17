@@ -247,6 +247,147 @@ async function findStepFile(workDir, stepPath) {
   return null;
 }
 
+async function upsertProjectFile({
+  projectId,
+  userId,
+  name,
+  s3Key,
+  mimeType,
+  kind,
+  sizeBytes,
+}) {
+  const existing = await ProjectFile.findOne({ projectId, userId, name });
+  if (existing) {
+    existing.s3Key = s3Key;
+    existing.mimeType = mimeType;
+    existing.kind = kind;
+    existing.sizeBytes = sizeBytes;
+    await existing.save();
+    return existing;
+  }
+  return ProjectFile.create({
+    projectId,
+    userId,
+    name,
+    s3Key,
+    mimeType,
+    kind,
+    sizeBytes,
+  });
+}
+
+export async function regeneratePartFromPython({
+  userId,
+  projectId,
+  partName,
+  pythonCode,
+  onProgress = () => {},
+}) {
+  const workDir = await fs.mkdtemp(path.join(os.tmpdir(), 'solidxcad-repair-'));
+  const scriptName = `${partName}.py`;
+  const stepName = `${partName}.step`;
+  const scriptPath = path.join(workDir, scriptName);
+  const stepPath = path.join(workDir, stepName);
+
+  try {
+    const preserveCompound = /Compound\s*\(/i.test(pythonCode);
+    const finalCode = prepareGenStepCode(pythonCode, {
+      preserveCompound,
+      preserveAssembly: preserveCompound,
+    });
+    await fs.writeFile(scriptPath, finalCode, 'utf8');
+    onProgress(`Regenerating ${stepName} from saved Python…`);
+
+    await runCadStepFromScript({
+      workDir,
+      scriptName,
+      stepName,
+      sidecars: {
+        stl: `${partName}.stl`,
+        glb: `${partName}.glb`,
+      },
+    });
+
+    const stepFile = await findStepFile(workDir, stepPath);
+    if (!stepFile) {
+      return { ok: false, error: `Could not regenerate ${stepName}` };
+    }
+
+    const stepStat = await fs.stat(stepFile);
+    const stepUpload = await uploadFile(
+      buildS3Key(userId, projectId, `models/${stepName}`),
+      stepFile,
+      'application/step',
+    );
+    const stepDoc = await upsertProjectFile({
+      projectId,
+      userId,
+      name: stepName,
+      s3Key: stepUpload.key,
+      mimeType: 'application/step',
+      kind: 'step',
+      sizeBytes: stepStat.size,
+    });
+
+    const scriptStat = await fs.stat(scriptPath);
+    const scriptUpload = await uploadFile(
+      buildS3Key(userId, projectId, `models/${scriptName}`),
+      scriptPath,
+      'text/x-python',
+    );
+    await upsertProjectFile({
+      projectId,
+      userId,
+      name: scriptName,
+      s3Key: scriptUpload.key,
+      mimeType: 'text/x-python',
+      kind: 'other',
+      sizeBytes: scriptStat.size,
+    });
+
+    await uploadSidecarIfExists({
+      userId,
+      projectId,
+      workDir,
+      fileName: `${partName}.stl`,
+      onProgress,
+    });
+    await uploadSidecarIfExists({
+      userId,
+      projectId,
+      workDir,
+      fileName: `${partName}.glb`,
+      onProgress,
+    });
+
+    try {
+      const { ensureMeshSidecar, ensureGlbSidecar } = await import('./artifactPipeline.js');
+      await ensureMeshSidecar({
+        userId,
+        projectId,
+        stepFileDoc: stepDoc,
+        stepLocalPath: stepFile,
+      });
+      await ensureGlbSidecar({
+        userId,
+        projectId,
+        stepFileDoc: stepDoc,
+        stepLocalPath: stepFile,
+        onProgress,
+      });
+    } catch (sidecarErr) {
+      console.warn('[repair] sidecar generation skipped:', sidecarErr.message);
+    }
+
+    onProgress(`Restored ${stepName} to cloud storage`);
+    return { ok: true, stepDoc };
+  } catch (err) {
+    return { ok: false, error: err.message || 'Regeneration failed' };
+  } finally {
+    await fs.rm(workDir, { recursive: true, force: true });
+  }
+}
+
 export async function executeCadGeneration({
   userId,
   projectId,

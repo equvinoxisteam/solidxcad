@@ -13,6 +13,7 @@ import { syncProjectWorkspace, projectWorkspaceDir, fileRefForDoc } from '../ser
 import { buildProjectCatalog } from '../services/viewerCatalog.js';
 import { getObjectStream } from '../services/s3.js';
 import { signViewerCatalogToken, verifyViewerCatalogToken } from '../services/viewerSession.js';
+import { repairProjectStorageIfNeeded, repairProjectStorage } from '../services/projectStorageRepair.js';
 
 const router = Router();
 
@@ -68,6 +69,11 @@ router.get('/public/catalog', asyncHandler(async (req, res) => {
   const project = await Project.findOne({ _id: payload.projectId, userId: payload.userId });
   if (!project) return res.status(404).json({ error: 'Project not found' });
 
+  await repairProjectStorageIfNeeded({
+    userId: payload.userId,
+    projectId: project._id.toString(),
+  });
+
   const files = await ProjectFile.find({ projectId: project._id }).sort({ createdAt: 1 });
   const catalog = await buildProjectCatalog(files, {
     projectId: project._id.toString(),
@@ -96,8 +102,13 @@ router.get('/public/content', asyncHandler(async (req, res) => {
   const project = await Project.findOne({ _id: payload.projectId, userId: payload.userId });
   if (!project) return res.status(404).json({ error: 'Project not found' });
 
-  const files = await ProjectFile.find({ projectId: project._id });
-  const match = files.find((f) => fileRefForDoc(f) === fileRef || f.name === fileRef);
+  await repairProjectStorageIfNeeded({
+    userId: payload.userId,
+    projectId: project._id.toString(),
+  });
+
+  let files = await ProjectFile.find({ projectId: project._id });
+  let match = files.find((f) => fileRefForDoc(f) === fileRef || f.name === fileRef);
   if (!match) {
     return res.status(404).json({ error: 'File not found' });
   }
@@ -105,6 +116,27 @@ router.get('/public/content', asyncHandler(async (req, res) => {
   try {
     await sendProjectFileContent(res, match, { cacheSeconds: 300 });
   } catch (err) {
+    if (!res.headersSent && storageErrorStatus(err) === 404) {
+      await repairProjectStorage({
+        userId: payload.userId,
+        projectId: project._id.toString(),
+        force: true,
+      });
+      const refreshed = await ProjectFile.findById(match._id);
+      if (refreshed) {
+        try {
+          await sendProjectFileContent(res, refreshed, { cacheSeconds: 300 });
+          return;
+        } catch (retryErr) {
+          if (!res.headersSent) {
+            res.status(storageErrorStatus(retryErr)).json({
+              error: retryErr.message || 'Failed to load file',
+            });
+          }
+          return;
+        }
+      }
+    }
     if (!res.headersSent) {
       res.status(storageErrorStatus(err)).json({
         error: err.message || 'Failed to load file',
@@ -159,6 +191,7 @@ router.get('/projects/:id/session', validateObjectId('id'), asyncHandler(async (
     root = synced.root;
     files = synced.files;
   } else {
+    await repairProjectStorageIfNeeded({ userId, projectId });
     files = (await ProjectFile.find({ projectId: project._id }).sort({ createdAt: 1 }))
       .map((f) => ({ file: fileRefForDoc(f), name: f.name }));
   }

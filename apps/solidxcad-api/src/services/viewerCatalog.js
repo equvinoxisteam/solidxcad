@@ -31,9 +31,25 @@ function glbSidecarRelForStep(stepRel) {
   return dir === '.' ? glbName : path.posix.join(dir, glbName);
 }
 
+function glbRelCandidatesForStep(stepRel) {
+  const dir = path.posix.dirname(stepRel);
+  const base = path.posix.basename(stepRel, path.extname(stepRel));
+  const plain = dir === '.' ? `${base}.glb` : path.posix.join(dir, `${base}.glb`);
+  return [glbSidecarRelForStep(stepRel), plain];
+}
+
 function isInlineStepGlbSidecar(fileDoc, rel) {
   const name = fileDoc.name || path.posix.basename(rel);
   return kindForFile(fileDoc) === 'glb' && name.startsWith('.') && name.endsWith('.step.glb');
+}
+
+function isStepCompanionGlb(fileDoc, rel, fileByRel) {
+  if (kindForFile(fileDoc) !== 'glb') return false;
+  if (isInlineStepGlbSidecar(fileDoc, rel)) return true;
+  const base = path.posix.basename(rel, '.glb');
+  const dir = path.posix.dirname(rel);
+  const stepRel = dir === '.' ? `${base}.step` : path.posix.join(dir, `${base}.step`);
+  return fileByRel.has(stepRel);
 }
 
 function catalogHashForFile(fileDoc) {
@@ -95,13 +111,25 @@ export async function buildProjectCatalog(files, {
       continue;
     }
 
+    if (isStepCompanionGlb(file, rel, fileByRel)) {
+      continue;
+    }
+
     const url = await contentUrlForFile(file, {
       projectId, apiBase, usePresignedUrls, catalogToken,
     });
 
     if (kind === 'step') {
-      const glbRel = glbSidecarRelForStep(rel);
-      const glbFile = fileByRel.get(glbRel);
+      let glbFile = null;
+      let glbRel = '';
+      for (const candidate of glbRelCandidatesForStep(rel)) {
+        const found = fileByRel.get(candidate);
+        if (found) {
+          glbFile = found;
+          glbRel = candidate;
+          break;
+        }
+      }
       if (glbFile) {
         const glbUrl = await contentUrlForFile(glbFile, {
           projectId, apiBase, usePresignedUrls, catalogToken,
