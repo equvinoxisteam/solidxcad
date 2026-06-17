@@ -63,7 +63,7 @@ import {
   renderedFileSheetSectionIds,
   shouldOpenFileSheetForSelectionReveal
 } from "@/workbench/fileSheetSections";
-import { isViewerEmbedMode } from "@/workbench/embedMode.js";
+import { embedUserFacingViewerAlert, isViewerEmbedMode } from "@/workbench/embedMode.js";
 import {
   entrySourceFormat,
   fileSheetKindForEntry,
@@ -2559,7 +2559,15 @@ export default function CadWorkspace({
     viewerLoading,
     viewerRuntimeAlert
   ]);
-  const viewerAlertKey = viewerAlert
+  const userFacingViewerAlert = useMemo(
+    () => embedUserFacingViewerAlert(viewerAlert, {
+      hasRenderableContent: Boolean(
+        selectedMeshData || selectedDxfData || selectedImplicitRuntimeModel
+      ),
+    }),
+    [viewerAlert, selectedMeshData, selectedDxfData, selectedImplicitRuntimeModel]
+  );
+  const viewerAlertKey = userFacingViewerAlert
     ? [
       fileKey(selectedEntry),
       viewerAlert.severity,
@@ -2966,7 +2974,7 @@ export default function CadWorkspace({
   }, []);
 
   const selectedFileStatusItems = useMemo(() => (
-    selectedGeneratorRunning
+    isViewerEmbedMode() || selectedGeneratorRunning
       ? []
       : buildFileStatusItems({
         entry: selectedEntry,
@@ -3012,7 +3020,7 @@ export default function CadWorkspace({
       selectedImplicitDefinition?.parameters?.length ||
       selectedImplicitDefinition?.animations?.length
     ),
-    hasFileStatus: selectedFileHasWarningOrErrorStatus,
+    hasFileStatus: !isViewerEmbedMode() && selectedFileHasWarningOrErrorStatus,
     isSdf: selectedFileSheetKind === "sdf",
     motionEnabled: selectedFileSheetKind === "srdf" && selectedUrdfMotionEndEffectors.length > 0,
     showJoints: selectedFileSheetKind === "urdf" || selectedFileSheetKind === "srdf" || selectedFileSheetKind === "sdf"
@@ -6781,7 +6789,7 @@ export default function CadWorkspace({
           previewMode={previewMode}
           viewportFrameInsets={viewportFrameInsets}
           viewerLoading={viewerLoading}
-          viewerAlert={viewerAlert}
+          viewerAlert={userFacingViewerAlert}
           stepUpdateInProgress={effectiveRenderFormat === RENDER_FORMAT.STEP && stepUpdateInProgress}
           referenceSelectionPending={referenceSelectionPending}
           referenceSelectionUnavailable={referenceSelectionUnavailable}
@@ -7233,7 +7241,7 @@ export default function CadWorkspace({
 
         <ViewerAlertDialog
           viewerAlertOpen={viewerAlertOpen}
-          viewerAlert={viewerAlert}
+          viewerAlert={userFacingViewerAlert}
           previewMode={previewMode}
           setViewerAlertOpen={setViewerAlertOpen}
         />

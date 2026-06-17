@@ -14,6 +14,10 @@ import { buildProjectCatalog } from '../services/viewerCatalog.js';
 import { getObjectStream } from '../services/s3.js';
 import { signViewerCatalogToken, verifyViewerCatalogToken } from '../services/viewerSession.js';
 import { repairProjectStorageIfNeeded, repairProjectStorage } from '../services/projectStorageRepair.js';
+import {
+  buildStepModuleScript,
+  extractPythonNumericParams,
+} from '../services/stepModuleFromPython.js';
 
 const router = Router();
 
@@ -98,6 +102,59 @@ router.get('/public/catalog', asyncHandler(async (req, res) => {
   res.setHeader('cache-control', 'private, max-age=30');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.json(catalog);
+}));
+
+router.get('/public/step-module', asyncHandler(async (req, res) => {
+  const token = String(req.query.token || '').trim();
+  const stepRef = String(req.query.step || '').trim();
+  if (!token) return res.status(400).json({ error: 'token query required' });
+  if (!stepRef) return res.status(400).json({ error: 'step query required' });
+
+  let payload;
+  try {
+    payload = verifyViewerCatalogToken(token);
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired viewer token' });
+  }
+
+  const project = await Project.findOne({ _id: payload.projectId, userId: payload.userId });
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+
+  const stepBaseName = path.posix.basename(stepRef);
+  const stepMatch = await ProjectFile.findOne({
+    projectId: project._id,
+    userId: payload.userId,
+    name: stepBaseName,
+  });
+  if (!stepMatch || !/\.(step|stp)$/i.test(stepMatch.name)) {
+    return res.status(404).json({ error: 'STEP file not found' });
+  }
+
+  const pyName = stepMatch.name.replace(/\.(step|stp)$/i, '.py');
+  const pyMatch = await ProjectFile.findOne({
+    projectId: project._id,
+    userId: payload.userId,
+    name: pyName,
+  });
+  if (!pyMatch?.s3Key) {
+    return res.status(404).json({ error: 'STEP module not available for this file' });
+  }
+
+  const stream = await getObjectStream(pyMatch.s3Key);
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+  const source = Buffer.concat(chunks).toString('utf8');
+  const parameters = extractPythonNumericParams(source);
+  const cadPath = path.posix.basename(stepRef, path.extname(stepRef));
+  const script = buildStepModuleScript({ cadPath, parameters });
+
+  res.setHeader('content-type', 'text/javascript; charset=utf-8');
+  res.setHeader('cache-control', 'private, max-age=60');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.send(script);
 }));
 
 router.get('/public/content', asyncHandler(async (req, res) => {

@@ -1,5 +1,6 @@
 import path from 'path';
 import { fileRefForDoc, stepGlbRelCandidates } from './projectWorkspace.js';
+import { filterUserVisibleFiles } from './projectFileVisibility.js';
 import { getSignedDownloadUrl, isLocalStorageKey } from './s3.js';
 
 const KIND_MAP = {
@@ -69,6 +70,37 @@ function publicContentUrlForFile(rel, { apiBase, catalogToken }) {
   return `${apiBase}/api/viewer/public/content?${params.toString()}`;
 }
 
+function publicStepModuleUrl(stepRel, { apiBase, catalogToken }) {
+  const params = new URLSearchParams();
+  params.set('token', catalogToken);
+  params.set('step', stepRel);
+  return `${apiBase}/api/viewer/public/step-module?${params.toString()}`;
+}
+
+function companionPythonRelForStep(stepRel, fileByRel) {
+  const dir = path.posix.dirname(stepRel);
+  const base = path.posix.basename(stepRel, path.extname(stepRel));
+  const pyRel = dir === '.' ? `${base}.py` : path.posix.join(dir, `${base}.py`);
+  return fileByRel.has(pyRel) ? pyRel : '';
+}
+
+  const byFile = new Map();
+  for (const entry of entries) {
+    const file = String(entry?.file || '').trim();
+    if (!file) continue;
+    const existing = byFile.get(file);
+    if (!existing) {
+      byFile.set(file, entry);
+      continue;
+    }
+    const preferNew = entry.kind === 'part' && existing.kind !== 'part';
+    if (preferNew) {
+      byFile.set(file, entry);
+    }
+  }
+  return [...byFile.values()];
+}
+
 async function contentUrlForFile(file, {
   projectId,
   apiBase,
@@ -96,13 +128,14 @@ export async function buildProjectCatalog(files, {
   usePresignedUrls = false,
   catalogToken = '',
 }) {
+  const visibleFiles = filterUserVisibleFiles(files);
   const fileByRel = new Map();
-  for (const file of files) {
+  for (const file of visibleFiles) {
     fileByRel.set(fileRefForDoc(file), file);
   }
 
   const entries = [];
-  for (const file of files) {
+  for (const file of visibleFiles) {
     const rel = fileRefForDoc(file);
     const kind = kindForFile(file);
 
@@ -133,6 +166,7 @@ export async function buildProjectCatalog(files, {
         const glbUrl = await contentUrlForFile(glbFile, {
           projectId, apiBase, usePresignedUrls, catalogToken,
         });
+        const hasPythonCompanion = Boolean(companionPythonRelForStep(rel, fileByRel));
         entries.push({
           file: rel,
           kind: 'part',
@@ -144,6 +178,9 @@ export async function buildProjectCatalog(files, {
             file: rel,
             url,
           },
+          ...(catalogToken && hasPythonCompanion
+            ? { moduleUrl: publicStepModuleUrl(rel, { apiBase, catalogToken }) }
+            : {}),
           artifact: {
             ok: true,
             status: 'current',
@@ -158,20 +195,24 @@ export async function buildProjectCatalog(files, {
       }
     }
 
+    if (kind === 'step') {
+      continue;
+    }
+
     entries.push({
       file: rel,
       kind,
       url,
       hash: catalogHashForFile(file),
       bytes: file.sizeBytes || 0,
-      ...(kind === 'step' ? { sourceKind: 'step' } : {}),
     });
   }
 
   entries.sort((a, b) => a.file.localeCompare(b.file));
+  const dedupedEntries = dedupeCatalogEntries(entries);
 
   return {
     schemaVersion: 4,
-    entries,
+    entries: dedupedEntries,
   };
 }

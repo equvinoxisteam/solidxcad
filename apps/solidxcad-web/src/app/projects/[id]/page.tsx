@@ -17,6 +17,7 @@ import {
 } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
 import { useClientUser } from '@/hooks/useClientUser';
+import { USER_ERROR_LOAD_PROJECT } from '@/lib/userMessages';
 
 const PANEL_CHAT_KEY = 'solidxcad_studio_chat_open';
 const PANEL_WORKSPACE_KEY = 'solidxcad_studio_workspace_open';
@@ -38,7 +39,6 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
   const [highlightFile, setHighlightFile] = useState('');
-  const [loadError, setLoadError] = useState('');
   const [viewMode, setViewMode] = useState<StudioViewMode>('viewer');
   const [showChat, setShowChat] = useState(true);
   const [showWorkspace, setShowWorkspace] = useState(false);
@@ -66,7 +66,6 @@ export default function StudioPage() {
   }
 
   const refresh = useCallback(async () => {
-    setLoadError('');
     try {
       const [{ project: p }, { files: f }, { messages: m }, { user: me }] = await Promise.all([
         api.getProject(id),
@@ -89,7 +88,7 @@ export default function StudioPage() {
         router.push('/dashboard');
         return;
       }
-      setLoadError(msg);
+      setStatus(USER_ERROR_LOAD_PROJECT);
       throw err;
     }
   }, [id, router]);
@@ -166,15 +165,6 @@ export default function StudioPage() {
         user={mounted ? user : null}
         onDeleted={() => router.push('/dashboard')}
       />
-
-      {loadError && (
-        <div className="bg-red-500/10 border-b border-red-500/30 text-red-300 text-xs px-4 py-2 shrink-0">
-          {loadError} —{' '}
-          <button type="button" className="underline" onClick={() => refresh()}>
-            Retry
-          </button>
-        </div>
-      )}
 
       <div className={`studio-main flex-1 min-h-0 ${showChat || showWorkspace ? 'chat-open' : ''}`}>
         {(showChat || showWorkspace) && (

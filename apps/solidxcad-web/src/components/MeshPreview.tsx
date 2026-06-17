@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { getToken } from '@/lib/api';
+import { USER_ERROR_PREVIEW } from '@/lib/userMessages';
 
 type MeshPreviewProps = {
   projectId: string;
@@ -33,12 +34,12 @@ export function MeshPreview({ projectId, fileId, fileName, kind }: MeshPreviewPr
 
       const ext = fileName.split('.').pop()?.toLowerCase() || kind;
       if (ext === 'gcode' || kind === 'gcode') {
-        setError('G-code toolpaths open in the full CAD Viewer tab.');
+        setError('Open G-code in CAD Workbench.');
         setLoading(false);
         return;
       }
       if (ext === 'step' || ext === 'stp' || kind === 'step') {
-        setError('STEP preview uses the STL sidecar or full CAD Viewer tab.');
+        setError('Open STEP models in CAD Workbench.');
         setLoading(false);
         return;
       }
@@ -141,7 +142,7 @@ export function MeshPreview({ projectId, fileId, fileName, kind }: MeshPreviewPr
         };
       } catch (err) {
         if (!disposed) {
-          setError(err instanceof Error ? err.message : 'Preview failed');
+          setError(USER_ERROR_PREVIEW);
           setLoading(false);
         }
       }

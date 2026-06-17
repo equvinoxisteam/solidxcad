@@ -14,6 +14,7 @@ import {
 import { VIEWER_SCENE_SCALE } from "cadjs/lib/viewer/sceneScale";
 import { VIEWER_PICK_MODE } from "cadjs/lib/viewer/constants";
 import { useStepAnimationSnapshot } from "@/workbench/stepAnimationStore";
+import { EMBED_STUDIO_ERROR, isViewerEmbedMode } from "@/workbench/embedMode.js";
 
 const EMPTY_LIST = Object.freeze([]);
 const VIEWPORT_ISSUE_META = Object.freeze({
@@ -116,7 +117,9 @@ export default function CadRenderPane({
       }
     };
   }, [stepParameters, liveStepAnimation]);
-  const viewerAlertIconLabel = "Viewer error. See the Issues section for details.";
+  const viewerAlertIconLabel = isViewerEmbedMode()
+    ? EMBED_STUDIO_ERROR.title
+    : "Viewer error. See the Issues section for details.";
   const dxfMode = renderFormat === RENDER_FORMAT.DXF;
   const gcodeMode = renderFormat === RENDER_FORMAT.GCODE;
   const urdfMode = isRobotRenderFormat(renderFormat);
@@ -326,14 +329,21 @@ export default function CadRenderPane({
                 {viewportIssueMeta.label}
               </span>
               <div className="mt-1 line-clamp-2 min-w-0 max-w-full break-words text-sm font-medium leading-5 text-foreground">
-                {viewerAlert.title || viewerAlert.summary || "Viewer issue"}
+                {isViewerEmbedMode()
+                  ? EMBED_STUDIO_ERROR.title
+                  : (viewerAlert.title || viewerAlert.summary || "Viewer issue")}
               </div>
-              {viewerAlert.message ? (
+              {isViewerEmbedMode() ? (
+                <p className="mt-1 line-clamp-3 min-w-0 max-w-full break-words text-xs leading-5 text-muted-foreground">
+                  {EMBED_STUDIO_ERROR.message} {EMBED_STUDIO_ERROR.hint}
+                </p>
+              ) : null}
+              {!isViewerEmbedMode() && viewerAlert.message ? (
                 <p className="mt-1 line-clamp-3 min-w-0 max-w-full break-words text-xs leading-5 text-muted-foreground">
                   {viewerAlert.message}
                 </p>
               ) : null}
-              {viewerAlert.resolution ? (
+              {!isViewerEmbedMode() && viewerAlert.resolution ? (
                 <p className="mt-1 line-clamp-2 min-w-0 max-w-full break-words text-xs leading-5 text-muted-foreground">
                   {viewerAlert.resolution}
                 </p>

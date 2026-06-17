@@ -555,8 +555,13 @@ export default function StepFileSheet({
                 {stepModuleStatus === "loading" ? (
                   <p className="px-3 py-2 text-xs text-[var(--ui-text-muted)]">Loading STEP module...</p>
                 ) : null}
-                {stepModuleError ? (
+                {stepModuleError && !embedMode ? (
                   <p className="whitespace-pre-line px-3 py-2 text-xs text-destructive">{stepModuleError}</p>
+                ) : null}
+                {stepModuleError && embedMode ? (
+                  <p className="px-3 py-2 text-xs text-[var(--ui-text-muted)] leading-relaxed">
+                    Describe dimension or feature changes in the Agent — for example resize holes, add fillets, or adjust gear teeth. Regenerate to update this model.
+                  </p>
                 ) : null}
 
                 {stepModuleDefinition && stepModuleAnimations.length ? (

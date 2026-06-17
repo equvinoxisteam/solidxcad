@@ -7,6 +7,7 @@ import type { ProjectFile } from '@/lib/api';
 import { ProjectFilesList } from '@/components/ProjectFilesList';
 import { SliceModal } from '@/components/SliceModal';
 import { isSliceableMesh } from '@/lib/sliceSettings';
+import { USER_ERROR_CATALOG, USER_ERROR_IMPORT } from '@/lib/userMessages';
 
 type StepPart = {
   id?: string;
@@ -103,7 +104,7 @@ export function ToolsPanel({
       setCatalogParts(list);
       if (!list.length) onStatus('No matching parts in the catalog — try another search');
     } catch (err) {
-      onStatus(err instanceof Error ? err.message : 'Catalog search unavailable — try again');
+      onStatus(USER_ERROR_CATALOG);
     } finally {
       setSearching(false);
     }
@@ -122,7 +123,7 @@ export function ToolsPanel({
       onStatus(`Imported ${partLabel(part)} into project`);
       onRefresh();
     } catch (err) {
-      onStatus(err instanceof Error ? err.message : 'Import failed — try again');
+      onStatus(USER_ERROR_IMPORT);
     } finally {
       setImporting('');
     }

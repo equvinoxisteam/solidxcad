@@ -120,6 +120,11 @@ export function entryReferenceAssetSignature(entry) {
 }
 
 export function entryHasMesh(entry) {
+  const kind = normalizedKind(entry);
+  const file = String(entry?.file || "").trim().toLowerCase();
+  if (kind === "other" || kind === "python" || kind === "script" || kind === "py" || file.endsWith(".py")) {
+    return false;
+  }
   if (entrySourceFormat(entry) === RENDER_FORMAT.STEP) {
     return Boolean(
       entryAssetUrl(entry, "glb") &&

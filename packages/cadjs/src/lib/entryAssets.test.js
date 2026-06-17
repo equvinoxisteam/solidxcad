@@ -84,6 +84,7 @@ test("entry availability helpers preserve existing viewer gates", () => {
   assert.equal(entryHasGcode({ kind: "gcode", url: "/part.gcode", hash: "gcode-hash" }), true);
   assert.equal(entryHasUrdf({ kind: "urdf", url: "/robot.urdf", hash: "urdf-hash" }), true);
   assert.equal(entryHasUrdf({ kind: "sdf", url: "/robot.sdf", hash: "sdf-hash" }), true);
+  assert.equal(entryHasMesh({ kind: "other", file: "models/part.py", url: "/models/part.py", hash: "py-hash" }), false);
 });
 
 test("robot and reference signatures match persisted session expectations", () => {

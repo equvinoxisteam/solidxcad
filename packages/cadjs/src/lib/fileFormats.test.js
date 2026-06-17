@@ -26,6 +26,9 @@ test("entrySourceFormat maps manifest kinds to stable render formats", () => {
   assert.equal(entrySourceFormat({ kind: "urdf" }), RENDER_FORMAT.URDF);
   assert.equal(entrySourceFormat({ kind: "srdf" }), RENDER_FORMAT.SRDF);
   assert.equal(entrySourceFormat({ kind: "sdf" }), RENDER_FORMAT.SDF);
+  assert.equal(entrySourceFormat({ kind: "other" }), "");
+  assert.equal(entrySourceFormat({ kind: "python" }), "");
+  assert.equal(entrySourceFormat({ file: "models/part.py", kind: "other" }), "");
 });
 
 test("fileSheetKindForEntry preserves specialized sheet routing", () => {

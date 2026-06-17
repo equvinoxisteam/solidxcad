@@ -8,7 +8,7 @@ import {
   AlertDialogTitle
 } from "../ui/alert-dialog";
 import { Badge } from "../ui/badge";
-import ViewerAlertCommand from "./ViewerAlertCommand";
+import { isViewerEmbedMode } from "@/workbench/embedMode.js";
 
 export default function ViewerAlertDialog({
   viewerAlertOpen,
@@ -16,7 +16,7 @@ export default function ViewerAlertDialog({
   previewMode,
   setViewerAlertOpen
 }) {
-  if (!viewerAlert || previewMode) {
+  if (!viewerAlert || previewMode || isViewerEmbedMode()) {
     return null;
   }
   const isWarning = viewerAlert.severity === "warning";
@@ -43,7 +43,6 @@ export default function ViewerAlertDialog({
             ) : null}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <ViewerAlertCommand command={viewerAlert.command} />
         <AlertDialogFooter>
           <AlertDialogCancel aria-label="Close alert dialog">Close</AlertDialogCancel>
         </AlertDialogFooter>

@@ -85,6 +85,16 @@ export function entrySourceFormat(entry) {
   if (kind === RENDER_FORMAT.SDF) {
     return RENDER_FORMAT.SDF;
   }
+  if (kind === "part" || kind === "assembly" || kind === "step" || kind === "stp") {
+    return RENDER_FORMAT.STEP;
+  }
+  if (kind === "other" || kind === "python" || kind === "script" || kind === "py") {
+    return "";
+  }
+  const file = String(entry?.file || "").trim().toLowerCase();
+  if (file.endsWith(".py")) {
+    return "";
+  }
   return RENDER_FORMAT.STEP;
 }
 

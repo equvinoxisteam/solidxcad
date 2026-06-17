@@ -19,19 +19,36 @@ function commandForFile(command, fileRef) {
   return normalizedCommand ? `${normalizedCommand} ${fileRef}` : "";
 }
 
+function stepFileRefForCommand(entry) {
+  const artifactStep = String(entry?.artifact?.stepPath || "").trim();
+  if (artifactStep && /\.(step|stp)$/i.test(artifactStep)) {
+    return artifactStep;
+  }
+  const sourceFile = String(entry?.source?.file || "").trim();
+  if (sourceFile && /\.(step|stp)$/i.test(sourceFile)) {
+    return sourceFile;
+  }
+  const fileRef = fileKey(entry);
+  if (/\.py$/i.test(fileRef)) {
+    return fileRef.replace(/\.py$/i, ".step");
+  }
+  return fileRef;
+}
+
 export function buildCadCommand(fileRef, entry = null) {
+  const resolvedFileRef = entry ? stepFileRefForCommand(entry) : fileRef;
   const sourceFormat = entrySourceFormat(entry);
   if (sourceFormat === RENDER_FORMAT.STEP && entryStepSourceKind(entry) === "python") {
     return "";
   }
   if (sourceFormat === RENDER_FORMAT.DXF) {
-    return commandForFile(CAD_BUILD_COMMANDS.dxf, fileRef);
+    return commandForFile(CAD_BUILD_COMMANDS.dxf, resolvedFileRef);
   }
   if (sourceFormat === RENDER_FORMAT.URDF || sourceFormat === RENDER_FORMAT.SRDF) {
-    return String(entry?.kind || "").trim().toLowerCase() === "srdf" ? "" : commandForFile(CAD_BUILD_COMMANDS.urdf, fileRef);
+    return String(entry?.kind || "").trim().toLowerCase() === "srdf" ? "" : commandForFile(CAD_BUILD_COMMANDS.urdf, resolvedFileRef);
   }
   if (sourceFormat === RENDER_FORMAT.SDF) {
-    return commandForFile(CAD_BUILD_COMMANDS.sdf, fileRef);
+    return commandForFile(CAD_BUILD_COMMANDS.sdf, resolvedFileRef);
   }
   if (sourceFormat === RENDER_FORMAT.STL) {
     return "";
@@ -45,7 +62,10 @@ export function buildCadCommand(fileRef, entry = null) {
   if (sourceFormat === RENDER_FORMAT.GCODE) {
     return "";
   }
-  return commandForFile(CAD_BUILD_COMMANDS.step, fileRef);
+  if (!sourceFormat) {
+    return "";
+  }
+  return commandForFile(CAD_BUILD_COMMANDS.step, resolvedFileRef);
 }
 
 export function buildViewerMeshAlert(entry, hasMeshData, loadError) {

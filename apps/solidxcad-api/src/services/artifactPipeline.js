@@ -195,7 +195,41 @@ export async function ensureGlbSidecar({
     }
   }
 
-  await generateGlbOnDisk(workspaceRoot, wsStep, onProgress);
+  try {
+    await generateGlbOnDisk(workspaceRoot, wsStep, onProgress);
+  } catch (cadpyErr) {
+    const projectFiles = await ProjectFile.find({ projectId, userId });
+    const fileByRel = new Map(projectFiles.map((f) => [fileRefForDoc(f), f]));
+    let plainGlbPath = '';
+    for (const candidate of stepGlbRelCandidates(rel)) {
+      const glbDoc = fileByRel.get(candidate);
+      if (!glbDoc || glbDoc.kind !== 'glb') continue;
+      const candidatePath = path.join(workspaceRoot, candidate);
+      try {
+        await fs.access(candidatePath);
+        plainGlbPath = candidatePath;
+        break;
+      } catch {
+        try {
+          await fs.mkdir(path.dirname(candidatePath), { recursive: true });
+          const { createWriteStream } = await import('fs');
+          const { pipeline } = await import('stream/promises');
+          await pipeline(await getObjectStream(glbDoc.s3Key), createWriteStream(candidatePath));
+          plainGlbPath = candidatePath;
+          break;
+        } catch {
+          // try next candidate
+        }
+      }
+    }
+    if (!plainGlbPath) {
+      throw cadpyErr;
+    }
+    if (plainGlbPath !== glbPath) {
+      await fs.copyFile(plainGlbPath, glbPath);
+      onProgress(`Using existing ${path.basename(plainGlbPath)} as viewer GLB sidecar`);
+    }
+  }
 
   if (existing) return existing;
 

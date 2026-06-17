@@ -207,14 +207,14 @@ export function createHttpCatalogAssetBackend({
       throw new Error(`STEP catalog entry not found: ${requestedFileRef || "(missing)"}`);
     }
     const repoStepRef = stepFileRefFromEntry(entry, requestedFileRef);
-    const sourceKind = String(entry?.sourceKind || entry?.stepSourceKind || "step").trim().toLowerCase();
+    const sourceKind = "step";
     const sourceUrl = stepUrlFromEntry(entry);
 
     return {
       ok: Boolean(sourceUrl),
       file: repoStepRef,
       stepPath: repoStepRef,
-      sourceKind: sourceKind === "python" ? "python" : "step",
+      sourceKind: "step",
       step: sourceUrl
         ? {
             ok: true,

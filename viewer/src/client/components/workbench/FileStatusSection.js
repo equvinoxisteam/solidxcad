@@ -1,12 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { copyTextToClipboard } from "@/ui/clipboard";
 import { cn } from "@/ui/utils";
+import { isViewerEmbedMode } from "@/workbench/embedMode.js";
 import {
   FILE_STATUS_LEVELS,
-  formatFileStatusItemForAgent,
   fileStatusLevelLabel,
   fileStatusWarningOrErrorItems,
   mostIntenseFileStatusLevel
@@ -42,18 +40,9 @@ export default function FileStatusSection({
   value = "status"
 }) {
   const [expandedItemIds, setExpandedItemIds] = useState(() => new Set());
-  const [copiedItemId, setCopiedItemId] = useState("");
   const statusItems = fileStatusWarningOrErrorItems(items);
 
-  useEffect(() => {
-    if (!copiedItemId) {
-      return undefined;
-    }
-    const timeout = globalThis.setTimeout(() => setCopiedItemId(""), 1400);
-    return () => globalThis.clearTimeout(timeout);
-  }, [copiedItemId]);
-
-  if (!statusItems.length) {
+  if (isViewerEmbedMode() || !statusItems.length) {
     return null;
   }
 
@@ -75,17 +64,6 @@ export default function FileStatusSection({
     }
     event.preventDefault();
     toggleExpanded(itemId);
-  };
-
-  const handleCopyIssue = async (event, item) => {
-    event.preventDefault();
-    event.stopPropagation();
-    try {
-      await copyTextToClipboard(formatFileStatusItemForAgent(item));
-      setCopiedItemId(item.id);
-    } catch {
-      setCopiedItemId("");
-    }
   };
 
   const highestLevel = mostIntenseFileStatusLevel(statusItems);
@@ -133,28 +111,15 @@ export default function FileStatusSection({
                     {fileStatusLevelLabel(item.level)}
                   </Badge>
                   <div className="min-w-0 flex-1 truncate font-medium leading-4 text-sidebar-foreground" title={item.title}>{item.title}</div>
-                  <span className="ml-auto inline-flex h-5 shrink-0 items-center gap-1">
-                    {hasDetails ? (
-                      <ChevronDown
-                        className={cn(
-                          "size-3.5 text-muted-foreground transition-transform",
-                          expanded && "rotate-180"
-                        )}
-                        aria-hidden="true"
-                      />
-                    ) : null}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="xs"
-                      className="h-5 rounded-sm px-1 text-[10px] font-normal text-muted-foreground hover:text-sidebar-foreground"
-                      onClick={(event) => handleCopyIssue(event, item)}
-                      aria-label={copiedItemId === item.id ? "Copied issue" : "Copy issue for agent"}
-                      title={copiedItemId === item.id ? "Copied" : "Copy issue for agent"}
-                    >
-                      {copiedItemId === item.id ? "Copied" : "Copy"}
-                    </Button>
-                  </span>
+                  {hasDetails ? (
+                    <ChevronDown
+                      className={cn(
+                        "ml-auto size-3.5 shrink-0 text-muted-foreground transition-transform",
+                        expanded && "rotate-180"
+                      )}
+                      aria-hidden="true"
+                    />
+                  ) : null}
                 </div>
                 {item.message ? (
                   <div className="mt-1 line-clamp-2 min-w-0 break-words text-[11px] font-normal leading-4 text-muted-foreground">
