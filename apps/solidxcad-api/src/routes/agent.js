@@ -134,7 +134,7 @@ router.post('/chat', async (req, res) => {
   if (hasImage) {
     systemPrompt += '\n\n---\nThe user attached a reference image. Infer dimensions, shape language, and features from the image; generate runnable CAD with reasonable estimates. Use [AGENT_PHASE: execute] when ready — avoid long clarification loops.';
   }
-  const maxTokens = maxTokensForSkill(skillIntent);
+  const maxTokens = maxTokensForSkill(skillIntent, { userMessage: trimmedMessage });
 
   if (stream) {
     res.setHeader('Content-Type', 'text/event-stream');

@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { AGENT_CORE_PROMPT } from './agentBehavior.js';
 import { normalizeAssistantReply } from './agentReply.js';
+import { detectComplexCadRequest } from './cadPythonPresets.js';
 
 export { normalizeAssistantReply };
 import { buildRichProjectContext } from './projectAgentContext.js';
@@ -50,9 +51,17 @@ Robotic arms (mechanical STEP, not URDF):
 - Prefer Compound(label="arm", children=[base, links, bolts, gripper]) for multi-link arms
 - Keep under ~100 lines; the pipeline also has a tested 6-DOF desktop arm preset
 
+Machine / gantry / printer frames (build from scratch):
+- Model base frame, powder bed, feed bed, recoater, gantry rails, printhead carriage as separate solids
+- Return Compound(label="machine_frame", children=[...]) — each child must be a shape (has .wrapped), never None
+- Use Box for extrusion profiles (2020 → 20×20 mm), Cylinder for rods/rails; Pos/Rot to place sub-assemblies
+- State dimensions in [AGENT_PLAN] then output the **full** Python in the same reply with [AGENT_PHASE: execute]
+- Up to ~400 lines allowed; use helper functions in the same file
+- Import catalog parts only when the user names specific hardware; otherwise model simplified geometry
+
 Rules:
-- gen_step() returns final solid; no export_step/export_stl (pipeline writes files)
-- Under ~120 lines; split helpers inside the same file
+- gen_step() returns final solid or Compound; no export_step/export_stl (pipeline writes files)
+- Simple parts: under ~120 lines. Machine frames: up to ~400 lines.
 - Do not list output filenames in chat prose`;
 
 const URDF_SYSTEM_PROMPT = `You are SolidX CAD — generate runnable URDF via Python gen_urdf() for the skills/urdf skill.
@@ -263,13 +272,44 @@ export async function chatCompletion(messages, { model, stream = false, maxToken
   throw lastError;
 }
 
-export async function repairPythonScript(brokenCode, errorMessage) {
+export async function repairPythonScript(brokenCode, errorMessage, { complex = false } = {}) {
   const reply = await chatCompletion(
     [{
       role: 'user',
       content: `${FIX_PROMPT}\n\nError:\n${errorMessage}\n\nScript:\n\`\`\`python\n${brokenCode}\n\`\`\``,
     }],
-    { model: config.openrouter.modelFast, maxTokens: 900, system: FIX_PROMPT },
+    {
+      model: complex ? config.openrouter.modelCad : config.openrouter.modelFast,
+      maxTokens: complex ? 4096 : 1200,
+      system: FIX_PROMPT,
+    },
+  );
+  return extractPythonCode(reply);
+}
+
+const CAD_CODE_FROM_PLAN_PROMPT = `You write runnable build123d Python only. Output a single fenced python block with def gen_step() returning a solid or Compound. Millimeters. Hole(radius=) not diameter=. Compound children must be shapes. No export_step. No prose outside the code block.`;
+
+export async function generateCadCodeFromPlan({
+  userMessage = '',
+  assistantText = '',
+  conversationContext = '',
+} = {}) {
+  const reply = await chatCompletion(
+    [{
+      role: 'user',
+      content: [
+        'Write the complete build123d script for this design.',
+        '',
+        `User request:\n${userMessage}`,
+        conversationContext ? `\nContext:\n${conversationContext}` : '',
+        `\nAssistant plan and specs:\n${assistantText}`,
+      ].filter(Boolean).join('\n'),
+    }],
+    {
+      model: config.openrouter.modelCad,
+      maxTokens: 8192,
+      system: CAD_CODE_FROM_PLAN_PROMPT,
+    },
   );
   return extractPythonCode(reply);
 }
@@ -297,9 +337,12 @@ export async function getSystemPromptForSkill(skillId, { projectFiles } = {}) {
   return `${AGENT_CORE_PROMPT}\n\n---\n\n${skillBlock}`;
 }
 
-export function maxTokensForSkill(skillId) {
+export function maxTokensForSkill(skillId, { userMessage = '' } = {}) {
   if (['urdf', 'srdf', 'sdf', 'implicit-cad'].includes(skillId)) return 2048;
-  if (skillId === 'cad') return 2560;
+  if (skillId === 'cad') {
+    const msg = [userMessage].filter(Boolean).join('\n');
+    return detectComplexCadRequest(msg) ? 8192 : 4096;
+  }
   return undefined;
 }
 

@@ -1,5 +1,5 @@
 import { hasCadPayload } from './cadWorker.js';
-import { detectHilbertRequest, detectRoboticArmRequest, wantsAssembly } from './cadPythonPresets.js';
+import { detectHilbertRequest, detectRoboticArmRequest, wantsAssembly, detectFromScratchMachineBuild, detectComplexCadRequest } from './cadPythonPresets.js';
 import { hasGeneratorPayload } from './generatorWorker.js';
 import { hasImplicitPayload } from './implicitWorker.js';
 
@@ -43,8 +43,18 @@ Never mention internal APIs, OpenRouter, backends, or infrastructure. The user e
 ## Execute immediately when
 - Simple part with clear dimensions (e.g. "30 mm cube", "50×30 mm plate, 4 holes")
 - Mechanical robotic arm / manipulator (STEP solid with links, flange bolts, gripper) — use build123d gen_step(); pipeline applies a tested 6-DOF preset when code would be too long
+- **Machine / printer / gantry frames** — state 2–4 assumptions in [AGENT_PLAN], then output **complete** build123d Python in the **same** turn with [AGENT_PHASE: execute]. Model rails, bed, gantry, recoater, carriage as separate solids in Compound(label="machine", children=[...]). Do **not** stop at a plan without code.
 - User is clearly answering your previous numbered questions
 - User says "defaults", "just build it", "proceed", "go ahead", "continue"
+
+## Build from scratch (machines, frames, assemblies)
+- Design and model **all** structure in build123d — do not tell the user to import catalog parts unless they asked for a specific fastener/bearing SKU.
+- Use import_step("parts/...") only for **standard hardware the user names** (M3 screw, 608 bearing). Otherwise model simplified cylinders/boxes for rails, extrusions, beds, gantries.
+- Large builds may use up to ~400 lines and helper functions inside one file.
+- Always end with a fenced \`\`\`python block containing \`def gen_step(): … return …\` — plan-only replies without code are invalid for execute phase.
+
+## Components and catalog parts
+When an assembly needs **specific** fasteners or bearings the user named, import from step.parts in the same turn (e.g. "Import M3 socket head cap screw from step.parts") then reference in Compound. For full machine frames, model the frame first; add catalog hardware only when explicitly requested.
 
 ## After user answers
 - Combine all prior answers from chat history into one design
@@ -54,12 +64,9 @@ Never mention internal APIs, OpenRouter, backends, or infrastructure. The user e
 ## Reference images
 When the user attaches an image, infer shape and approximate dimensions from the image. Prefer executing with reasonable estimates and [AGENT_PHASE: execute] rather than long question lists. Ask at most 1–2 critical questions only when scale or feature count is truly ambiguous.
 
-## Components and catalog parts
-When an assembly needs fasteners, bearings, or standard parts, import from step.parts in the same turn when possible (e.g. "Import M3 socket head cap screw from step.parts") then build the assembly. Do not ask the user to hunt for parts if a catalog import solves it.
-
 Be concise. No filler. Questions should be specific and actionable.`;
 
-export const ASSEMBLY_PARTS_HINT = `Assembly tree needs at least one catalog part in parts/ first.
+export const ASSEMBLY_PARTS_HINT = `For a **small mount plate + catalog screws** only:
 
 Step 1 — import a fastener:
   "Import M3 socket head cap screw from step.parts"
@@ -67,15 +74,26 @@ Step 1 — import a fastener:
 Step 2 — build the assembly:
   "Assembly: 50×30×5 mm mount plate with 4 corner holes and the imported screws at each hole."
 
-Open the resulting .step in CAD Viewer (not STL) to see the assembly tree in the left sidebar.`;
+For **machine frames, gantries, or full printers**, model the structure in build123d from scratch — catalog import is optional, not required.`;
 
 export function assemblyNeedsCatalogParts({
   userMessage = '',
+  assistantText = '',
   partsCount = 0,
   importingParts = false,
 } = {}) {
   if (importingParts || partsCount > 0) return false;
-  return wantsAssembly(userMessage);
+  const combined = [userMessage, assistantText].filter(Boolean).join('\n');
+  if (detectFromScratchMachineBuild(combined) || detectComplexCadRequest(combined)) return false;
+  if (/\bimport\b.*step\.parts/i.test(combined)) return false;
+  if (
+    /\b(mount(ing)?\s*plate)\b/i.test(userMessage)
+    && /\b(screw|bolt|M[2-8])\b/i.test(userMessage)
+    && !/\b(machine|frame|printer|gantry|build)\b/i.test(userMessage)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 export function hasExecutablePayload(assistantText = '', skill = 'cad') {
@@ -113,8 +131,12 @@ export function isAmbiguousRequest(userMessage = '', skill = 'cad') {
     return true;
   }
 
-  if (skill === 'cad' && /\b(assembly|assemble)\b/i.test(msg) && !/\bimport\b/i.test(msg)) {
+  if (skill === 'cad' && /\b(mount(ing)?\s*plate)\b/i.test(msg) && /\b(screw|bolt|M[2-8])\b/i.test(msg) && !/\bimport\b/i.test(msg)) {
     return true;
+  }
+
+  if (detectComplexCadRequest(msg) || detectFromScratchMachineBuild(msg)) {
+    return false;
   }
 
   return false;
@@ -175,6 +197,9 @@ export function shouldDeferPipeline({
   const hasCode = extractAnyCodeBlock(assistantText);
   const questionCount = (assistantText.match(/\?/g) || []).length;
   const looksLikeClarification = CLARIFY_PHRASES.some((re) => re.test(assistantText));
+
+  if (detectComplexCadRequest(context) && EXECUTE_MARKER.test(assistantText)) return false;
+  if (detectFromScratchMachineBuild(userMessage) && !CLARIFY_MARKER.test(assistantText)) return false;
 
   if (!hasCode && (looksLikeClarification || questionCount >= 2)) return true;
   if (!hasCode && questionCount >= 1 && isAmbiguousRequest(userMessage, skill)) return true;

@@ -10,7 +10,7 @@ import {
   skillMeta,
 } from './skillRegistry.js';
 import { executeCadGeneration, hasCadPayload } from './cadWorker.js';
-import { detectHilbertRequest, detectRoboticArmRequest } from './cadPythonPresets.js';
+import { detectHilbertRequest, detectRoboticArmRequest, detectComplexCadRequest } from './cadPythonPresets.js';
 import { executeGeneratorSkill, hasGeneratorPayload } from './generatorWorker.js';
 import { executeImplicitGeneration, hasImplicitPayload } from './implicitWorker.js';
 import { executeSendCutSendPreflight } from './sendcutsendWorker.js';
@@ -34,6 +34,7 @@ function countPipelineSteps(userMessage, assistantText, cadContext, hasCode) {
   const wantsCad = hasCadPayload(assistantText, cadContext)
     || detectHilbertRequest(cadContext)
     || detectRoboticArmRequest(cadContext)
+    || detectComplexCadRequest(cadContext)
     || (hasCode && /build123d|export_step|Box\(|Cylinder\(/i.test(assistantText));
   if (wantsCad) total += 1;
   if (wantsSliceAfterCad(userMessage) && wantsCad) total += 1;
@@ -273,11 +274,13 @@ export async function runSkillPipeline({
   } else if (skill === 'cad' || (hasCadPayload(assistantText, cadContext) && !assistantText.includes('gen_urdf') && !assistantText.includes('gen_srdf'))) {
     const wantsCad = hasCadPayload(assistantText, cadContext)
       || detectHilbertRequest(cadContext)
-    || detectRoboticArmRequest(cadContext)
+      || detectRoboticArmRequest(cadContext)
+      || detectComplexCadRequest(cadContext)
       || (hasCode && /build123d|export_step|Box\(|Cylinder\(/i.test(assistantText));
     const partsAvailable = grouped.parts.length + (partsResult?.ok ? 1 : 0);
     const needsAssemblyParts = assemblyNeedsCatalogParts({
       userMessage,
+      assistantText,
       partsCount: partsAvailable,
       importingParts: wantsPartsImport(userMessage),
     });
@@ -319,6 +322,8 @@ export async function runSkillPipeline({
         if (cadResult?.ok) {
           const note = cadResult.fallback ? ' (reliable fallback solid)' : '';
           stepEmit(`✓ Solid model saved to workspace${note}`, 'cad', 'done');
+        } else if (cadResult?.complexBuildFailed) {
+          stepEmit(`✗ ${cadResult.error}`, 'cad', 'error');
         } else if (cadResult?.error) {
           stepEmit('Adjusting design — using tested fallback…', 'cad', 'running');
         }

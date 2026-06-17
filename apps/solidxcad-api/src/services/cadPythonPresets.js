@@ -349,6 +349,31 @@ def gen_step():
 `;
 }
 
+export function detectFromScratchMachineBuild(text = '') {
+  const t = String(text || '');
+  return /\b(sand\s*print|binder\s*jet|ink\s*jet|inkjet|powder\s*bed|recoater|corexy|gantry|print\s*head|machine\s*frame|printer\s*frame|industrial\s*printer|3d\s*printer\s*frame)\b/i.test(t)
+    || (/\b(frame|chassis|enclosure|structure)\b/i.test(t) && /\b(machine|printer|build|design|assemble)\b/i.test(t));
+}
+
+export function detectComplexCadRequest(text = '') {
+  const t = String(text || '');
+  if (detectFromScratchMachineBuild(t)) return true;
+  if (/\b(from scratch|full(y)?|end[\s-]to[\s-]end|complete|entire)\b/i.test(t) && /\b(build|design|create|make)\b/i.test(t)) {
+    return true;
+  }
+  if (detectHilbertRequest(t) || detectRoboticArmRequest(t) || detectGearRequest(t)) return true;
+  if (wantsAssembly(t) && t.length > 80) return true;
+  return false;
+}
+
+export function isSimplePartRequest(text = '') {
+  if (detectComplexCadRequest(text)) return false;
+  const msg = String(text || '').trim();
+  return msg.length < 140
+    && /\b\d+(\.\d+)?\s*mm\b/i.test(msg)
+    && !/\b(assembly|machine|frame|robot|gantry|printer)\b/i.test(msg);
+}
+
 export function detectGearRequest(text = '') {
   return /\b(gear|spur|helical|pinion|teeth|module)\b/i.test(text);
 }

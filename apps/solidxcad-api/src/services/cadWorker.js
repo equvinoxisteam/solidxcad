@@ -4,7 +4,7 @@ import os from 'os';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import { config } from '../config.js';
-import { extractPythonCode, repairPythonScript } from './openrouter.js';
+import { extractPythonCode, repairPythonScript, generateCadCodeFromPlan } from './openrouter.js';
 import { buildS3Key, uploadFile, getObjectStream } from './s3.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 import {
@@ -31,6 +31,7 @@ import {
   buildRoboticArmGenStep,
   buildFallbackGenStep,
   buildGearFallbackGenStep,
+  detectComplexCadRequest,
 } from './cadPythonPresets.js';
 
 function formatPythonError(raw) {
@@ -151,6 +152,31 @@ function resolveCadPython({ userMessage = '', assistantText = '', conversationCo
   return { code: extracted, source: 'llm' };
 }
 
+async function resolveCadPythonAsync({
+  userMessage = '',
+  assistantText = '',
+  conversationContext = '',
+  partFiles = [],
+  onProgress = () => {},
+}) {
+  const resolved = resolveCadPython({ userMessage, assistantText, conversationContext, partFiles });
+  if (resolved) return resolved;
+
+  const combined = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
+  if (!detectComplexCadRequest(combined) && !/\[AGENT_PHASE:\s*execute\]/i.test(assistantText)) {
+    return null;
+  }
+
+  onProgress('Generating full build123d script from design plan…');
+  const generated = await generateCadCodeFromPlan({
+    userMessage,
+    assistantText,
+    conversationContext,
+  });
+  if (!generated) return null;
+  return { code: generated, source: 'llm-plan' };
+}
+
 function sanitizeCompoundUsage(code) {
   return sanitizeCompoundInCode(code);
 }
@@ -179,7 +205,8 @@ export function hasCadPayload(text = '', conversationContext = '') {
   const combined = [conversationContext, text].filter(Boolean).join('\n');
   return Boolean(extractCadPython(text))
     || detectHilbertRequest(combined)
-    || detectRoboticArmRequest(combined);
+    || detectRoboticArmRequest(combined)
+    || detectComplexCadRequest(combined);
 }
 
 function prepareGenStepCode(pythonCode, { isPreset = false, preserveCompound = false, preserveAssembly = false } = {}) {
@@ -400,17 +427,22 @@ export async function executeCadGeneration({
 }) {
   const workDir = await fs.mkdtemp(path.join(os.tmpdir(), 'solidxcad-'));
   const partFiles = await copyProjectPartsToWorkDir({ userId, projectId, workDir });
-  const resolved = resolveCadPython({
+  const ctx = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
+  const complexBuild = detectComplexCadRequest(ctx);
+  const resolved = await resolveCadPythonAsync({
     userMessage,
     assistantText,
     conversationContext,
     partFiles,
+    onProgress,
   });
   if (!resolved) {
     await fs.rm(workDir, { recursive: true, force: true });
     return {
       ok: false,
-      error: 'No Python code in AI response. Ask again: "Create a simple box 20x30x10mm and export STEP"',
+      error: complexBuild
+        ? 'Design plan did not produce runnable CAD code. Try again or say "proceed with defaults" after the plan.'
+        : 'No Python code in AI response. Ask again: "Create a simple box 20x30x10mm and export STEP"',
     };
   }
 
@@ -419,8 +451,7 @@ export async function executeCadGeneration({
   let isPreset = ['preset-hilbert', 'preset-assembly', 'preset-fallback', 'preset-robotic-arm']
     .includes(codeSource);
   let preserveCompound = codeSource === 'preset-assembly' || codeSource === 'preset-robotic-arm';
-  const ctx = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
-  const preserveAssembly = preserveCompound || wantsAssembly(userMessage) || wantsAssembly(ctx);
+  const preserveAssembly = preserveCompound || wantsAssembly(userMessage) || wantsAssembly(ctx) || complexBuild;
   if (codeSource === 'preset-hilbert') {
     const { order, envelopeMm, barMm } = resolved.params;
     onProgress(`Using tested Hilbert preset (level ${order}, ${envelopeMm} mm cube, ${barMm} mm bars)…`);
@@ -445,10 +476,11 @@ export async function executeCadGeneration({
   const wantsDxf = exportOptions.dxf === true || /def\s+gen_dxf\s*\(/i.test(pythonCode);
 
   let lastError = null;
+  const maxAttempts = complexBuild ? 8 : 5;
 
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (attempt > 0) {
-      onProgress(`Retrying script (attempt ${attempt + 1}/5)…`);
+      onProgress(`Retrying script (attempt ${attempt + 1}/${maxAttempts})…`);
     } else {
       onProgress(`Running skills/cad/scripts/step via ${path.basename(python)}…`);
     }
@@ -640,10 +672,10 @@ export async function executeCadGeneration({
         continue;
       }
 
-      if (attempt < 4 && config.openrouter.apiKey && !isPreset) {
+      if (attempt < maxAttempts - 1 && config.openrouter.apiKey && !isPreset) {
         try {
           onProgress('Asking AI to repair the script…');
-          const fixed = await repairPythonScript(finalCode, lastError);
+          const fixed = await repairPythonScript(finalCode, lastError, { complex: complexBuild });
           if (fixed && fixed !== pythonCode) {
             pythonCode = injectCadHelpers(sanitizeInventedApis(fixed));
             continue;
@@ -654,6 +686,15 @@ export async function executeCadGeneration({
       }
       break;
     }
+  }
+
+  if (complexBuild) {
+    await fs.rm(workDir, { recursive: true, force: true });
+    return {
+      ok: false,
+      error: lastError || 'Complex design could not be generated. Try a smaller sub-assembly first or say "proceed with defaults".',
+      complexBuildFailed: true,
+    };
   }
 
   onProgress('Using reliable solid fallback…');
