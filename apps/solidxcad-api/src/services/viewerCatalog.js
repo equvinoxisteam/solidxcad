@@ -84,6 +84,7 @@ function companionPythonRelForStep(stepRel, fileByRel) {
   return fileByRel.has(pyRel) ? pyRel : '';
 }
 
+function dedupeCatalogEntries(entries) {
   const byFile = new Map();
   for (const entry of entries) {
     const file = String(entry?.file || '').trim();
