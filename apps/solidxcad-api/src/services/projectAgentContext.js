@@ -39,6 +39,32 @@ export function wantsModifyExisting(text = '') {
   return /\b(change|modify|update|edit|resize|adjust|make it|add\s+(a\s+)?hole|remove|bigger|smaller|thicker|thinner|longer|shorter|redo|revise|iterate|version\s*2)\b/i.test(text);
 }
 
+export async function buildFocusedFileContext(files = [], fileIds = []) {
+  if (!fileIds?.length) return '';
+  const idSet = new Set(fileIds.map(String));
+  const selected = files.filter((f) => idSet.has(String(f._id)));
+  if (!selected.length) return '';
+
+  const lines = ['\n\n## User @-referenced files (focus edits on these)'];
+  for (const file of selected) {
+    lines.push(`\n### ${file.name} (${file.kind || 'file'})`);
+    if (/\.py$/i.test(file.name) && file.s3Key) {
+      try {
+        const stream = await getObjectStream(file.s3Key);
+        const chunks = [];
+        for await (const chunk of stream) chunks.push(chunk);
+        const code = Buffer.concat(chunks).toString('utf8').slice(0, MAX_PY_CHARS);
+        lines.push(`\`\`\`python\n${code}\n\`\`\``);
+      } catch {
+        lines.push('(script stored — regenerate from user intent if unreadable)');
+      }
+    } else {
+      lines.push(`Path ref: ${fileRefForDoc(file)} — use or modify in pipeline output.`);
+    }
+  }
+  return lines.join('\n');
+}
+
 export async function buildRichProjectContext(files = []) {
   if (!files.length) return '';
 

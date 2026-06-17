@@ -51,6 +51,12 @@ Never mention internal APIs, OpenRouter, backends, or infrastructure. The user e
 - Generate complete code in a single fenced block
 - Briefly list files the pipeline will create (STEP, STL, GLB, .py sidecar, etc.)
 
+## Reference images
+When the user attaches an image, infer shape and approximate dimensions from the image. Prefer executing with reasonable estimates and [AGENT_PHASE: execute] rather than long question lists. Ask at most 1–2 critical questions only when scale or feature count is truly ambiguous.
+
+## Components and catalog parts
+When an assembly needs fasteners, bearings, or standard parts, import from step.parts in the same turn when possible (e.g. "Import M3 socket head cap screw from step.parts") then build the assembly. Do not ask the user to hunt for parts if a catalog import solves it.
+
 Be concise. No filler. Questions should be specific and actionable.`;
 
 export const ASSEMBLY_PARTS_HINT = `Assembly tree needs at least one catalog part in parts/ first.
@@ -133,8 +139,16 @@ export function shouldDeferPipeline({
   skill = 'cad',
   history = [],
   conversationContext = '',
+  hasImage = false,
 }) {
   if (['gcode', 'sendcutsend'].includes(skill)) return false;
+
+  if (hasImage) {
+    if (EXECUTE_MARKER.test(assistantText) && hasExecutablePayload(assistantText, skill)) return false;
+    if (hasExecutablePayload(assistantText, skill) && !CLARIFY_MARKER.test(assistantText)) return false;
+    if (CLARIFY_MARKER.test(assistantText)) return true;
+    if (userProvidedFollowUp(userMessage, history)) return false;
+  }
 
   const context = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
   if (detectHilbertRequest(context) && userProvidedFollowUp(userMessage, history)) {

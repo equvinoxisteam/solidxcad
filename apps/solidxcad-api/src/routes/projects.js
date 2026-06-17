@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import { Router } from 'express';
 import { Project } from '../models/Project.js';
 import { ProjectFile } from '../models/ProjectFile.js';
+import { filterUserVisibleFiles } from '../services/projectFileVisibility.js';
 import { ChatMessage } from '../models/ChatMessage.js';
 import { Job } from '../models/Job.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -102,8 +103,9 @@ router.get('/:id/files', validateObjectId(), asyncHandler(async (req, res) => {
   if (!project) return res.status(404).json({ error: 'Project not found' });
 
   const files = await ProjectFile.find({ projectId: project._id }).sort({ createdAt: -1 });
+  const visible = filterUserVisibleFiles(files);
   const withUrls = await Promise.all(
-    files.map(async (f) => ({
+    visible.map(async (f) => ({
       ...f.toObject(),
       downloadUrl: await fileDownloadUrl(f.s3Key),
     })),

@@ -1,5 +1,8 @@
 import { config } from '../config.js';
-import { AGENT_CORE_PROMPT, stripAgentMarkers } from './agentBehavior.js';
+import { AGENT_CORE_PROMPT } from './agentBehavior.js';
+import { normalizeAssistantReply } from './agentReply.js';
+
+export { normalizeAssistantReply };
 import { buildRichProjectContext } from './projectAgentContext.js';
 
 async function projectFilesContext(files = []) {
@@ -177,8 +180,26 @@ function normalizeOpenRouterModel(model, webSearch = false) {
   return webSearch ? `${base}:online` : base;
 }
 
-async function callOpenRouter(messages, { model, stream = false, maxTokens, system, webSearch = false } = {}) {
+function attachImageToMessages(messages, imageDataUrl) {
+  if (!imageDataUrl || !messages.length) return messages;
+  const copy = messages.map((m) => ({ ...m }));
+  const lastUserIdx = [...copy].reverse().findIndex((m) => m.role === 'user');
+  if (lastUserIdx < 0) return copy;
+  const idx = copy.length - 1 - lastUserIdx;
+  const text = copy[idx].content || '';
+  copy[idx] = {
+    role: 'user',
+    content: [
+      { type: 'text', text },
+      { type: 'image_url', image_url: { url: imageDataUrl } },
+    ],
+  };
+  return copy;
+}
+
+async function callOpenRouter(messages, { model, stream = false, maxTokens, system, webSearch = false, imageDataUrl } = {}) {
   const resolvedModel = normalizeOpenRouterModel(model, webSearch);
+  const payloadMessages = attachImageToMessages(messages, imageDataUrl);
   const response = await fetch(`${config.openrouter.baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -189,7 +210,7 @@ async function callOpenRouter(messages, { model, stream = false, maxTokens, syst
     },
     body: JSON.stringify({
       model: resolvedModel,
-      messages: [{ role: 'system', content: system || CAD_SYSTEM_PROMPT }, ...messages],
+      messages: [{ role: 'system', content: system || CAD_SYSTEM_PROMPT }, ...payloadMessages],
       stream,
       temperature: 0.2,
       max_tokens: maxTokens ?? config.openrouter.maxTokens,
@@ -207,7 +228,7 @@ async function callOpenRouter(messages, { model, stream = false, maxTokens, syst
   return response;
 }
 
-export async function chatCompletion(messages, { model, stream = false, maxTokens, system, webSearch = false } = {}) {
+export async function chatCompletion(messages, { model, stream = false, maxTokens, system, webSearch = false, imageDataUrl } = {}) {
   if (!config.openrouter.apiKey) {
     throw new Error('OPENROUTER_API_KEY is not configured');
   }
@@ -227,6 +248,7 @@ export async function chatCompletion(messages, { model, stream = false, maxToken
         maxTokens: attempt.maxTokens,
         system,
         webSearch,
+        imageDataUrl,
       });
       if (stream) return response;
       const data = await response.json();
@@ -275,18 +297,14 @@ export async function getSystemPromptForSkill(skillId, { projectFiles } = {}) {
   return `${AGENT_CORE_PROMPT}\n\n---\n\n${skillBlock}`;
 }
 
-export function normalizeAssistantReply(text = '') {
-  return stripAgentMarkers(text);
-}
-
 export function maxTokensForSkill(skillId) {
   if (['urdf', 'srdf', 'sdf', 'implicit-cad'].includes(skillId)) return 2048;
   if (skillId === 'cad') return 2560;
   return undefined;
 }
 
-export async function* streamChatCompletion(messages, { model, system, maxTokens, webSearch = false } = {}) {
-  const response = await chatCompletion(messages, { model, stream: true, system, maxTokens, webSearch });
+export async function* streamChatCompletion(messages, { model, system, maxTokens, webSearch = false, imageDataUrl } = {}) {
+  const response = await chatCompletion(messages, { model, stream: true, system, maxTokens, webSearch, imageDataUrl });
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';

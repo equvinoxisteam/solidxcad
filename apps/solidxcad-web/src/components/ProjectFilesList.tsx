@@ -2,6 +2,7 @@
 
 import { Download, FileBox, FolderOpen, Layers } from 'lucide-react';
 import type { ProjectFile } from '@/lib/api';
+import { isUserVisibleFile } from '@/lib/agentDisplay';
 
 function folderFor(file: ProjectFile): 'models' | 'parts' | 'slices' | 'other' {
   if (file.s3Key?.includes('/slices/') || file.kind === 'gcode' || /\.gcode$/i.test(file.name)) {
@@ -37,6 +38,7 @@ export function ProjectFilesList({
 
   for (const file of files) {
     if (file.name.startsWith('.')) continue;
+    if (!isUserVisibleFile(file.name, file.kind)) continue;
     grouped[folderFor(file)].push(file);
   }
 

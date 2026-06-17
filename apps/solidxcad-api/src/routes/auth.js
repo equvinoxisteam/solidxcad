@@ -13,6 +13,7 @@ import {
   isGoogleAuthEnabled,
   verifyGoogleIdToken,
 } from '../services/googleAuth.js';
+import { uploadBuffer, publicUrlForKey } from '../services/s3.js';
 
 const router = Router();
 
@@ -34,6 +35,7 @@ function sanitizeUser(user) {
     onboarding: user.onboarding || {},
     authProvider: user.authProvider,
     avatarUrl: user.avatarUrl || null,
+    phone: user.phone || null,
     createdAt: user.createdAt,
   };
 }
@@ -292,16 +294,36 @@ router.get('/google/callback', async (req, res) => {
 
 router.patch('/profile', requireAuth, async (req, res) => {
   try {
-    const { name } = req.body;
-    if (!name?.trim()) {
-      return res.status(400).json({ error: 'Name is required' });
+    const { name, phone, avatarDataUrl } = req.body;
+    if (name !== undefined) {
+      if (!name?.trim()) {
+        return res.status(400).json({ error: 'Name cannot be empty' });
+      }
+      req.user.name = name.trim();
     }
-    req.user.name = name.trim();
+    if (phone !== undefined) {
+      req.user.phone = phone?.trim() || '';
+    }
+    if (avatarDataUrl && String(avatarDataUrl).startsWith('data:image/')) {
+      const match = String(avatarDataUrl).match(/^data:(image\/[\w+.-]+);base64,(.+)$/);
+      if (!match) {
+        return res.status(400).json({ error: 'Invalid image data' });
+      }
+      const contentType = match[1];
+      const buffer = Buffer.from(match[2], 'base64');
+      if (buffer.length > 2_500_000) {
+        return res.status(400).json({ error: 'Image must be under 2.5 MB' });
+      }
+      const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
+      const key = `${config.aws.prefix}/users/${req.user._id}/avatar.${ext}`;
+      await uploadBuffer(key, buffer, contentType);
+      req.user.avatarUrl = publicUrlForKey(key);
+    }
     await req.user.save();
     res.json({ user: sanitizeUser(req.user) });
   } catch (err) {
     console.error('[auth/profile]', err);
-    res.status(500).json({ error: 'Could not update profile' });
+    res.status(400).json({ error: err.message || 'Could not update profile' });
   }
 });
 

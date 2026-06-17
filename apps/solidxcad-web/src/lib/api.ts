@@ -119,7 +119,7 @@ export const api = {
   }) =>
     request<{ user: User }>('/api/auth/onboarding', { method: 'PATCH', body: JSON.stringify(body) }),
 
-  updateProfile: (body: { name: string }) =>
+  updateProfile: (body: { name?: string; phone?: string; avatarDataUrl?: string }) =>
     request<{ user: User }>('/api/auth/profile', { method: 'PATCH', body: JSON.stringify(body) }),
 
   me: () => request<{ user: User }>('/api/auth/me'),
@@ -187,7 +187,19 @@ export type ChatModelsResponse = {
 };
 
 const MODEL_STORAGE_KEY = 'solidxcad_chat_model';
+const MODEL_AUTO_STORAGE_KEY = 'solidxcad_model_auto';
 const WEB_SEARCH_STORAGE_KEY = 'solidxcad_web_search';
+
+export function getStoredModelAuto(): boolean {
+  if (typeof window === 'undefined') return true;
+  const v = localStorage.getItem(MODEL_AUTO_STORAGE_KEY);
+  if (v === '0') return false;
+  return true;
+}
+
+export function setStoredModelAuto(auto: boolean) {
+  localStorage.setItem(MODEL_AUTO_STORAGE_KEY, auto ? '1' : '0');
+}
 
 export function getStoredWebSearch(): boolean {
   if (typeof window === 'undefined') return false;
@@ -219,6 +231,7 @@ export type User = {
   isVerified?: boolean;
   authProvider?: string;
   avatarUrl?: string | null;
+  phone?: string | null;
   onboarding?: { useCase?: string; experience?: string; goal?: string };
 };
 
@@ -322,18 +335,32 @@ export type ViewerSyncResult = {
   viewerUrl: string;
 };
 
+export type StreamChatOptions = {
+  contextFileIds?: string[];
+  imageDataUrl?: string;
+  modelMode?: 'auto' | 'manual';
+};
+
 export async function streamChat(
   projectId: string,
   message: string,
   model: string,
   webSearch: boolean,
   onDelta: (text: string) => void,
-  onDone: (payload: { cadResult?: CadResult; pipelineDeferred?: boolean }) => void,
+  onDone: (payload: {
+    cadResult?: CadResult;
+    pipelineDeferred?: boolean;
+    reply?: string;
+    modelUsed?: string;
+    webSearchUsed?: boolean;
+  }) => void,
   onError: (err: string) => void,
   onCadStatus?: (message: string, skill?: string, status?: string) => void,
   onAgentPhase?: (phase: string, message: string) => void,
+  options: StreamChatOptions = {},
 ) {
   const token = getToken();
+  const modelMode = options.modelMode || (model === 'auto' ? 'auto' : 'manual');
   const res = await fetch(`/api/agent/chat`, {
     method: 'POST',
     headers: {
@@ -343,10 +370,13 @@ export async function streamChat(
     body: JSON.stringify({
       projectId,
       message,
-      model,
+      model: modelMode === 'auto' ? 'auto' : model,
+      modelMode,
       stream: true,
       generateCad: true,
       webSearch: Boolean(webSearch),
+      contextFileIds: options.contextFileIds || [],
+      imageDataUrl: options.imageDataUrl || '',
     }),
   });
 
@@ -380,7 +410,13 @@ export async function streamChat(
           onCadStatus?.(json.message, json.skill, json.status);
         }
         if (json.type === 'done') {
-          onDone({ cadResult: json.cadResult, pipelineDeferred: json.pipelineDeferred });
+          onDone({
+            cadResult: json.cadResult,
+            pipelineDeferred: json.pipelineDeferred,
+            reply: json.reply,
+            modelUsed: json.modelUsed,
+            webSearchUsed: json.webSearchUsed,
+          });
         }
         if (json.type === 'error') onError(json.error);
       } catch {

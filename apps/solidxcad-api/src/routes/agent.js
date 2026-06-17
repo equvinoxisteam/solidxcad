@@ -13,6 +13,24 @@ import {
   normalizeAssistantReply,
 } from '../services/openrouter.js';
 import { shouldDeferPipeline } from '../services/agentBehavior.js';
+import { searchStepParts } from '../services/cadWorker.js';
+import { resolveChatModel, getChatModels } from '../services/models.js';
+import { modelLabel, inferWebSearchNeeded } from '../services/modelPicker.js';
+import { buildFocusedFileContext } from '../services/projectAgentContext.js';
+import { runSkillPipeline, resolveSkillFromChat, normalizePipelineResult } from '../services/skillOrchestrator.js';
+import { SKILLS, BROWSER_SKILLS } from '../services/skillRegistry.js';
+import { ProjectFile } from '../models/ProjectFile.js';
+
+function buildUserContextPrompt(user) {
+  if (!user) return '';
+  const parts = ['\n\n## User profile'];
+  if (user.name) parts.push(`Name: ${user.name}`);
+  if (user.phone) parts.push(`Phone: ${user.phone}`);
+  if (user.onboarding?.useCase) parts.push(`Use case: ${user.onboarding.useCase}`);
+  if (user.avatarUrl) parts.push('User has a profile photo on file — reference for personalization only.');
+  return parts.join('\n');
+}
+
 function buildConversationContext(history, userMessage = '') {
   const userLines = history
     .filter((m) => m.role === 'user')
@@ -23,11 +41,6 @@ function buildConversationContext(history, userMessage = '') {
   }
   return userLines.join('\n');
 }
-import { searchStepParts } from '../services/cadWorker.js';
-import { resolveChatModel, getChatModels } from '../services/models.js';
-import { runSkillPipeline, resolveSkillFromChat, normalizePipelineResult } from '../services/skillOrchestrator.js';
-import { SKILLS, BROWSER_SKILLS } from '../services/skillRegistry.js';
-import { ProjectFile } from '../models/ProjectFile.js';
 
 const router = Router();
 
@@ -55,15 +68,39 @@ router.post('/chat', async (req, res) => {
     stream = false,
     generateCad = true,
     model: requestedModel,
+    modelMode = 'manual',
     webSearch = false,
+    contextFileIds = [],
+    imageDataUrl = '',
   } = req.body;
-  const chatModel = resolveChatModel(requestedModel);
-  if (!projectId || !message?.trim()) {
+  const trimmedMessage = message?.trim();
+  if (!projectId || !trimmedMessage) {
     return res.status(400).json({ error: 'projectId and message required' });
   }
 
   const project = await Project.findOne({ _id: projectId, userId: req.user._id });
   if (!project) return res.status(404).json({ error: 'Project not found' });
+
+  const projectFiles = await ProjectFile.find({ projectId, userId: req.user._id }).sort({ createdAt: 1 });
+  const skillIntent = resolveSkillFromChat(trimmedMessage, '');
+  const focusedFiles = contextFileIds?.length
+    ? projectFiles.filter((f) => contextFileIds.map(String).includes(String(f._id)))
+    : [];
+  const hasImage = Boolean(imageDataUrl && String(imageDataUrl).startsWith('data:image/'));
+  const useAutoModel = modelMode === 'auto' || requestedModel === 'auto';
+  const userWebSearch = Boolean(webSearch);
+  const autoWebSearch = useAutoModel && inferWebSearchNeeded(trimmedMessage);
+  const effectiveWebSearch = userWebSearch || autoWebSearch;
+  const pickerContext = {
+    message: trimmedMessage,
+    webSearch: effectiveWebSearch,
+    hasImage,
+    contextFiles: focusedFiles,
+    skill: skillIntent,
+  };
+  const chatModel = useAutoModel
+    ? resolveChatModel('auto', pickerContext)
+    : resolveChatModel(requestedModel, pickerContext);
 
   try {
     await chargeCredits(req.user._id, CREDIT_COSTS.chat, 'chat', { projectId });
@@ -78,17 +115,24 @@ router.post('/chat', async (req, res) => {
     projectId,
     userId: req.user._id,
     role: 'user',
-    content: message.trim(),
+    content: trimmedMessage,
     creditsUsed: usageCost(CREDIT_COSTS.chat),
   });
 
   const history = await ChatMessage.find({ projectId }).sort({ createdAt: 1 }).limit(30);
   const messages = history.map((m) => ({ role: m.role, content: m.content }));
-  const skillIntent = resolveSkillFromChat(message.trim(), '');
-  const projectFiles = await ProjectFile.find({ projectId, userId: req.user._id }).sort({ createdAt: 1 });
   let systemPrompt = await getSystemPromptForSkill(skillIntent, { projectFiles });
-  if (webSearch) {
-    systemPrompt += '\n\n---\nWeb search is enabled for this turn. Use current web results for standards, dimensions, and product data when the user needs factual grounding.';
+  systemPrompt += buildUserContextPrompt(req.user);
+  const fileFocus = await buildFocusedFileContext(projectFiles, contextFileIds);
+  if (fileFocus) systemPrompt += fileFocus;
+  if (effectiveWebSearch) {
+    const webNote = userWebSearch
+      ? 'Web search is enabled for this turn.'
+      : 'Web search was auto-enabled for standards, catalog, or product data in this request.';
+    systemPrompt += `\n\n---\n${webNote} Use current web results for standards, dimensions, and product data when the user needs factual grounding.`;
+  }
+  if (hasImage) {
+    systemPrompt += '\n\n---\nThe user attached a reference image. Infer dimensions, shape language, and features from the image; generate runnable CAD with reasonable estimates. Use [AGENT_PHASE: execute] when ready — avoid long clarification loops.';
   }
   const maxTokens = maxTokensForSkill(skillIntent);
 
@@ -99,17 +143,31 @@ router.post('/chat', async (req, res) => {
 
     let full = '';
     try {
-      if (webSearch) {
-        res.write(`data: ${JSON.stringify({ type: 'agent_phase', phase: 'searching', message: 'Searching the web for reference data…' })}\n\n`);
+      if (effectiveWebSearch) {
+        res.write(`data: ${JSON.stringify({
+          type: 'agent_phase',
+          phase: 'searching',
+          message: autoWebSearch && !userWebSearch
+            ? 'Auto web search for standards and reference data…'
+            : 'Searching the web for reference data…',
+        })}\n\n`);
       }
-      res.write(`data: ${JSON.stringify({ type: 'agent_phase', phase: 'reading', message: 'Reading your workspace…' })}\n\n`);
+      if (focusedFiles.length) {
+        res.write(`data: ${JSON.stringify({ type: 'agent_phase', phase: 'exploring', message: `Reviewing ${focusedFiles.map((f) => f.name).join(', ')}…` })}\n\n`);
+      }
+      res.write(`data: ${JSON.stringify({
+        type: 'agent_phase',
+        phase: 'reading',
+        message: useAutoModel ? `Reading workspace · ${modelLabel(chatModel)}` : 'Reading your workspace…',
+      })}\n\n`);
       res.write(`data: ${JSON.stringify({ type: 'agent_phase', phase: 'thinking', message: 'Designing your solution…' })}\n\n`);
 
       for await (const chunk of streamChatCompletion(messages, {
         model: chatModel,
         system: systemPrompt,
         maxTokens,
-        webSearch: Boolean(webSearch),
+        webSearch: effectiveWebSearch,
+        imageDataUrl: hasImage ? imageDataUrl : undefined,
       })) {
         full += chunk;
         res.write(`data: ${JSON.stringify({ type: 'delta', content: chunk })}\n\n`);
@@ -124,16 +182,17 @@ router.post('/chat', async (req, res) => {
 
       let cadResult = null;
       let pipelineDeferred = false;
-      const resolvedSkill = resolveSkillFromChat(message.trim(), full);
+      const resolvedSkill = resolveSkillFromChat(trimmedMessage, full);
       if (generateCad) {
         const historyForAgent = messages.map((m) => ({ role: m.role, content: m.content }));
-        const conversationContext = buildConversationContext(historyForAgent, message.trim());
+        const conversationContext = buildConversationContext(historyForAgent, trimmedMessage);
         if (shouldDeferPipeline({
-          userMessage: message.trim(),
+          userMessage: trimmedMessage,
           assistantText: full,
           skill: resolvedSkill,
           history: historyForAgent,
           conversationContext,
+          hasImage,
         })) {
           pipelineDeferred = true;
           res.write(`data: ${JSON.stringify({
@@ -158,7 +217,7 @@ router.post('/chat', async (req, res) => {
             res,
             userId: req.user._id,
             projectId: project._id,
-            userMessage: message.trim(),
+            userMessage: trimmedMessage,
             assistantText: full,
             project,
             conversationContext,
@@ -178,6 +237,8 @@ router.post('/chat', async (req, res) => {
         skill: resolvedSkill,
         pipelineDeferred,
         reply: normalizeAssistantReply(full),
+        modelUsed: chatModel,
+        webSearchUsed: effectiveWebSearch,
       })}\n\n`);
       res.end();
     } catch (err) {
@@ -195,7 +256,8 @@ router.post('/chat', async (req, res) => {
       model: chatModel,
       system: systemPrompt,
       maxTokens,
-      webSearch: Boolean(webSearch),
+      webSearch: effectiveWebSearch,
+      imageDataUrl: hasImage ? imageDataUrl : undefined,
     });
     const assistantMsg = await ChatMessage.create({
       projectId,
@@ -205,17 +267,18 @@ router.post('/chat', async (req, res) => {
     });
 
     let cadResult = null;
-    let skill = resolveSkillFromChat(message.trim(), reply);
+    let skill = resolveSkillFromChat(trimmedMessage, reply);
     let pipelineDeferred = false;
     if (generateCad) {
       const historyForAgent = messages.map((m) => ({ role: m.role, content: m.content }));
-      const conversationContext = buildConversationContext(historyForAgent, message.trim());
+      const conversationContext = buildConversationContext(historyForAgent, trimmedMessage);
       if (shouldDeferPipeline({
-        userMessage: message.trim(),
+        userMessage: trimmedMessage,
         assistantText: reply,
         skill,
         history: historyForAgent,
         conversationContext,
+        hasImage,
       })) {
         pipelineDeferred = true;
         cadResult = { ok: true, skill: 'agent', deferred: true, hint: 'clarify' };
@@ -223,7 +286,7 @@ router.post('/chat', async (req, res) => {
         const pipeline = await runSkillPipeline({
           userId: req.user._id,
           projectId: project._id,
-          userMessage: message.trim(),
+          userMessage: trimmedMessage,
           assistantText: reply,
           project,
           conversationContext,
@@ -242,6 +305,8 @@ router.post('/chat', async (req, res) => {
       cadResult,
       skill,
       pipelineDeferred,
+      modelUsed: chatModel,
+      webSearchUsed: effectiveWebSearch,
     });
   } catch (err) {
     console.error('[agent/chat]', err);

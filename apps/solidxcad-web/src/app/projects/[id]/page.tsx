@@ -216,6 +216,7 @@ export default function StudioPage() {
             <ChatPanel
               projectId={id}
               messages={messages}
+              projectFiles={files}
               onMessagesChange={refresh}
               onCadGenerated={onCadGenerated}
             />

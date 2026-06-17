@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { pickChatModel } from './modelPicker.js';
 
 export const CHAT_MODELS = [
   {
@@ -55,7 +56,10 @@ export function getChatModels() {
   };
 }
 
-export function resolveChatModel(requested) {
+export function resolveChatModel(requested, pickerContext = {}) {
+  if (requested === 'auto') {
+    return pickChatModel(pickerContext.message || '', pickerContext);
+  }
   if (requested && allowedIds.has(requested)) return requested;
   const { defaultModel } = getChatModels();
   return defaultModel;

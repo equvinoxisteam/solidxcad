@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema(
       goal: { type: String, trim: true },
     },
     avatarUrl: String,
+    phone: { type: String, trim: true },
   },
   { timestamps: true },
 );
