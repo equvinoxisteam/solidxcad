@@ -535,9 +535,14 @@ export default function StepFileSheet({
             </div>
         </FileSheetSection>
 
-        {stepModuleDefinition || stepModuleStatus === "loading" || stepModuleError ? (
+        {stepModuleDefinition || stepModuleStatus === "loading" || stepModuleError || embedMode ? (
           <FileSheetSection value="parameters" title="Parameters">
               <FileSheetSectionBody>
+                {embedMode && !stepModuleDefinition && stepModuleStatus !== "loading" && !stepModuleError ? (
+                  <p className="px-3 py-2 text-xs text-[var(--ui-text-muted)] leading-relaxed">
+                    Describe dimension or feature changes in the Agent — for example resize holes, add fillets, or adjust gear teeth. Regenerate to update this model.
+                  </p>
+                ) : null}
                 {stepModuleDefinition ? (
                   <FileSheetToggleRow
                     label="Enable"

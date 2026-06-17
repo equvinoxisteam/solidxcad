@@ -33,7 +33,7 @@ export function applyViewerEmbedChrome() {
 export function embedStudioEmptyCopy() {
   return {
     heading: "What do you want to build?",
-    body: "Describe your part in the Agent panel — parts, assemblies, robots, or attach a reference image. Your model will appear here when it is ready.",
+    body: "Describe your part in the Agent panel — it will appear here.",
     sidebar: "No models yet — ask the Agent to generate one.",
     searchPlaceholder: "Search workspace files…",
   };

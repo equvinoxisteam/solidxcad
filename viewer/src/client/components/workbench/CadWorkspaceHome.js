@@ -9,8 +9,7 @@ import {
   FolderOpen,
   Layers3,
   Package,
-  Route,
-  Sparkles
+  Route
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/ui/utils";
@@ -180,6 +179,22 @@ export default function CadWorkspaceHome({
     ? "Select a workspace"
     : (embedCopy?.heading || "Select a file");
 
+  if (
+    embedMode
+    && !workspaceSelectionActive
+    && !hasEntries
+    && !catalogLoading
+    && !catalogErrorMessage
+  ) {
+    return (
+      <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
+        <p className="text-sm text-muted-foreground text-center" role="status">
+          {embedCopy?.body}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex min-w-0 items-center justify-center px-4 py-6">
       <section
@@ -290,21 +305,9 @@ export default function CadWorkspaceHome({
               Loading CAD catalog...
             </p>
           ) : embedCopy ? (
-            <div className="px-5 py-6 sm:px-8 text-center space-y-4" role="status">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 border border-primary/25">
-                <Sparkles className="size-6 text-primary" aria-hidden="true" />
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">{embedCopy.heading}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
-                  {embedCopy.body}
-                </p>
-              </div>
-              <ul className="text-[11px] text-muted-foreground text-left space-y-1.5 max-w-sm mx-auto pt-1">
-                <li>Try: &ldquo;30 mm cube with 4× M3 holes&rdquo;</li>
-                <li>Or attach an image and describe what to model</li>
-              </ul>
-            </div>
+            <p className="px-5 py-5 text-sm text-muted-foreground sm:px-6 text-center" role="status">
+              {embedCopy.body}
+            </p>
           ) : (
             <p className="px-5 py-5 text-sm text-muted-foreground sm:px-6">
               No CAD entries found.

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUp,
   AtSign,
-  Box,
   ChevronDown,
   Globe,
   ImagePlus,
@@ -246,22 +245,11 @@ export function ChatPanel({
       ({ cadResult, pipelineDeferred, reply, modelUsed, webSearchUsed }) => {
         setStreaming(false);
         setLiveReply('');
+        setAgentSteps([]);
         setAgentPhase(pipelineDeferred ? 'waiting' : 'idle');
         if (modelUsed) {
           const label = models.find((m) => m.id === modelUsed)?.label || modelUsed;
           setModelUsedLabel(label);
-        }
-        if (webSearchUsed && !webSearch) {
-          setAgentSteps((steps) => [
-            ...steps,
-            { message: 'Auto-enabled web search for this request', skill: 'agent', status: 'searching' },
-          ]);
-        }
-        if (reply) {
-          setAgentSteps((steps) => [
-            ...steps,
-            { message: sanitizeAssistantForDisplay(reply).slice(0, 280), skill: 'agent', status: 'done' },
-          ]);
         }
         onMessagesChange();
         if (cadResult?.hint === 'assembly_needs_parts') {
@@ -326,27 +314,9 @@ export function ChatPanel({
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
-        {!messages.length && !streaming && (
-          <div className="space-y-3">
-            <p className="text-xs text-white/80 leading-relaxed">
-              Describe parts, assemblies, robots (URDF/SRDF/SDF), or attach an image. Use{' '}
-              <span className="text-brand-muted">@filename</span> to target a workspace file.
-            </p>
-            <p className="text-[11px] text-muted">Try a prompt:</p>
-            {PROMPTS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => send(p)}
-                className="block w-full text-left text-xs bg-panel/60 border border-border rounded-lg p-2.5 hover:border-brand/50 hover:bg-brand/10 text-white/90 transition-colors"
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        )}
-
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0 flex flex-col">
+        {messages.length > 0 && (
+          <div className="space-y-3 flex-1 min-h-0">
         {messages.map((m) => (
           <div
             key={m._id}
@@ -366,6 +336,29 @@ export function ChatPanel({
             </div>
           </div>
         ))}
+
+          </div>
+        )}
+
+        {!messages.length && !streaming && (
+          <div className="space-y-3">
+            <p className="text-xs text-white/80 leading-relaxed">
+              Describe parts, assemblies, robots (URDF/SRDF/SDF), or attach an image. Use{' '}
+              <span className="text-brand-muted">@filename</span> to target a workspace file.
+            </p>
+            <p className="text-[11px] text-muted">Try a prompt:</p>
+            {PROMPTS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => send(p)}
+                className="block w-full text-left text-xs bg-panel/60 border border-border rounded-lg p-2.5 hover:border-brand/50 hover:bg-brand/10 text-white/90 transition-colors"
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
 
         {showLiveThinking && (
           <div className="text-sm rounded-xl p-3 bg-panel/50 border border-border mr-1">
@@ -399,40 +392,21 @@ export function ChatPanel({
           </div>
         )}
 
-        {generatedItems.length > 0 && (
-          <div className="rounded-xl border border-brand/40 bg-brand/10 p-3 mr-1 space-y-2">
-            <div className="text-[10px] uppercase text-brand-muted font-semibold">Generated</div>
-            <ul className="space-y-1.5">
-              {generatedItems.map((g) => (
-                <li key={g.id} className="flex items-center gap-2 text-[12px] text-white/90 min-w-0">
-                  <Box className="w-3.5 h-3.5 text-brand-muted shrink-0" />
-                  <span className="truncate">{g.label}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {generatedItems[0] && !streaming && (
+          <p className="text-[11px] text-brand-muted mr-1 px-1">
+            ✓ {generatedItems[0].label}
+          </p>
         )}
 
-        {(streaming || agentSteps.length > 0) && (
-          <div className="rounded-xl border border-border bg-panel/40 p-3 mr-1">
-            <div className="text-[10px] uppercase text-brand-muted font-semibold mb-2 flex items-center gap-2 flex-wrap">
-              {streaming && <Loader2 className="w-3 h-3 animate-spin" />}
-              Agent activity
-              {phaseLabel && <span className="text-muted normal-case font-normal">· {phaseLabel}</span>}
-              {modelUsedLabel && (
-                <span className="text-muted normal-case font-normal">· {modelUsedLabel}</span>
-              )}
-            </div>
-            <ul className="space-y-1 max-h-44 overflow-y-auto">
-              {agentSteps.slice(-12).map((step, i) => (
-                <li key={`${i}-${step.message}`} className="text-[11px] text-white/70 leading-snug">
-                  {step.skill && step.skill !== 'agent' && (
-                    <span className="text-brand-muted mr-1">[{SKILL_LABELS[step.skill] || step.skill}]</span>
-                  )}
-                  {step.message}
-                </li>
-              ))}
-            </ul>
+        {streaming && (
+          <div className="flex items-center gap-2 text-[11px] text-white/60 mr-1 px-1 py-0.5">
+            <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+            <span className="truncate">
+              {phaseLabel || 'Working'}
+              {agentSteps.length > 0
+                ? ` — ${activityLabel(agentSteps[agentSteps.length - 1].message)}`
+                : ''}
+            </span>
           </div>
         )}
 

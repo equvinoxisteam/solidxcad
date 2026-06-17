@@ -6,7 +6,7 @@ import { Project } from '../models/Project.js';
 import { chargeCredits, CREDIT_COSTS } from '../services/credits.js';
 import { executeSliceJob } from '../services/sliceService.js';
 import { importStepPart } from '../services/partsImport.js';
-import { searchStepParts } from '../services/cadWorker.js';
+import { searchStepParts, browseStepParts } from '../services/cadWorker.js';
 import { getSignedDownloadUrl, publicUrlForKey } from '../services/s3.js';
 
 const router = Router();
@@ -92,6 +92,11 @@ router.post('/parts/import', asyncHandler(async (req, res) => {
   res.status(201).json({
     file: { ...fileDoc.toObject(), downloadUrl },
   });
+}));
+
+router.get('/parts/browse', asyncHandler(async (req, res) => {
+  const results = await browseStepParts();
+  res.json(results);
 }));
 
 router.post('/parts/search', asyncHandler(async (req, res) => {

@@ -63,6 +63,7 @@ import {
   renderedFileSheetSectionIds,
   shouldOpenFileSheetForSelectionReveal
 } from "@/workbench/fileSheetSections";
+import { isViewerEmbedMode } from "@/workbench/embedMode.js";
 import {
   entrySourceFormat,
   fileSheetKindForEntry,
@@ -3000,6 +3001,7 @@ export default function CadWorkspace({
 
   const fileSheetSectionOptions = useMemo(() => ({
     hasStepModulePanel: Boolean(
+      (isViewerEmbedMode() && selectedFileSheetKind === "step") ||
       selectedStepModuleDefinition ||
       selectedStepModuleStatus === "loading" ||
       selectedStepModuleError

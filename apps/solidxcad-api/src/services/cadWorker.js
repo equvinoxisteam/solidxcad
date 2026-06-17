@@ -763,3 +763,32 @@ export async function searchStepParts(query) {
   if (Array.isArray(data)) return { parts: data };
   return data;
 }
+
+const BROWSE_PART_QUERIES = [
+  'M3 socket head cap screw',
+  'M4 socket head cap screw',
+  '608 bearing',
+  'hex nut M6',
+  'washer M6',
+  'Arduino Uno',
+];
+
+export async function browseStepParts() {
+  const seen = new Set();
+  const parts = [];
+  for (const query of BROWSE_PART_QUERIES) {
+    try {
+      const data = await searchStepParts(query);
+      const list = data.parts || data.items || [];
+      for (const item of list) {
+        const key = String(item.id || item.name || item.title || '').trim();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        parts.push(item);
+      }
+    } catch {
+      // skip failed catalog query
+    }
+  }
+  return { parts };
+}

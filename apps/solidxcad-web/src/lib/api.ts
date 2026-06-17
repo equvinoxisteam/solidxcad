@@ -150,6 +150,9 @@ export const api = {
   searchParts: (query: string) =>
     request<unknown>('/api/manufacturing/parts/search', { method: 'POST', body: JSON.stringify({ query }) }),
 
+  browseParts: () =>
+    request<{ parts: unknown[] }>('/api/manufacturing/parts/browse'),
+
   importPart: (body: { projectId: string; partId?: string; partUrl?: string; name?: string }) =>
     request<{ file: ProjectFile }>('/api/manufacturing/parts/import', { method: 'POST', body: JSON.stringify(body) }),
 
