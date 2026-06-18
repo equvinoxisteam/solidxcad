@@ -77,7 +77,7 @@ export function CadViewerFrame({ projectId, fileRef }: CadViewerFrameProps) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-3">
         <BrandLogo size={56} showName={false} />
-        <p className="text-sm text-white/80 font-medium">CAD Workbench is syncing</p>
+        <p className="text-sm text-gray-700 font-medium">CAD Workbench is syncing</p>
         <p className="text-xs text-muted max-w-md">
           Your files are loading — refresh in a moment or use Mesh view meanwhile.
         </p>

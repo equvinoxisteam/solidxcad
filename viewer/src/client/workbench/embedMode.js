@@ -1,4 +1,4 @@
-import { DARK_COLOR_SCHEME_ID, THEME_STORAGE_KEY, writeColorSchemePreference } from "@/ui/colorScheme.js";
+import { LIGHT_COLOR_SCHEME_ID, THEME_STORAGE_KEY, writeColorSchemePreference } from "@/ui/colorScheme.js";
 
 const EMBED_THEME_STORAGE_VERSION = 11;
 
@@ -13,8 +13,9 @@ export function applyViewerEmbedChrome() {
   if (!isViewerEmbedMode() || typeof document === "undefined") {
     return;
   }
-  document.documentElement.classList.add("viewer-embed", "dark");
-  writeColorSchemePreference(DARK_COLOR_SCHEME_ID);
+  document.documentElement.classList.add("viewer-embed", "light");
+  document.documentElement.classList.remove("dark");
+  writeColorSchemePreference(LIGHT_COLOR_SCHEME_ID);
   try {
     window.localStorage.setItem(
       THEME_STORAGE_KEY,

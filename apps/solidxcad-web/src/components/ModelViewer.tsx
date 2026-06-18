@@ -61,7 +61,7 @@ export function ModelViewer({
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-8">
                 <div className="text-center max-w-md">
                   <Box className="w-14 h-14 text-brand/40 mx-auto mb-4" />
-              <p className="text-white/80 text-sm font-medium mb-1">What do you want to build?</p>
+              <p className="text-gray-700 text-sm font-medium mb-1">What do you want to build?</p>
               <p className="text-muted text-xs leading-relaxed">
                 Describe your part in the Agent panel. Your CAD model will open here automatically.
               </p>

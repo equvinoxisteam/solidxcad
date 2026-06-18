@@ -284,7 +284,7 @@ export default function SettingsPage() {
                     <div className="space-y-2">
                       <div className="h-2 rounded-full bg-white/10 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-brand to-brand-light transition-all"
+                          className="h-full rounded-full bg-brand transition-all"
                           style={{ width: `${usage.percentRemaining}%` }}
                         />
                       </div>

@@ -6,7 +6,7 @@ export function BrandLogo({
   size = 36,
   showName = true,
   className = '',
-  nameClassName = 'font-semibold text-white tracking-tight',
+  nameClassName = 'font-semibold text-gray-900 tracking-tight',
 }: {
   href?: string;
   size?: number;

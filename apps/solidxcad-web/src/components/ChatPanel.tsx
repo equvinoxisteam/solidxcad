@@ -303,8 +303,8 @@ export function ChatPanel({
   const showLiveThinking = streaming && !sanitizeAssistantForDisplay(liveReply);
 
   return (
-    <aside className="w-full lg:w-[380px] border-0 lg:border-l border-border bg-[#0d1a30] flex flex-col shrink-0 flex-1 min-h-0">
-      <div className="bg-gradient-to-r from-brand to-brand-light text-white px-4 py-3 flex items-center justify-between shrink-0">
+    <aside className="w-full lg:w-[380px] border-0 lg:border-l border-border bg-white flex flex-col shrink-0 flex-1 min-h-0">
+      <div className="bg-brand text-white px-4 py-3 flex items-center justify-between shrink-0">
         <div className="font-semibold text-sm">Agent</div>
         <span className="text-[10px] font-medium bg-white/15 px-2 py-0.5 rounded-full flex items-center gap-1.5">
           <span
@@ -331,7 +331,7 @@ export function ChatPanel({
                 SolidX Assistant
               </div>
             )}
-            <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-white/90">
+            <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-gray-800">
               {m.role === 'assistant' ? sanitizeAssistantForDisplay(m.content) : m.content}
             </div>
           </div>
@@ -342,7 +342,7 @@ export function ChatPanel({
 
         {!messages.length && !streaming && (
           <div className="space-y-3">
-            <p className="text-xs text-white/80 leading-relaxed">
+            <p className="text-xs text-gray-600 leading-relaxed">
               Describe parts, assemblies, robots (URDF/SRDF/SDF), or attach an image. Use{' '}
               <span className="text-brand-muted">@filename</span> to target a workspace file.
             </p>
@@ -352,7 +352,7 @@ export function ChatPanel({
                 key={p}
                 type="button"
                 onClick={() => send(p)}
-                className="block w-full text-left text-xs bg-panel/60 border border-border rounded-lg p-2.5 hover:border-brand/50 hover:bg-brand/10 text-white/90 transition-colors"
+                className="block w-full text-left text-xs bg-elevated border border-border rounded-lg p-2.5 hover:border-brand/50 hover:bg-brand/5 text-gray-800 transition-colors"
               >
                 {p}
               </button>
@@ -363,7 +363,7 @@ export function ChatPanel({
         {showLiveThinking && (
           <div className="text-sm rounded-xl p-3 bg-panel/50 border border-border mr-1">
             <div className="text-[10px] uppercase text-brand-muted font-semibold mb-1.5">SolidX Assistant</div>
-            <div className="whitespace-pre-wrap break-words text-[13px] text-white/90">
+            <div className="whitespace-pre-wrap break-words text-[13px] text-gray-800">
               {sanitizeAssistantForDisplay(liveReply)}
             </div>
           </div>
@@ -399,7 +399,7 @@ export function ChatPanel({
         )}
 
         {streaming && (
-          <div className="flex items-center gap-2 text-[11px] text-white/60 mr-1 px-1 py-0.5">
+          <div className="flex items-center gap-2 text-[11px] text-gray-500 mr-1 px-1 py-0.5">
             <Loader2 className="w-3 h-3 animate-spin shrink-0" />
             <span className="truncate">
               {phaseLabel || 'Working'}
@@ -413,7 +413,7 @@ export function ChatPanel({
         <div ref={bottomRef} />
       </div>
 
-      <div className="p-3 border-t border-border bg-[#0a1628] shrink-0 relative">
+      <div className="p-3 border-t border-border bg-elevated shrink-0 relative">
         {mentionOpen && filteredMentions.length > 0 && (
           <div className="absolute bottom-full left-3 right-3 mb-1 rounded-lg border border-border bg-panel shadow-lg max-h-40 overflow-y-auto z-10">
             <div className="text-[10px] uppercase text-muted px-2 py-1.5 border-b border-border flex items-center gap-1">
@@ -424,7 +424,7 @@ export function ChatPanel({
                 key={f._id}
                 type="button"
                 onClick={() => insertMention(f)}
-                className="w-full text-left px-2.5 py-2 text-[12px] hover:bg-brand/15 text-white/90 truncate"
+                className="w-full text-left px-2.5 py-2 text-[12px] hover:bg-brand/10 text-gray-800 truncate"
               >
                 @{f.name}
               </button>
@@ -437,7 +437,7 @@ export function ChatPanel({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imagePreview} alt="Reference" className="h-12 w-12 object-cover rounded" />
             <span className="text-[11px] text-muted flex-1">Reference image attached</span>
-            <button type="button" onClick={() => setImagePreview(null)} className="text-muted hover:text-white">
+            <button type="button" onClick={() => setImagePreview(null)} className="text-muted hover:text-gray-900">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -456,7 +456,7 @@ export function ChatPanel({
             }}
             placeholder="Describe your part… use @ to pick a file"
             rows={3}
-            className="w-full resize-none bg-transparent px-3 pt-3 pb-1 text-sm text-white placeholder:text-muted focus:outline-none"
+            className="w-full resize-none bg-transparent px-3 pt-3 pb-1 text-sm text-gray-900 placeholder:text-muted focus:outline-none"
             disabled={streaming}
           />
           <div className="flex items-center justify-between px-2 pb-2 gap-2 flex-wrap">
@@ -471,7 +471,7 @@ export function ChatPanel({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-1.5 text-muted hover:text-white"
+                className="p-1.5 text-muted hover:text-gray-900"
                 aria-label="Attach image"
                 title="Attach reference image for CAD"
               >
@@ -484,7 +484,7 @@ export function ChatPanel({
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] border transition-colors ${
                   webSearch
                     ? 'bg-brand/25 border-brand text-brand-muted'
-                    : 'border-border text-muted hover:text-white hover:border-brand/40'
+                    : 'border-border text-muted hover:text-gray-900 hover:border-brand/40'
                 }`}
               >
                 <Globe className="w-3.5 h-3.5" />
@@ -497,7 +497,7 @@ export function ChatPanel({
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] border transition-colors ${
                   modelAuto
                     ? 'bg-brand/25 border-brand text-brand-muted'
-                    : 'border-border text-muted hover:text-white hover:border-brand/40'
+                    : 'border-border text-muted hover:text-gray-900 hover:border-brand/40'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -509,7 +509,7 @@ export function ChatPanel({
                     value={selectedModel}
                     onChange={(e) => onModelChange(e.target.value)}
                     disabled={streaming || !models.length}
-                    className="appearance-none text-[11px] border border-border rounded-md pl-2 pr-6 py-1 bg-panel text-white/80 cursor-pointer disabled:opacity-50 max-w-[130px]"
+                    className="appearance-none text-[11px] border border-border rounded-md pl-2 pr-6 py-1 bg-white text-gray-800 cursor-pointer disabled:opacity-50 max-w-[130px]"
                   >
                     {models.map((m) => (
                       <option key={m.id} value={m.id}>

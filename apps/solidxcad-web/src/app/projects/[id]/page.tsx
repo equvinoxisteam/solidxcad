@@ -145,7 +145,7 @@ export default function StudioPage() {
   if (loading) {
     return (
       <div className="min-h-screen studio-scene flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-light" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand" />
       </div>
     );
   }

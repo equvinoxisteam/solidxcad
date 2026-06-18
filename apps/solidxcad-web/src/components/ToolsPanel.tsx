@@ -136,13 +136,13 @@ export function ToolsPanel({
   }
 
   return (
-    <aside className="w-full lg:w-60 border-0 lg:border-l border-border bg-[#0d1a30] flex flex-col shrink-0 flex-1 min-h-0">
+    <aside className="w-full lg:w-60 border-0 lg:border-l border-border bg-white flex flex-col shrink-0 flex-1 min-h-0">
       <div className="h-10 border-b border-border flex text-[10px] font-medium uppercase tracking-wide">
         <button
           type="button"
           onClick={() => setTab('files')}
           className={`flex-1 flex items-center justify-center gap-1 ${
-            tab === 'files' ? 'text-white bg-brand/20 border-b-2 border-brand-light' : 'text-muted hover:text-white'
+            tab === 'files' ? 'text-brand bg-brand/10 border-b-2 border-brand' : 'text-muted hover:text-gray-900'
           }`}
         >
           <FolderTree className="w-3.5 h-3.5" />
@@ -152,7 +152,7 @@ export function ToolsPanel({
           type="button"
           onClick={() => setTab('slice')}
           className={`flex-1 flex items-center justify-center gap-1 ${
-            tab === 'slice' ? 'text-white bg-brand/20 border-b-2 border-brand-light' : 'text-muted hover:text-white'
+            tab === 'slice' ? 'text-brand bg-brand/10 border-b-2 border-brand' : 'text-muted hover:text-gray-900'
           }`}
         >
           <Printer className="w-3.5 h-3.5" />
@@ -162,7 +162,7 @@ export function ToolsPanel({
           type="button"
           onClick={() => setTab('parts')}
           className={`flex-1 flex items-center justify-center gap-1 ${
-            tab === 'parts' ? 'text-white bg-brand/20 border-b-2 border-brand-light' : 'text-muted hover:text-white'
+            tab === 'parts' ? 'text-brand bg-brand/10 border-b-2 border-brand' : 'text-muted hover:text-gray-900'
           }`}
         >
           <Package className="w-3.5 h-3.5" />
@@ -179,7 +179,7 @@ export function ToolsPanel({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && searchParts()}
               placeholder="Search screws, bearings, boards…"
-              className="flex-1 bg-panel border border-border rounded-lg px-2 py-1.5 text-xs text-white placeholder:text-muted focus:outline-none focus:border-brand"
+              className="flex-1 bg-white border border-border rounded-lg px-2 py-1.5 text-xs text-gray-900 placeholder:text-muted focus:outline-none focus:border-brand"
             />
             <button
               type="button"
@@ -196,7 +196,7 @@ export function ToolsPanel({
                 <p className="text-[10px] uppercase text-muted mb-1 px-0.5">In this project</p>
                 <ul className="space-y-1">
                   {projectParts.map((file) => (
-                    <li key={file._id} className="rounded-lg border border-border bg-panel/80 px-2 py-1.5 text-[11px] text-white truncate">
+                    <li key={file._id} className="rounded-lg border border-border bg-elevated px-2 py-1.5 text-[11px] text-gray-800 truncate">
                       {file.name}
                     </li>
                   ))}
@@ -215,7 +215,7 @@ export function ToolsPanel({
                 const busy = importing === (part.id || part.name);
                 return (
                   <div key={key} className="rounded-lg border border-border bg-panel/80 p-2 text-xs">
-                    <p className="text-white truncate font-medium">{label}</p>
+                    <p className="text-gray-900 truncate font-medium">{label}</p>
                     <button
                       type="button"
                       disabled={busy}
@@ -243,7 +243,7 @@ export function ToolsPanel({
           {!sliceableFiles.length ? (
             <div className="rounded-lg border border-dashed border-border bg-panel/50 p-3 text-[11px] text-muted space-y-2">
               <FileBox className="w-5 h-5 text-muted/70" />
-              <p className="text-white font-medium">No mesh to slice yet</p>
+              <p className="text-gray-900 font-medium">No mesh to slice yet</p>
               <p className="text-[10px] leading-relaxed">
                 Generate a CAD model in the Agent first — STEP and STL will appear here when ready.
               </p>
@@ -254,7 +254,7 @@ export function ToolsPanel({
               <select
                 value={selectedMesh?._id || ''}
                 onChange={(e) => setSelectedMeshId(e.target.value)}
-                className="w-full bg-panel border border-border rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-brand"
+                className="w-full bg-white border border-border rounded-lg px-2 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-brand"
               >
                 {sliceableFiles.map((file) => (
                   <option key={file._id} value={file._id}>

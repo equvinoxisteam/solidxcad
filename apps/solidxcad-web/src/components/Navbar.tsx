@@ -10,8 +10,8 @@ import { useClientUser } from '@/hooks/useClientUser';
 function iconBtnClass(active = false) {
   return `flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors border ${
     active
-      ? 'bg-brand/15 border-brand/40 text-white'
-      : 'border-white/10 text-gray-300 hover:text-white hover:bg-white/5 hover:border-white/20'
+      ? 'bg-brand/10 border-brand/40 text-brand'
+      : 'border-border text-gray-600 hover:text-gray-900 hover:bg-elevated hover:border-gray-300'
   }`;
 }
 
@@ -36,11 +36,11 @@ export function Navbar({ variant = 'app' }: NavbarProps) {
   }
 
   return (
-    <header className="h-14 border-b border-white/5 bg-[#071428]/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 shrink-0">
+    <header className="h-14 border-b border-border bg-white/90 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 shrink-0">
       <BrandLogo
         href={!isMarketing && isAuthenticated ? '/dashboard' : '/'}
         size={34}
-        nameClassName="font-semibold text-white hidden sm:inline"
+        nameClassName="font-semibold text-gray-900 hidden sm:inline"
       />
 
       <div className="flex items-center gap-2 sm:gap-3 min-h-[36px]">
@@ -54,13 +54,13 @@ export function Navbar({ variant = 'app' }: NavbarProps) {
           <>
             <Link
               href="/pricing"
-              className="text-sm text-gray-400 hover:text-white px-2 hidden sm:inline"
+              className="text-sm text-gray-600 hover:text-gray-900 px-2 hidden sm:inline"
             >
               Pricing
             </Link>
             {!isAuthenticated && (
               <>
-                <Link href="/login?fresh=1" className="text-sm text-gray-400 hover:text-white px-2">
+                <Link href="/login?fresh=1" className="text-sm text-gray-600 hover:text-gray-900 px-2">
                   Sign in
                 </Link>
                 <Link href="/register" className="auth-btn-primary text-sm py-2 px-4">
@@ -91,7 +91,7 @@ export function Navbar({ variant = 'app' }: NavbarProps) {
 
         {!isMarketing && mounted && !user && (
           <>
-            <Link href="/login?fresh=1" className="text-sm text-gray-400 hover:text-white px-2">
+            <Link href="/login?fresh=1" className="text-sm text-gray-600 hover:text-gray-900 px-2">
               Sign in
             </Link>
             <Link href="/register" className="auth-btn-primary text-sm py-2 px-4">

@@ -358,21 +358,23 @@
   }
 
   .viewer-embed {
-    --background: #0a1628;
-    --foreground: #e8eef7;
-    --card: #0d1a30;
-    --sidebar: #0d1a30;
-    --sidebar-foreground: #e8eef7;
-    --sidebar-border: rgba(91, 159, 212, 0.22);
-    --border: rgba(91, 159, 212, 0.18);
-    --accent: #5b9fd4;
-    --accent-foreground: #0a1628;
-    --muted: #8fa3bc;
-    --muted-foreground: #8fa3bc;
+    --background: #f8fafc;
+    --foreground: #1e293b;
+    --card: #ffffff;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #1e293b;
+    --sidebar-border: #e2e8f0;
+    --border: #e2e8f0;
+    --accent: #103A8E;
+    --accent-foreground: #ffffff;
+    --muted: #64748b;
+    --muted-foreground: #64748b;
+    --primary: #103A8E;
+    --primary-foreground: #ffffff;
   }
 
   .viewer-embed .cad-glass-surface {
-    background: color-mix(in srgb, #0d1a30 92%, transparent);
-    border-color: rgba(91, 159, 212, 0.2);
+    background: color-mix(in srgb, #ffffff 92%, transparent);
+    border-color: #e2e8f0;
   }
 }

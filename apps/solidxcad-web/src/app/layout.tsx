@@ -44,14 +44,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#071428',
-  colorScheme: 'dark',
+  themeColor: '#103A8E',
+  colorScheme: 'light',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark h-full" suppressHydrationWarning>
-      <body className="dark min-h-screen bg-[#071428] text-gray-200 antialiased">{children}</body>
+    <html lang="en" className="h-full" suppressHydrationWarning>
+      <body className="min-h-screen bg-base text-gray-900 antialiased">{children}</body>
     </html>
   );
 }

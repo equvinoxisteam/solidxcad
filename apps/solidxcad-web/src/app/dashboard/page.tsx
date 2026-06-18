@@ -132,7 +132,7 @@ export default function DashboardPage() {
 
         <main className="flex-1 w-full max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {error && (
-            <div className="mb-4 text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-lg p-3">
+            <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
               {error}
             </div>
           )}
@@ -140,7 +140,7 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-4 sm:gap-5 mb-6">
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">Projects</h1>
+                <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight">Projects</h1>
                 <p className="text-sm text-gray-500 mt-1">{projectCountLabel}</p>
               </div>
 
@@ -190,40 +190,40 @@ export default function DashboardPage() {
               <Loader2 className="w-8 h-8 animate-spin text-brand" />
             </div>
           ) : !projects.length ? (
-            <div className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/80 p-10 sm:p-12 text-center">
+            <div className="auth-card rounded-2xl border border-border p-10 sm:p-12 text-center">
               <div className="dashboard-empty-icon">
                 <Plus className="w-5 h-5 text-brand" />
               </div>
-              <h2 className="text-lg font-semibold text-white mb-2">No projects yet</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">No projects yet</h2>
               <p className="text-gray-500 text-sm max-w-md mx-auto leading-relaxed">
                 Create your first project above, then describe parts in chat. SolidX CAD will generate
                 your STEP, STL, and manufacturing files.
               </p>
             </div>
           ) : !visibleProjects.length ? (
-            <div className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/80 p-10 text-center">
-              <p className="text-sm text-gray-400">No projects match your search.</p>
+            <div className="auth-card rounded-2xl border border-border p-10 text-center">
+              <p className="text-sm text-gray-600">No projects match your search.</p>
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="text-sm text-brand-muted hover:text-white mt-3 underline"
+                className="text-sm text-brand hover:text-brand-hover mt-3 underline"
               >
                 Clear search
               </button>
             </div>
           ) : (
-            <div className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/85 overflow-hidden">
-              <div className="hidden lg:grid grid-cols-[minmax(0,1.4fr)_140px_140px_48px] gap-4 px-5 py-3 border-b border-white/5 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+            <div className="auth-card rounded-2xl border border-border overflow-hidden">
+              <div className="hidden lg:grid grid-cols-[minmax(0,1.4fr)_140px_140px_48px] gap-4 px-5 py-3 border-b border-border text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 <span>Project</span>
                 <span>Last updated</span>
                 <span>Created</span>
                 <span className="text-right">Open</span>
               </div>
 
-              <ul className="divide-y divide-white/5">
+              <ul className="divide-y divide-border">
                 {visibleProjects.map((p) => (
                   <li key={p._id}>
-                    <div className="group grid grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1.4fr)_140px_140px_48px] gap-3 lg:gap-4 items-center px-4 sm:px-5 py-3.5 hover:bg-white/[0.03] transition-colors">
+                    <div className="group grid grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1.4fr)_140px_140px_48px] gap-3 lg:gap-4 items-center px-4 sm:px-5 py-3.5 hover:bg-elevated transition-colors">
                       <Link
                         href={`/projects/${p._id}`}
                         className="flex min-w-0 items-center gap-3 no-underline"
@@ -242,7 +242,7 @@ export default function DashboardPage() {
                         </div>
                       </Link>
 
-                      <p className="hidden lg:block text-sm text-gray-300 truncate tabular-nums">
+                      <p className="hidden lg:block text-sm text-gray-700 truncate tabular-nums">
                         {formatDate(p.updatedAt)}
                       </p>
                       <p className="hidden lg:block text-sm text-gray-400 truncate tabular-nums">

@@ -32,16 +32,16 @@ type StudioTopBarProps = {
 function viewToggle(active: boolean) {
   return `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
     active
-      ? 'bg-brand text-white border-brand-light shadow-sm'
-      : 'bg-panel/80 text-muted border-border hover:text-white hover:border-brand/40'
+      ? 'bg-brand text-white border-brand shadow-sm'
+      : 'bg-white text-muted border-border hover:text-gray-900 hover:border-brand/40'
   }`;
 }
 
 function iconToggle(active: boolean) {
   return `p-2 rounded-lg border transition-colors ${
     active
-      ? 'bg-brand text-white border-brand-light'
-      : 'bg-panel/80 text-muted border-border hover:text-white hover:border-brand/40'
+      ? 'bg-brand text-white border-brand'
+      : 'bg-white text-muted border-border hover:text-gray-900 hover:border-brand/40'
   }`;
 }
 
@@ -56,10 +56,10 @@ export function StudioTopBar({
   onToggleWorkspace,
 }: StudioTopBarProps) {
   return (
-    <header className="h-11 border-b border-border bg-[#0a1628] flex items-center gap-2 px-2 sm:px-3 shrink-0 z-20">
+    <header className="h-11 border-b border-border bg-white flex items-center gap-2 px-2 sm:px-3 shrink-0 z-20">
       <Link
         href="/dashboard"
-        className="p-2 rounded-lg text-muted hover:text-white hover:bg-panel/60 border border-transparent hover:border-border"
+        className="p-2 rounded-lg text-muted hover:text-gray-900 hover:bg-elevated border border-transparent hover:border-border"
         title="Back to projects"
         aria-label="Back to projects"
       >
@@ -68,7 +68,7 @@ export function StudioTopBar({
 
       <BrandLogo href="/dashboard" size={28} showName={false} className="shrink-0" />
 
-      <span className="text-sm text-white font-semibold truncate max-w-[140px] sm:max-w-[220px]">
+      <span className="text-sm text-gray-900 font-semibold truncate max-w-[140px] sm:max-w-[220px]">
         {projectName}
       </span>
 
@@ -80,7 +80,7 @@ export function StudioTopBar({
 
       <div className="flex-1" />
 
-      <div className="flex items-center gap-1 p-0.5 rounded-lg bg-panel/50 border border-border">
+      <div className="flex items-center gap-1 p-0.5 rounded-lg bg-elevated border border-border">
         <button
           type="button"
           onClick={() => onViewModeChange('mesh')}
@@ -134,7 +134,7 @@ export function StudioTopBar({
 
       <Link
         href="/settings"
-        className="p-2 rounded-lg text-muted hover:text-white hover:bg-panel/60 border border-transparent hover:border-border"
+        className="p-2 rounded-lg text-muted hover:text-gray-900 hover:bg-elevated border border-transparent hover:border-border"
         title="Settings"
         aria-label="Settings"
       >

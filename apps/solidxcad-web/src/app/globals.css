@@ -5,12 +5,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  color-scheme: dark only;
-  --bg-base: #071428;
-  --bg-sidebar: #0a1628;
-  --bg-panel: #0f1f38;
-  --border: #1e3a5f;
-  --text: #e5e7eb;
+  color-scheme: light only;
+  --bg-base: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --bg-panel: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
   --accent: #103A8E;
   --brand: #103A8E;
 }
@@ -19,7 +19,7 @@
 
 html {
   height: 100%;
-  color-scheme: dark only;
+  color-scheme: light only;
 }
 
 html, body {
@@ -34,43 +34,43 @@ body {
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #071428; }
-::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 4px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
 .btn-primary {
   @apply bg-brand hover:bg-brand-hover text-white px-4 py-2 rounded font-medium transition-colors;
 }
 
 .btn-ghost {
-  @apply border border-border hover:bg-panel text-gray-300 px-4 py-2 rounded transition-colors;
+  @apply border border-border hover:bg-elevated text-gray-700 px-4 py-2 rounded transition-colors;
 }
 
 .input {
-  @apply w-full bg-panel border border-border rounded px-3 py-2 text-gray-200 placeholder:text-muted focus:outline-none focus:border-brand;
+  @apply w-full bg-white border border-border rounded px-3 py-2 text-gray-900 placeholder:text-muted focus:outline-none focus:border-brand;
 }
 
 .card {
   @apply bg-sidebar border border-border rounded-lg;
 }
 
-/* Auth & landing — SolidX CAD blueprint theme */
+/* Auth & landing — SolidX CAD light theme */
 .auth-scene,
 .landing-scene,
 .dashboard-scene {
-  background: #071428;
-  color: #e5e7eb;
+  background: #f8fafc;
+  color: #1e293b;
 }
 
 .studio-scene {
-  background: #0a1628;
-  color: #e5e7eb;
+  background: #f1f5f9;
+  color: #1e293b;
 }
 
 .studio-viewport-grid {
   background:
-    radial-gradient(ellipse 70% 50% at 50% 40%, rgba(16, 58, 142, 0.12), transparent),
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    radial-gradient(ellipse 70% 50% at 50% 40%, rgba(16, 58, 142, 0.06), transparent),
+    linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
   background-size: 100% 100%, 32px 32px, 32px 32px;
 }
 
@@ -78,16 +78,16 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(16, 58, 142, 0.35), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(26, 79, 181, 0.2), transparent),
-    linear-gradient(160deg, #071428 0%, #0a1f3d 50%, #071428 100%);
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(16, 58, 142, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(16, 58, 142, 0.08), transparent),
+    linear-gradient(160deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%);
 }
 
 .auth-bg-form {
   background:
-    radial-gradient(ellipse 70% 55% at 85% 20%, rgba(16, 58, 142, 0.22), transparent),
-    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(26, 79, 181, 0.12), transparent),
-    linear-gradient(180deg, #071428 0%, #08182e 100%);
+    radial-gradient(ellipse 70% 55% at 85% 20%, rgba(16, 58, 142, 0.1), transparent),
+    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(16, 58, 142, 0.06), transparent),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   animation: none;
 }
 
@@ -95,9 +95,9 @@ body {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    radial-gradient(circle, rgba(16, 58, 142, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(16, 58, 142, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 58, 142, 0.04) 1px, transparent 1px);
   background-size: 28px 28px, 28px 28px, 28px 28px;
   mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, black, transparent);
 }
@@ -137,7 +137,7 @@ body {
 .auth-orb-b {
   width: 240px;
   height: 240px;
-  background: #1a4fb5;
+  background: #103A8E;
   bottom: 12%;
   right: -6%;
   animation-delay: -6s;
@@ -146,11 +146,11 @@ body {
 .auth-orb-c {
   width: 180px;
   height: 180px;
-  background: #3b82f6;
+  background: #103A8E;
   top: 50%;
   left: 38%;
   animation-delay: -12s;
-  opacity: 0.22;
+  opacity: 0.15;
 }
 
 @keyframes auth-bg-shift {
@@ -165,21 +165,21 @@ body {
 }
 
 .auth-input {
-  @apply w-full rounded-lg px-3.5 py-2.5 text-sm text-white placeholder:text-gray-500 bg-[#071428]/60 border border-white/10 transition-all;
+  @apply w-full rounded-lg px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 bg-white border border-border transition-all;
 }
 
 .auth-input:focus {
   outline: none;
-  border-color: rgba(16, 58, 142, 0.7);
-  box-shadow: 0 0 0 2px rgba(16, 58, 142, 0.2);
+  border-color: #103A8E;
+  box-shadow: 0 0 0 2px rgba(16, 58, 142, 0.15);
 }
 
 .auth-label {
-  @apply block text-xs font-medium text-gray-400;
+  @apply block text-xs font-medium text-gray-600;
 }
 
 .auth-oauth-wrap {
-  @apply rounded-xl border border-white/[0.08] bg-white/[0.02] p-3;
+  @apply rounded-xl border border-border bg-elevated p-3;
 }
 
 .auth-btn-primary {
@@ -189,13 +189,14 @@ body {
 
 .auth-panel {
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 24px 48px rgba(0, 0, 0, 0.35);
+    0 0 0 1px rgba(16, 58, 142, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
 .auth-card {
-  box-shadow: 0 0 0 1px rgba(16, 58, 142, 0.15), 0 24px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 1px rgba(16, 58, 142, 0.1), 0 12px 32px rgba(0, 0, 0, 0.08);
+  background: #ffffff;
 }
 
 /* Landing — engineering-focused marketing */
@@ -204,7 +205,7 @@ body {
 }
 
 .landing-format-pill {
-  @apply inline-flex items-center rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] font-mono font-medium text-gray-300;
+  @apply inline-flex items-center rounded-md border border-border bg-elevated px-2.5 py-1 text-[11px] font-mono font-medium text-gray-600;
 }
 
 .landing-workflow {
@@ -212,7 +213,7 @@ body {
 }
 
 .landing-workflow-step {
-  @apply relative rounded-xl border border-white/[0.08] bg-[#0a1628]/70 px-4 py-3.5;
+  @apply relative rounded-xl border border-border bg-white px-4 py-3.5;
 }
 
 .landing-workflow-node {
@@ -226,11 +227,11 @@ body {
   transform: translateY(-50%);
   width: 1rem;
   height: 1rem;
-  color: rgba(143, 168, 200, 0.6);
+  color: rgba(16, 58, 142, 0.45);
 }
 
 .landing-feature-card {
-  @apply rounded-2xl border border-white/10 bg-[#0a1628]/80 p-6 transition-colors;
+  @apply rounded-2xl border border-border bg-white p-6 transition-colors;
 }
 
 .landing-feature-card:hover {
@@ -250,11 +251,11 @@ body {
 }
 
 .landing-prompt-panel {
-  @apply rounded-2xl border border-white/10 bg-[#0a1628]/60 p-6 md:p-8;
+  @apply rounded-2xl border border-border bg-white p-6 md:p-8;
 }
 
 .landing-prompt-chip {
-  @apply flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-[#071428]/80 px-4 py-2.5 text-sm text-gray-300 font-mono;
+  @apply flex items-center gap-2.5 rounded-lg border border-border bg-elevated px-4 py-2.5 text-sm text-gray-700 font-mono;
 }
 
 .auth-google-fallback {
@@ -269,10 +270,10 @@ body {
   height: 100%;
   min-height: 100%;
   border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(10, 22, 40, 0.88);
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
   padding: 1.5rem;
-  box-shadow: 0 0 0 1px rgba(16, 58, 142, 0.08), 0 24px 48px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 1px rgba(16, 58, 142, 0.06), 0 12px 32px rgba(0, 0, 0, 0.06);
 }
 
 @media (min-width: 640px) {
@@ -283,7 +284,7 @@ body {
 
 .pricing-card-pro {
   border-color: rgba(16, 58, 142, 0.35);
-  background: rgba(10, 22, 40, 0.95);
+  background: #ffffff;
 }
 
 .pricing-card-badge {
@@ -324,7 +325,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: #dbeafe;
+  color: #103A8E;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -365,9 +366,10 @@ body {
   flex-direction: column;
   gap: 0.5rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(7, 20, 40, 0.55);
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
   padding: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 @media (min-width: 640px) {
@@ -392,7 +394,7 @@ body {
   border: 0;
   border-radius: 0.625rem;
   background: transparent;
-  color: #f3f4f6;
+  color: #1e293b;
   font-size: 0.875rem;
   line-height: 1.25rem;
 }
@@ -407,7 +409,7 @@ body {
 
 @media (min-width: 640px) {
   .dashboard-search-wrap {
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-right: 1px solid #e2e8f0;
   }
 
   .dashboard-search-input {
@@ -445,7 +447,7 @@ body {
   border: 0;
   border-radius: 0.625rem;
   background: transparent;
-  color: #e5e7eb;
+  color: #1e293b;
   font-size: 0.875rem;
   line-height: 1.25rem;
   text-align: left;
@@ -455,7 +457,7 @@ body {
 
 .dashboard-sort-trigger:hover,
 .dashboard-sort-trigger:focus-visible {
-  background: rgba(255, 255, 255, 0.04);
+  background: #f1f5f9;
   outline: none;
 }
 
@@ -484,7 +486,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #f3f4f6;
+  color: #1e293b;
   font-weight: 500;
 }
 
@@ -498,9 +500,9 @@ body {
   padding: 0.375rem;
   list-style: none;
   border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #0a1628;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-sort-option {
@@ -513,7 +515,7 @@ body {
   border: 0;
   border-radius: 0.5rem;
   background: transparent;
-  color: #d1d5db;
+  color: #475569;
   font-size: 0.875rem;
   line-height: 1.25rem;
   text-align: left;
@@ -522,17 +524,17 @@ body {
 }
 
 .dashboard-sort-option:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #f9fafb;
+  background: #f1f5f9;
+  color: #1e293b;
 }
 
 .dashboard-sort-option.is-active {
-  background: rgba(16, 58, 142, 0.22);
-  color: #f9fafb;
+  background: rgba(16, 58, 142, 0.1);
+  color: #103A8E;
 }
 
 .dashboard-project-name {
-  color: #ffffff !important;
+  color: #1e293b !important;
   font-weight: 600;
 }
 
@@ -542,7 +544,7 @@ body {
 }
 
 .dashboard-project-link:hover .dashboard-project-name {
-  color: #dbeafe !important;
+  color: #103A8E !important;
 }
 
 /* Studio — mobile chat drawer + viewer stack */
@@ -583,7 +585,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: #0d1a30;
+  background: #ffffff;
   border-top: 1px solid var(--border);
 }
 
@@ -607,7 +609,7 @@ body {
     height: 0.25rem;
     margin: 0.5rem auto 0;
     border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.18);
+    background: #cbd5e1;
   }
 }
 
@@ -630,7 +632,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: #0d1a30;
+  background: #ffffff;
   border-top: 1px solid var(--border);
 }
 
