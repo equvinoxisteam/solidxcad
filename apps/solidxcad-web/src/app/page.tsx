@@ -70,11 +70,11 @@ export default function HomePage() {
             </div>
 
             <div className="landing-cta-actions mb-8">
-              <Link href="/register" className="auth-btn-primary text-base px-8 py-3 inline-flex items-center gap-2">
+              <Link href="/register" className="auth-btn-primary text-base px-8 py-3 inline-flex items-center gap-2 shrink-0">
                 Start free
                 <ArrowRight className="w-4 h-4" aria-hidden />
               </Link>
-              <Link href="/login?fresh=1" className="landing-btn-secondary">
+              <Link href="/login?fresh=1" className="landing-btn-secondary shrink-0">
                 Sign in
               </Link>
             </div>
@@ -123,11 +123,11 @@ export default function HomePage() {
                 Free tier includes text-to-CAD, cloud viewer, and project storage.
               </p>
               <div className="landing-cta-actions">
-                <Link href="/register" className="auth-btn-primary inline-flex items-center gap-2 px-10 py-3">
+                <Link href="/register" className="auth-btn-primary inline-flex items-center gap-2 px-10 py-3 shrink-0">
                   Open design studio
                   <ArrowRight className="w-4 h-4" aria-hidden />
                 </Link>
-                <Link href="/pricing" className="landing-btn-secondary">
+                <Link href="/pricing" className="landing-btn-secondary shrink-0">
                   View pricing
                 </Link>
               </div>
