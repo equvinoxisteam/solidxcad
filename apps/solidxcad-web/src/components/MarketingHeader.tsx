@@ -36,11 +36,8 @@ export function MarketingHeader({ variant = 'light' }: MarketingHeaderProps) {
           <Link href="/login?fresh=1" className={navLinkClass(false, dark)}>
             Sign in
           </Link>
-          <Link
-            href="/register"
-            className={dark ? 'landing-home-header-cta' : 'auth-btn-primary text-sm py-2 px-4 sm:px-5'}
-          >
-            Open Design Engine
+          <Link href="/register" className="auth-btn-primary text-sm py-2 px-4 sm:px-5">
+            Start free
           </Link>
         </nav>
       </div>

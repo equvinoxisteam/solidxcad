@@ -534,6 +534,27 @@ body {
   color: #64748b;
 }
 
+.landing-home-formats {
+  margin-bottom: 1.75rem;
+  text-align: center;
+}
+
+.landing-home-formats-label {
+  margin: 0 0 0.625rem;
+  color: #64748b;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.landing-home-formats-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 .marketing-footer-dark {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: #050508;

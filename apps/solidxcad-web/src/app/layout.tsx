@@ -5,11 +5,11 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL('https://solidxcad.equvinoxis.com'),
   title: {
-    default: `${BRAND_NAME} — Next-generation CAD for the AI age`,
+    default: `${BRAND_NAME} — Text to STEP, STL, and manufacturing exports`,
     template: `%s · ${BRAND_NAME}`,
   },
   description:
-    'AI-native cloud CAD for engineers. Generate parametric STEP models, inspect assemblies in-browser, and export STL, G-code, URDF, and DXF from one workspace.',
+    'Describe parts in plain language. SolidXCad generates parametric STEP models, previews them in-browser, and exports STL, G-code, URDF, and DXF.',
   keywords: [
     'CAD',
     'STEP',
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     shortcut: BRAND_LOGO_SRC,
   },
   openGraph: {
-    title: `${BRAND_NAME} — Next-generation CAD for the AI age`,
+    title: `${BRAND_NAME} — Text to STEP, STL, and manufacturing exports`,
     description:
       'Describe parts and assemblies in plain language. Get parametric STEP geometry, in-browser inspection, and manufacturing exports.',
     url: 'https://solidxcad.equvinoxis.com',
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary',
-    title: `${BRAND_NAME} — Next-generation CAD for the AI age`,
+    title: `${BRAND_NAME} — Text to STEP, STL, and manufacturing exports`,
     description:
       'Cloud CAD for engineers. Text-to-STEP, assembly modeling, and export to STL, G-code, and URDF.',
     images: [BRAND_LOGO_SRC],

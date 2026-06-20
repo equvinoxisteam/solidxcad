@@ -1,13 +1,13 @@
 import Link from 'next/link';
-import { ArrowRight, Box, Globe, Sparkles } from 'lucide-react';
-import { BRAND_NAME } from '@/lib/brand';
+import { ArrowRight, Box, Download, Sparkles } from 'lucide-react';
+import { BRAND_EXPORT_FORMATS, BRAND_NAME } from '@/lib/brand';
 import { MarketingFooter } from '@/components/MarketingFooter';
 import { MarketingHeader } from '@/components/MarketingHeader';
 
 const PILLARS = [
-  { icon: Box, title: 'Parametric Engine', subtitle: 'INDUSTRIAL GRADE' },
-  { icon: Sparkles, title: 'AI Agent', subtitle: 'TEXT TO STEP' },
-  { icon: Globe, title: 'Zero Installation', subtitle: 'BROWSER NATIVE' },
+  { icon: Sparkles, title: 'Describe your part', subtitle: 'TEXT TO CAD' },
+  { icon: Box, title: 'Inspect in 3D', subtitle: 'BROWSER VIEWER' },
+  { icon: Download, title: 'Export for production', subtitle: 'STEP · STL · G-CODE' },
 ];
 
 export default function HomePage() {
@@ -21,22 +21,32 @@ export default function HomePage() {
         <main className="landing-home-main flex-1">
           <section className="landing-home-hero">
             <p className="landing-home-badge landing-home-badge-light">
-              THE FUTURE OF CAD IS HERE <span aria-hidden>|</span> Browser-Native
+              AI-NATIVE CAD <span aria-hidden>|</span> In Your Browser
             </p>
 
             <h1 className="landing-home-title landing-home-title-light">
-              Next-Generation CAD.
-              <span className="landing-home-title-accent-light">Engineered for the AI Age.</span>
+              From design intent
+              <span className="landing-home-title-accent-light">to production-ready files.</span>
             </h1>
 
             <p className="landing-home-lead landing-home-lead-light">
-              Escape legacy constraints. {BRAND_NAME} fuses professional parametric modeling with an
-              intelligent AI Agent and in-browser inspection. Design, refine, and export faster, all
-              directly in your browser.
+              Tell {BRAND_NAME} what you need in plain language. Get parametric STEP geometry, preview
+              assemblies in the browser, and export manufacturing files without installing desktop CAD.
             </p>
 
+            <div className="landing-home-formats">
+              <p className="landing-home-formats-label">Generate and export</p>
+              <div className="landing-home-formats-row">
+                {BRAND_EXPORT_FORMATS.map((fmt) => (
+                  <span key={fmt} className="landing-format-pill">
+                    {fmt}
+                  </span>
+                ))}
+              </div>
+            </div>
+
             <Link href="/register" className="auth-btn-primary landing-home-cta-light inline-flex items-center gap-2">
-              Launch Design Engine
+              Start free
               <ArrowRight className="w-4 h-4" aria-hidden />
             </Link>
 
@@ -51,7 +61,7 @@ export default function HomePage() {
             </div>
 
             <p className="landing-home-proof landing-home-proof-light">
-              REAL MODELS — GENERATED IN {BRAND_NAME.toUpperCase()}
+              FREE TO START · NO INSTALL REQUIRED
             </p>
           </section>
         </main>
