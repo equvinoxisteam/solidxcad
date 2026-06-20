@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2, Rocket, Wrench, GraduationCap } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { api, getToken, setStoredUser } from '@/lib/api';
+import { BRAND_NAME } from '@/lib/brand';
 
 const USE_CASES = [
   { id: 'hobby', label: 'Hobby & makers', icon: Wrench },
@@ -77,7 +78,7 @@ export default function OnboardingPage() {
 
   return (
     <AuthShell
-      title={step === 1 ? 'What should we call you?' : step === 2 ? 'How will you use SolidX?' : 'What do you want to build first?'}
+      title={step === 1 ? 'What should we call you?' : step === 2 ? `How will you use ${BRAND_NAME}?` : 'What do you want to build first?'}
       subtitle={step === 3 ? 'What do you want to build first?' : 'Personalize your studio'}
       step={step}
       totalSteps={3}

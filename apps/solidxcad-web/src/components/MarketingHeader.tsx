@@ -22,7 +22,6 @@ export function MarketingHeader() {
         <BrandLogo
           href="/"
           size={32}
-          nameClassName="font-semibold text-gray-900 tracking-tight text-sm sm:text-base"
         />
 
         <nav className="flex items-center gap-1 sm:gap-2 shrink-0">

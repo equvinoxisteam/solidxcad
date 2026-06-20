@@ -1,15 +1,16 @@
 import Link from 'next/link';
+import { BRAND_COMPANY, BRAND_NAME } from '@/lib/brand';
 
 export function MarketingFooter() {
   return (
     <footer className="marketing-footer">
       <div className="marketing-footer-line">
         <div className="marketing-footer-meta">
-          <span>© {new Date().getFullYear()} SolidX CAD</span>
+          <span>© {new Date().getFullYear()} {BRAND_NAME}</span>
           <span className="marketing-footer-dot" aria-hidden>
             ·
           </span>
-          <span>Powered by Equvinoxis Technologies</span>
+          <span>Powered by {BRAND_COMPANY}</span>
         </div>
         <nav className="marketing-footer-links" aria-label="Footer">
           <Link href="/pricing">Pricing</Link>

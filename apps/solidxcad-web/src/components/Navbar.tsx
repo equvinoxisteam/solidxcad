@@ -40,7 +40,6 @@ export function Navbar({ variant = 'app' }: NavbarProps) {
       <BrandLogo
         href={!isMarketing && isAuthenticated ? '/dashboard' : '/'}
         size={34}
-        nameClassName="font-semibold text-gray-900 hidden sm:inline"
       />
 
       <div className="flex items-center gap-2 sm:gap-3 min-h-[36px]">

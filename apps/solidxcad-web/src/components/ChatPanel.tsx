@@ -1,5 +1,6 @@
 'use client';
 
+import { BRAND_NAME } from '@/lib/brand';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUp,
@@ -328,7 +329,7 @@ export function ChatPanel({
           >
             {m.role === 'assistant' && (
               <div className="text-[10px] uppercase text-brand-muted font-semibold mb-1.5 tracking-wide">
-                SolidX Assistant
+                {BRAND_NAME} Assistant
               </div>
             )}
             <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-gray-800">
@@ -362,7 +363,7 @@ export function ChatPanel({
 
         {showLiveThinking && (
           <div className="text-sm rounded-xl p-3 bg-panel/50 border border-border mr-1">
-            <div className="text-[10px] uppercase text-brand-muted font-semibold mb-1.5">SolidX Assistant</div>
+            <div className="text-[10px] uppercase text-brand-muted font-semibold mb-1.5">{BRAND_NAME} Assistant</div>
             <div className="whitespace-pre-wrap break-words text-[13px] text-gray-800">
               {sanitizeAssistantForDisplay(liveReply)}
             </div>

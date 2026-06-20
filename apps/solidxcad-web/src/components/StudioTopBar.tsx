@@ -66,7 +66,7 @@ export function StudioTopBar({
         <ArrowLeft className="w-4 h-4" />
       </Link>
 
-      <BrandLogo href="/dashboard" size={28} showName={false} className="shrink-0" />
+      <BrandLogo href="/dashboard" size={28} className="shrink-0" />
 
       <span className="text-sm text-gray-900 font-semibold truncate max-w-[140px] sm:max-w-[220px]">
         {projectName}

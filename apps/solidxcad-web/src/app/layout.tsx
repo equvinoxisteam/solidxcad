@@ -21,9 +21,12 @@ export const metadata: Metadata = {
     'manufacturing',
   ],
   icons: {
-    icon: [{ url: '/logo.png', type: 'image/png' }],
-    apple: '/logo.png',
-    shortcut: '/logo.png',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.svg', sizes: '32x32' },
+    ],
+    apple: '/favicon.svg',
+    shortcut: '/favicon.svg',
   },
   openGraph: {
     title: 'SolidX CAD — From design intent to production-ready STEP',
@@ -32,14 +35,14 @@ export const metadata: Metadata = {
     url: 'https://solidxcad.equvinoxis.com',
     siteName: 'SolidX CAD',
     type: 'website',
-    images: [{ url: '/logo.png', width: 512, height: 512, alt: 'SolidX CAD' }],
+    images: [{ url: '/favicon.svg', width: 32, height: 32, alt: 'SolidX CAD' }],
   },
   twitter: {
     card: 'summary',
     title: 'SolidX CAD — From design intent to production-ready STEP',
     description:
       'Cloud CAD for engineers. Text-to-STEP, assembly modeling, and export to STL, G-code, and URDF.',
-    images: ['/logo.png'],
+    images: ['/favicon.svg'],
   },
 };
 

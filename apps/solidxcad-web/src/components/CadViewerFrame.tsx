@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { api } from '@/lib/api';
+import { BRAND_NAME } from '@/lib/brand';
 
 type CadViewerFrameProps = {
   projectId: string;
@@ -89,7 +90,7 @@ export function CadViewerFrame({ projectId, fileRef }: CadViewerFrameProps) {
     <div className="absolute inset-0">
       <iframe
         key={`${viewerLink}:${reloadKey}`}
-        title="SolidX CAD Workbench"
+        title={`${BRAND_NAME} Workbench`}
         src={viewerLink}
         className="w-full h-full border-0 bg-base"
         allow="fullscreen"

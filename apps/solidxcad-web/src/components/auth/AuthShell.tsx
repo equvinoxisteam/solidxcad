@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { BRAND_COMPANY, BRAND_NAME } from '@/lib/brand';
 import Link from 'next/link';
 import { ArrowLeft, Box, Layers, Sparkles } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -58,7 +59,7 @@ export function AuthShell({
             ))}
           </ul>
         </div>
-        <p className="text-[11px] text-gray-500">Powered by Equvinoxis Technologies</p>
+        <p className="text-[11px] text-gray-500">Powered by {BRAND_COMPANY}</p>
       </aside>
 
       <div className="relative z-10 flex flex-1 flex-col min-h-screen min-w-0">
@@ -105,11 +106,11 @@ export function AuthShell({
         </main>
 
         <footer className="auth-page-footer">
-          <span>SolidX CAD · Prompt to STEP in the browser</span>
+          <span>{BRAND_NAME} · Prompt to STEP in the browser</span>
           <span className="auth-page-footer-dot" aria-hidden>
             ·
           </span>
-          <span>Powered by Equvinoxis Technologies</span>
+          <span>Powered by {BRAND_COMPANY}</span>
         </footer>
       </div>
     </div>

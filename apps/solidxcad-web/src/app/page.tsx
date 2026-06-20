@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
+import { BRAND_NAME } from '@/lib/brand';
 import { MarketingFooter } from '@/components/MarketingFooter';
 import { MarketingHeader } from '@/components/MarketingHeader';
 
@@ -56,7 +57,7 @@ export default function HomePage() {
             </h1>
 
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-6 leading-relaxed">
-              SolidX CAD is an AI-native design engine in the browser. Describe parametric parts,
+              {BRAND_NAME} is an AI-native design engine in the browser. Describe parametric parts,
               assemblies, and modifications, then inspect, refine, and export manufacturing files
               without leaving your project.
             </p>
