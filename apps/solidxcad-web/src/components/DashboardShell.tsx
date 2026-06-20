@@ -76,7 +76,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
           <BrandLogo
             href="/dashboard"
             size={32}
-            showName={false}
+            showName={expanded}
+            nameClassName="dashboard-sidebar-brand-name"
+            className="dashboard-sidebar-brand min-w-0"
           />
           <button
             type="button"

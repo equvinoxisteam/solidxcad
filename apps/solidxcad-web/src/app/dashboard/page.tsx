@@ -13,8 +13,10 @@ import {
   Pencil,
   Plus,
   Search,
+  Trash2,
 } from 'lucide-react';
 import { DashboardShell } from '@/components/DashboardShell';
+import { DeleteProjectModal } from '@/components/DeleteProjectModal';
 import { NewProjectModal } from '@/components/NewProjectModal';
 import { RenameProjectModal } from '@/components/RenameProjectModal';
 import { ProjectSortMenu, type ProjectSortKey } from '@/components/ProjectSortMenu';
@@ -71,6 +73,11 @@ export default function DashboardPage() {
   const [renameName, setRenameName] = useState('');
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     if (!getToken()) {
@@ -174,6 +181,38 @@ export default function DashboardPage() {
     }
   }
 
+  function openDelete(project: Project) {
+    setDeleteTarget(project);
+    setDeleteConfirm('');
+    setDeleteError('');
+    setDeleteOpen(true);
+  }
+
+  function closeDelete() {
+    if (deleting) return;
+    setDeleteOpen(false);
+    setDeleteTarget(null);
+    setDeleteConfirm('');
+    setDeleteError('');
+  }
+
+  async function deleteProject(e: React.FormEvent) {
+    e.preventDefault();
+    if (!deleteTarget || deleteConfirm.trim().toUpperCase() !== 'DELETE') return;
+
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await api.deleteProject(deleteTarget._id);
+      setProjects((list) => list.filter((p) => p._id !== deleteTarget._id));
+      closeDelete();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete project');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const visibleProjects = useMemo(() => {
     const q = search.trim().toLowerCase();
     const filtered = q
@@ -191,8 +230,9 @@ export default function DashboardPage() {
       <div className="auth-bg opacity-50" aria-hidden />
       <div className="auth-grid opacity-30" aria-hidden />
 
-      <div className="relative z-10 min-h-screen">
+      <div className="relative z-10 h-screen">
         <DashboardShell>
+          <div className="dashboard-page-body">
           <header className="dashboard-page-header">
             <div>
               <p className="dashboard-page-eyebrow">Workspace</p>
@@ -231,10 +271,11 @@ export default function DashboardPage() {
           )}
 
           {loading ? (
-            <div className="flex justify-center py-20">
+            <div className="dashboard-projects-scroll flex justify-center items-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-brand" />
             </div>
           ) : !projects.length ? (
+            <div className="dashboard-projects-scroll">
             <div className="dashboard-empty-card">
               <div className="dashboard-empty-icon">
                 <Plus className="w-5 h-5 text-brand" aria-hidden />
@@ -253,7 +294,9 @@ export default function DashboardPage() {
                 Create first project
               </button>
             </div>
+            </div>
           ) : !visibleProjects.length ? (
+            <div className="dashboard-projects-scroll">
             <div className="dashboard-empty-card">
               <p className="text-sm text-gray-700">No projects match your search.</p>
               <button
@@ -264,7 +307,9 @@ export default function DashboardPage() {
                 Clear search
               </button>
             </div>
+            </div>
           ) : (
+            <div className="dashboard-projects-scroll">
             <div className="dashboard-folder-grid">
               {visibleProjects.map((p) => (
                 <article key={p._id} className="dashboard-folder-card group">
@@ -285,19 +330,32 @@ export default function DashboardPage() {
                     </p>
                     <p className="dashboard-folder-created">Created {formatDate(p.createdAt)}</p>
                   </Link>
-                  <button
-                    type="button"
-                    className="dashboard-folder-rename"
-                    title={`Rename ${p.name || 'project'}`}
-                    aria-label={`Rename ${p.name || 'project'}`}
-                    onClick={() => openRename(p)}
-                  >
-                    <Pencil className="w-4 h-4" aria-hidden />
-                  </button>
+                  <div className="dashboard-folder-actions">
+                    <button
+                      type="button"
+                      className="dashboard-folder-action"
+                      title={`Rename ${p.name || 'project'}`}
+                      aria-label={`Rename ${p.name || 'project'}`}
+                      onClick={() => openRename(p)}
+                    >
+                      <Pencil className="w-4 h-4" aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="dashboard-folder-action dashboard-folder-action-danger"
+                      title={`Delete ${p.name || 'project'}`}
+                      aria-label={`Delete ${p.name || 'project'}`}
+                      onClick={() => openDelete(p)}
+                    >
+                      <Trash2 className="w-4 h-4" aria-hidden />
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
+            </div>
           )}
+          </div>
         </DashboardShell>
       </div>
 
@@ -319,6 +377,17 @@ export default function DashboardPage() {
         onNameChange={setRenameName}
         onClose={closeRename}
         onSubmit={renameProject}
+      />
+
+      <DeleteProjectModal
+        open={deleteOpen}
+        projectName={deleteTarget?.name || 'this project'}
+        deleting={deleting}
+        error={deleteError}
+        confirmText={deleteConfirm}
+        onConfirmTextChange={setDeleteConfirm}
+        onClose={closeDelete}
+        onSubmit={deleteProject}
       />
     </div>
   );
