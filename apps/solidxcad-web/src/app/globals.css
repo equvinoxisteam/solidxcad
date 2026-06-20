@@ -322,7 +322,26 @@ body {
 }
 
 .landing-btn-secondary {
-  @apply px-8 py-3 rounded-xl border border-border text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors text-base font-medium;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 2rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid #103A8E;
+  background: #ffffff;
+  color: #103A8E;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(16, 58, 142, 0.12);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.landing-btn-secondary:hover {
+  background: rgba(16, 58, 142, 0.06);
+  border-color: #0c2d6e;
+  color: #0c2d6e;
 }
 
 .landing-workflow-row {

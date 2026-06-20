@@ -49,18 +49,18 @@ export default function PricingPage() {
         <MarketingHeader />
 
         <main className="flex-1 w-full marketing-section-inner pb-12 sm:pb-16">
-          <section className="text-center pt-6 sm:pt-10 pb-10 sm:pb-14 max-w-3xl mx-auto">
+          <section className="text-center pt-6 sm:pt-10 pb-10 sm:pb-14">
             <p className="landing-eyebrow mb-3 sm:mb-4">Pricing</p>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 tracking-tight leading-tight">
               Start free. Upgrade when you need more throughput.
             </h1>
-            <p className="text-sm sm:text-base text-gray-600 leading-relaxed px-2">
+            <p className="text-sm sm:text-base text-gray-600 leading-relaxed max-w-2xl mx-auto">
               Credits power CAD generation and exports. Keep your projects, files, and inspections
               in one cloud workspace.
             </p>
           </section>
 
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-8 max-w-4xl mx-auto items-stretch">
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6 items-stretch">
             {PLANS.map((plan) => (
               <article
                 key={plan.id}
@@ -108,7 +108,7 @@ export default function PricingPage() {
             ))}
           </section>
 
-          <section className="max-w-3xl mx-auto mt-10 sm:mt-14 rounded-2xl border border-border bg-white px-5 sm:px-8 py-6 sm:py-8 text-center shadow-sm">
+          <section className="mt-10 sm:mt-14 rounded-2xl border border-border bg-white px-5 sm:px-8 py-6 sm:py-8 text-center shadow-sm">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">What are credits?</h2>
             <p className="text-sm text-gray-600 leading-relaxed">
               Each CAD generation, refinement, or export uses credits. Free is enough to explore the
