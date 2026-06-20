@@ -1,13 +1,5 @@
 import Link from 'next/link';
-import {
-  ArrowRight,
-  Box,
-  Cpu,
-  Layers,
-  MessageSquare,
-  Printer,
-  Ruler,
-} from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { MarketingFooter } from '@/components/MarketingFooter';
 import { MarketingHeader } from '@/components/MarketingHeader';
 
@@ -18,13 +10,31 @@ const WORKFLOW = [
   { step: '04', label: 'Export', detail: 'STL, G-code, URDF, and DXF' },
 ];
 
-const FEATURES = [
-  { icon: MessageSquare, title: 'Text-to-STEP generation' },
-  { icon: Box, title: 'In-browser CAD workbench' },
-  { icon: Layers, title: 'Assembly-aware modeling' },
-  { icon: Ruler, title: 'Engineering inspection' },
-  { icon: Printer, title: 'Print and fabrication ready' },
-  { icon: Cpu, title: 'Robotics and mechanisms' },
+const FEATURE_POINTS = [
+  {
+    title: 'Text-to-STEP generation',
+    text: 'Describe brackets, mounts, and enclosures and get real parametric B-rep STEP output.',
+  },
+  {
+    title: 'In-browser CAD workbench',
+    text: 'Orbit, pick, section, and measure assemblies directly in the studio.',
+  },
+  {
+    title: 'Assembly-aware modeling',
+    text: 'Multi-body designs with fasteners, standoffs, and catalog hardware.',
+  },
+  {
+    title: 'Engineering inspection',
+    text: 'Check bounding boxes, mass properties, and fit before export.',
+  },
+  {
+    title: 'Print and fabrication ready',
+    text: 'Slice to G-code and export watertight STL or sheet-metal DXF.',
+  },
+  {
+    title: 'Robotics and mechanisms',
+    text: 'Generate URDF, SRDF, and SDFormat for simulation pipelines.',
+  },
 ];
 
 const FORMATS = ['STEP', 'STL', 'GLB', 'G-code', 'URDF', 'DXF'];
@@ -85,27 +95,21 @@ export default function HomePage() {
             </div>
           </section>
 
-          <section className="marketing-features-section">
+          <section className="marketing-points-section">
             <div className="marketing-section-inner">
-              <div className="space-y-0">
-                {FEATURES.map(({ icon: Icon, title }, index) => (
-                  <article
-                    key={title}
-                    className={`landing-feature-row ${index % 2 === 1 ? 'landing-feature-row-reverse' : ''} ${
-                      index > 0 ? 'border-t border-border' : ''
-                    }`}
-                  >
-                    <div className="landing-feature-visual">
-                      <div className="landing-feature-visual-inner">
-                        <Icon className="w-16 h-16 text-brand" aria-hidden />
-                      </div>
+              <ul className="landing-points-grid">
+                {FEATURE_POINTS.map(({ title, text }) => (
+                  <li key={title} className="landing-point-item">
+                    <span className="landing-point-check" aria-hidden>
+                      <Check className="w-4 h-4 text-brand" />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+                      <p className="text-sm text-gray-600 mt-1 leading-relaxed">{text}</p>
                     </div>
-                    <div className="landing-feature-content">
-                      <h3 className="text-xl sm:text-2xl font-semibold text-gray-900">{title}</h3>
-                    </div>
-                  </article>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           </section>
 

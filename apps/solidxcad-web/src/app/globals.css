@@ -249,13 +249,6 @@ body {
   }
 }
 
-.marketing-features-section {
-  background: #ffffff;
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 2rem 0;
-}
-
 .marketing-cta-section {
   padding: 2.5rem 0;
 }
@@ -372,64 +365,53 @@ body {
   justify-self: center;
 }
 
-.landing-feature-row {
+.marketing-points-section {
+  padding: 1.5rem 0 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.landing-points-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 640px) {
+  .landing-points-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.875rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .landing-points-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.landing-point-item {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem 0;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
 }
 
-@media (min-width: 768px) {
-  .landing-feature-row {
-    flex-direction: row;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 1.5rem 0;
-  }
-
-  .landing-feature-row-reverse {
-    flex-direction: row-reverse;
-  }
-}
-
-.landing-feature-visual {
-  flex: 0 0 auto;
-  width: 100%;
-}
-
-@media (min-width: 768px) {
-  .landing-feature-visual {
-    width: 50%;
-  }
-}
-
-.landing-feature-visual-inner {
+.landing-point-check {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 9rem;
-  border-radius: 1rem;
-  border: 1px solid #e2e8f0;
-  background:
-    linear-gradient(135deg, rgba(16, 58, 142, 0.06) 0%, rgba(248, 250, 252, 1) 55%, #ffffff 100%),
-    linear-gradient(rgba(16, 58, 142, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 58, 142, 0.04) 1px, transparent 1px);
-  background-size: 100% 100%, 20px 20px, 20px 20px;
-}
-
-.landing-feature-content {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-@media (min-width: 768px) {
-  .landing-feature-row-reverse .landing-feature-content {
-    justify-content: flex-end;
-    text-align: right;
-  }
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: 0.125rem;
+  border-radius: 9999px;
+  background: rgba(16, 58, 142, 0.08);
+  flex-shrink: 0;
 }
 
 .auth-aside {
