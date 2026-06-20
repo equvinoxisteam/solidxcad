@@ -389,14 +389,6 @@
     color: #1e293b;
   }
 
-  .viewer-studio-embed [data-sidebar="sidebar"] {
-    display: none !important;
-  }
-
-  .viewer-studio-embed [data-slot="sidebar-gap"] {
-    width: 0 !important;
-  }
-
   .viewer-studio-embed,
   .viewer-studio-embed body {
     background: #ffffff;

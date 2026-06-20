@@ -40,12 +40,12 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
   const [highlightFile, setHighlightFile] = useState('');
-  const [showChat, setShowChat] = useState(true);
+  const [showChat, setShowChat] = useState(false);
   const [showWorkspace, setShowWorkspace] = useState(false);
   useClientUser(true);
 
   useEffect(() => {
-    setShowChat(readPanelPref(PANEL_CHAT_KEY, true));
+    setShowChat(readPanelPref(PANEL_CHAT_KEY, false));
     setShowWorkspace(readPanelPref(PANEL_WORKSPACE_KEY, false));
   }, []);
 

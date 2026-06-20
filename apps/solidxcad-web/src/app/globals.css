@@ -2389,15 +2389,20 @@ body {
 
 .studio-embed-dock {
   position: absolute;
-  left: 0.75rem;
-  bottom: 0.75rem;
-  z-index: 25;
+  top: 0.75rem;
+  right: 0.75rem;
+  left: auto;
+  bottom: auto;
+  z-index: 35;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 0.5rem;
+  pointer-events: none;
 }
 
 .studio-embed-dock-btn {
+  pointer-events: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2443,9 +2448,9 @@ body {
   }
 
   .studio-embed-dock {
-    flex-direction: row;
-    left: auto;
+    top: 0.75rem;
     right: 0.75rem;
+    flex-direction: row;
   }
 }
 
