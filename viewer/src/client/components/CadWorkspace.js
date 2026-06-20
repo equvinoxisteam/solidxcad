@@ -2693,6 +2693,16 @@ export default function CadWorkspace({
   const effectiveSidebarOpen = directoryNavigationAvailable && sidebarOpen && !previewMode;
   const desktopSidebarOpen = isDesktop && effectiveSidebarOpen && !previewMode;
 
+  useEffect(() => {
+    if (!studioEmbedMode || previewMode) {
+      return;
+    }
+    setSidebarOpen(true);
+    if (selectedFileSheetKind) {
+      setFileSheetOpenIntent(true);
+    }
+  }, [studioEmbedMode, previewMode, selectedFileSheetKind]);
+
   const setThemeMenuOpen = useCallback(() => {}, []);
 
   const readGlobalThemeState = useCallback(() => (

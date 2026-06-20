@@ -77,3 +77,17 @@ export function embedUserFacingViewerAlert(alert, { hasRenderableContent = false
 export function viewerEmptyHeading(fallback = "Select a file") {
   return isViewerEmbedMode() ? embedStudioEmptyCopy().heading : fallback;
 }
+
+export const STUDIO_PANEL_MESSAGE_TYPE = "solidxcad-studio-panel";
+
+/** Ask the SolidXCad studio shell to toggle workspace or agent panels. */
+export function postStudioPanelToggle(panel) {
+  if (!isViewerStudioEmbed() || typeof window === "undefined") {
+    return;
+  }
+  const normalized = String(panel || "").trim().toLowerCase();
+  if (normalized !== "workspace" && normalized !== "agent") {
+    return;
+  }
+  window.parent?.postMessage({ type: STUDIO_PANEL_MESSAGE_TYPE, panel: normalized }, "*");
+}

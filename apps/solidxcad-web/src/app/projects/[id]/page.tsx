@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Bot, FolderTree, PanelRightClose, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { ChatPanel } from '@/components/ChatPanel';
 import { ModelViewer } from '@/components/ModelViewer';
 import { ToolsPanel } from '@/components/ToolsPanel';
@@ -22,6 +22,7 @@ import { USER_ERROR_LOAD_PROJECT } from '@/lib/userMessages';
 
 const PANEL_CHAT_KEY = 'solidxcad_studio_chat_open';
 const PANEL_WORKSPACE_KEY = 'solidxcad_studio_workspace_open';
+const STUDIO_PANEL_MESSAGE_TYPE = 'solidxcad-studio-panel';
 
 function readPanelPref(key: string, fallback: boolean) {
   if (typeof window === 'undefined') return fallback;
@@ -64,6 +65,34 @@ export default function StudioPage() {
       return next;
     });
   }
+
+  const openWorkspace = useCallback(() => {
+    setShowWorkspace(true);
+    localStorage.setItem(PANEL_WORKSPACE_KEY, '1');
+  }, []);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data;
+      if (!data || data.type !== STUDIO_PANEL_MESSAGE_TYPE) return;
+      if (data.panel === 'agent') {
+        setShowChat((open) => {
+          const next = !open;
+          localStorage.setItem(PANEL_CHAT_KEY, next ? '1' : '0');
+          return next;
+        });
+      }
+      if (data.panel === 'workspace') {
+        setShowWorkspace((open) => {
+          const next = !open;
+          localStorage.setItem(PANEL_WORKSPACE_KEY, next ? '1' : '0');
+          return next;
+        });
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -124,7 +153,7 @@ export default function StudioPage() {
       const cadName = result.file?.name;
       setStatus(`✓ ${label}: ${cadName || 'saved'}${note}`);
       setHighlightFile(cadName || '');
-      if (!showWorkspace && cadName) setShowWorkspace(true);
+      if (!showWorkspace && cadName) openWorkspace();
       try {
         const [{ files: f }] = await Promise.all([
           api.getFiles(id),
@@ -210,41 +239,6 @@ export default function StudioPage() {
           </div>
         )}
 
-        <div className="studio-embed-dock">
-          {!showWorkspace && (
-            <button
-              type="button"
-              className="studio-embed-dock-btn"
-              onClick={toggleWorkspace}
-              title="Workspace files"
-              aria-label="Open workspace files"
-            >
-              <FolderTree className="w-4 h-4" aria-hidden />
-            </button>
-          )}
-          {!showChat && (
-            <button
-              type="button"
-              className="studio-embed-dock-btn studio-embed-dock-btn-primary"
-              onClick={toggleChat}
-              title="CAD Agent"
-              aria-label="Open CAD agent"
-            >
-              <Bot className="w-4 h-4" aria-hidden />
-            </button>
-          )}
-          {showChat && (
-            <button
-              type="button"
-              className="studio-embed-dock-btn"
-              onClick={toggleChat}
-              title="Hide agent"
-              aria-label="Hide agent"
-            >
-              <PanelRightClose className="w-4 h-4" aria-hidden />
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );

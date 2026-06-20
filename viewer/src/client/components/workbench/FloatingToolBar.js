@@ -1,6 +1,8 @@
 import {
+  Bot,
   Camera,
   Crosshair,
+  FolderTree,
   MousePointer2,
   Play,
   PenTool
@@ -10,6 +12,7 @@ import {
   isMeshRenderFormat,
   isRobotRenderFormat
 } from "cadjs/lib/fileFormats";
+import { isViewerStudioEmbed, postStudioPanelToggle } from "@/workbench/embedMode.js";
 import { TooltipProvider } from "../ui/tooltip";
 import DrawingToolbar from "./DrawingToolbar";
 import { ToolbarButton } from "./ToolbarButton";
@@ -17,6 +20,25 @@ import { CAD_WORKSPACE_TOOLBAR_DESKTOP_WIDTH_CLASS } from "./ToolbarShell";
 
 const FLOATING_TOOL_BAR_SURFACE_CLASS =
   "cad-glass-surface border border-sidebar-border text-sidebar-foreground shadow-sm";
+
+function StudioPanelButtons() {
+  return (
+    <>
+      <ToolbarButton
+        label="Workspace files"
+        onClick={() => postStudioPanelToggle("workspace")}
+      >
+        <FolderTree className="size-3.5" strokeWidth={2} aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton
+        label="CAD Agent"
+        onClick={() => postStudioPanelToggle("agent")}
+      >
+        <Bot className="size-3.5" strokeWidth={2} aria-hidden="true" />
+      </ToolbarButton>
+    </>
+  );
+}
 
 function DesktopFloatingToolBar({
   renderFormat,
@@ -45,7 +67,8 @@ function DesktopFloatingToolBar({
   drawingStrokes,
   handleEnterPreviewMode,
   handleScreenshotCopy,
-  handleScreenshotDownload
+  handleScreenshotDownload,
+  studioEmbed = false
 }) {
   const dxfMode = renderFormat === RENDER_FORMAT.DXF;
   const implicitMode = renderFormat === RENDER_FORMAT.IMPLICIT;
@@ -115,6 +138,8 @@ function DesktopFloatingToolBar({
             </ToolbarButton>
           ) : null}
 
+          {studioEmbed ? <StudioPanelButtons /> : null}
+
           {!dxfMode ? (
             <ToolbarButton
               label="Screenshot"
@@ -147,14 +172,43 @@ function DesktopFloatingToolBar({
   );
 }
 
+function StudioOnlyFloatingToolBar({ floatingCadToolbarPosition }) {
+  return (
+    <div
+      className="absolute z-20 flex flex-col items-end gap-1.5"
+      style={floatingCadToolbarPosition}
+    >
+      <TooltipProvider delayDuration={250}>
+        <div className={`pointer-events-auto inline-flex w-fit items-center gap-1 self-end rounded-md p-1 ${FLOATING_TOOL_BAR_SURFACE_CLASS}`}>
+          <StudioPanelButtons />
+        </div>
+      </TooltipProvider>
+    </div>
+  );
+}
+
 export default function FloatingToolBar({
   previewMode,
   selectedEntry,
+  floatingCadToolbarPosition,
   ...toolbarProps
 }) {
-  if (previewMode || !selectedEntry) {
+  if (previewMode) {
     return null;
   }
 
-  return <DesktopFloatingToolBar {...toolbarProps} />;
+  const studioEmbed = isViewerStudioEmbed();
+  if (!selectedEntry) {
+    return studioEmbed
+      ? <StudioOnlyFloatingToolBar floatingCadToolbarPosition={floatingCadToolbarPosition} />
+      : null;
+  }
+
+  return (
+    <DesktopFloatingToolBar
+      {...toolbarProps}
+      floatingCadToolbarPosition={floatingCadToolbarPosition}
+      studioEmbed={studioEmbed}
+    />
+  );
 }
