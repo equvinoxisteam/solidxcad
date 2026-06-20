@@ -720,6 +720,7 @@ export default function CadWorkspace({
     ));
   }, []);
   const [previewMode, setPreviewMode] = useState(false);
+  const [previewOrbitPaused, setPreviewOrbitPaused] = useState(false);
   const [tabToolsWidth, setTabToolsWidth] = useState(readInitialFileSheetWidth);
   const [fileSheetWidthIsCustom, setFileSheetWidthIsCustom] = useState(readInitialFileSheetWidthIsCustom);
   const [drawingTool, setDrawingTool] = useState(DRAWING_TOOL.FREEHAND);
@@ -2689,9 +2690,10 @@ export default function CadWorkspace({
     setTabToolsWidth(defaultFileSheetWidth);
   }, [defaultFileSheetWidth, fileSheetWidthIsCustom]);
   const studioEmbedMode = isViewerStudioEmbed();
-  const desktopFileSheetOpen = isDesktop && tabToolsOpen && !!selectedFileSheetKind && !previewMode;
-  const effectiveSidebarOpen = directoryNavigationAvailable && sidebarOpen && !previewMode;
-  const desktopSidebarOpen = isDesktop && effectiveSidebarOpen && !previewMode;
+  const hidePanelsForPreview = previewMode && !studioEmbedMode;
+  const desktopFileSheetOpen = isDesktop && tabToolsOpen && !!selectedFileSheetKind && !hidePanelsForPreview;
+  const effectiveSidebarOpen = directoryNavigationAvailable && sidebarOpen && !hidePanelsForPreview;
+  const desktopSidebarOpen = isDesktop && effectiveSidebarOpen;
 
   const setThemeMenuOpen = useCallback(() => {}, []);
 
@@ -2906,7 +2908,7 @@ export default function CadWorkspace({
     if (event.button !== 0) {
       return;
     }
-    const rightSheetOpen = !previewMode && tabToolsOpen && !!selectedFileSheetKind;
+    const rightSheetOpen = !hidePanelsForPreview && tabToolsOpen && !!selectedFileSheetKind;
     if (!isDesktop || !rightSheetOpen) {
       return;
     }
@@ -2935,7 +2937,7 @@ export default function CadWorkspace({
     desktopFileSheetOpen,
     desktopSidebarOpen,
     layoutViewportWidth,
-    previewMode,
+    hidePanelsForPreview,
     sidebarWidth,
     selectedFileSheetKind,
     setFileSheetWidthIsCustom,
@@ -4478,6 +4480,7 @@ export default function CadWorkspace({
       return;
     }
     previewUiStateRef.current = null;
+    setPreviewOrbitPaused(false);
     setPreviewMode(false);
   }, [effectiveRenderFormat, previewMode]);
 
@@ -6548,6 +6551,7 @@ export default function CadWorkspace({
     handleUndoDrawing,
     handleRedoDrawing,
     setPreviewMode,
+    setPreviewOrbitPaused,
     setViewerAlertOpen,
     setThemeMenuOpen,
     setTabToolsOpen,
@@ -6597,15 +6601,24 @@ export default function CadWorkspace({
     const previewRenderable = effectiveRenderFormat === RENDER_FORMAT.IMPLICIT
       ? !!selectedImplicitRuntimeModel
       : !!selectedMeshData;
-    if (effectiveRenderFormat === RENDER_FORMAT.DXF || viewerLoading || !previewRenderable || previewMode) {
+    if (effectiveRenderFormat === RENDER_FORMAT.DXF || viewerLoading || !previewRenderable) {
       return;
     }
+    if (previewMode && previewOrbitPaused) {
+      setPreviewOrbitPaused(false);
+      return;
+    }
+    if (previewMode) {
+      return;
+    }
+    const keepPanels = isViewerStudioEmbed();
     previewUiStateRef.current = {
       sidebarOpen,
       tabToolsOpen,
       tabToolMode,
       themeMenuOpen: false,
-      viewerAlertOpen
+      viewerAlertOpen,
+      keepPanels
     };
     setCopyStatus("");
     setScreenshotStatus("");
@@ -6614,12 +6627,16 @@ export default function CadWorkspace({
     setDrawingRedoStack([]);
     setViewerAlertOpen(false);
     setThemeMenuOpen(false);
-    setSidebarOpen(false);
-    setTabToolsOpen(false);
+    if (!keepPanels) {
+      setSidebarOpen(false);
+      setTabToolsOpen(false);
+    }
+    setPreviewOrbitPaused(false);
     setPreviewMode(true);
   }, [
     effectiveRenderFormat,
     previewMode,
+    previewOrbitPaused,
     sidebarOpen,
     setThemeMenuOpen,
     setTabToolsOpen,
@@ -6630,6 +6647,13 @@ export default function CadWorkspace({
     viewerAlertOpen,
     viewerLoading
   ]);
+
+  const handlePausePreviewOrbit = useCallback(() => {
+    if (!previewMode || previewOrbitPaused) {
+      return;
+    }
+    setPreviewOrbitPaused(true);
+  }, [previewMode, previewOrbitPaused]);
 
   const toggleDirectory = (directoryId) => {
     setFileViewerDirectoryStateInitialized(true);
@@ -6701,7 +6725,7 @@ export default function CadWorkspace({
   ]);
   const canUndoDrawing = drawingUndoStack.length > 0;
   const canRedoDrawing = drawingRedoStack.length > 0;
-  const fileSheetOpen = !!selectedFileSheetKind && tabToolsOpen && !previewMode;
+  const fileSheetOpen = !!selectedFileSheetKind && tabToolsOpen && !hidePanelsForPreview;
   const activeSidebarWidth = desktopSidebarOpen
     ? resolvedDesktopPanelWidths.sidebarWidth
     : 0;
@@ -6775,6 +6799,7 @@ export default function CadWorkspace({
 
   const floatingToolbarProps = {
     previewMode,
+    previewOrbitPaused,
     selectedEntry,
     renderFormat: effectiveRenderFormat,
     floatingCadToolbarPosition,
@@ -6801,6 +6826,7 @@ export default function CadWorkspace({
     canRedoDrawing,
     drawingStrokes,
     handleEnterPreviewMode,
+    handlePausePreviewOrbit,
     handleScreenshotCopy,
     handleScreenshotDownload,
     navigationAvailable: directoryNavigationAvailable,
@@ -6842,6 +6868,7 @@ export default function CadWorkspace({
           themeSettings={resolvedThemeSettings}
           displaySettings={renderDisplaySettings}
           previewMode={previewMode}
+          previewOrbitPaused={previewOrbitPaused}
           viewportFrameInsets={viewportFrameInsets}
           viewerLoading={viewerLoading}
           viewerAlert={userFacingViewerAlert}
@@ -6938,7 +6965,7 @@ export default function CadWorkspace({
           <div className="flex h-full min-w-0">
             {directoryNavigationAvailable ? (
             <FileViewerSidebar
-              previewMode={previewMode}
+              previewMode={hidePanelsForPreview}
               query={query}
               onQueryChange={setQuery}
               filteredEntries={filteredEntries}

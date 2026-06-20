@@ -20,6 +20,7 @@ export function useCadWorkspaceShortcuts({
   handleUndoDrawing,
   handleRedoDrawing,
   setPreviewMode,
+  setPreviewOrbitPaused,
   setViewerAlertOpen,
   setThemeMenuOpen,
   setTabToolsOpen,
@@ -71,8 +72,9 @@ export function useCadWorkspaceShortcuts({
         if (previewMode) {
           const previousUiState = previewUiStateRef.current;
           previewUiStateRef.current = null;
+          setPreviewOrbitPaused(false);
           setPreviewMode(false);
-          if (previousUiState) {
+          if (previousUiState && !previousUiState.keepPanels) {
             setViewerAlertOpen(previousUiState.viewerAlertOpen);
             setThemeMenuOpen(previousUiState.themeMenuOpen);
             setSidebarOpen(previousUiState.sidebarOpen);
@@ -105,6 +107,7 @@ export function useCadWorkspaceShortcuts({
     previewUiStateRef,
     setThemeMenuOpen,
     setPreviewMode,
+    setPreviewOrbitPaused,
     setSidebarOpen,
     setTabToolMode,
     setTabToolsOpen,

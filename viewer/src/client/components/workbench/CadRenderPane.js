@@ -60,6 +60,7 @@ export default function CadRenderPane({
   viewerPerspectiveRef,
   themeSettings,
   previewMode,
+  previewOrbitPaused = false,
   viewportFrameInsets,
   viewerLoading,
   viewerAlert,
@@ -213,6 +214,7 @@ export default function CadRenderPane({
           modelKey={activeModelKey}
           isLoading={viewerLoading}
           previewMode={previewMode}
+          previewOrbitPaused={previewOrbitPaused}
           viewportFrameInsets={viewportFrameInsets}
           viewPlaneOffsetRight={viewPlaneOffsetRight}
           themeSettings={themeSettings}
@@ -243,6 +245,7 @@ export default function CadRenderPane({
           themeSettings={themeSettings}
           displaySettings={dxfMode || pathPreviewMode ? null : displaySettings}
           previewMode={dxfMode ? false : previewMode}
+          previewOrbitPaused={previewOrbitPaused}
           showViewPlane={dxfMode || gcodeMode ? true : !previewMode}
           scale={urdfMode ? VIEWER_SCENE_SCALE.URDF : VIEWER_SCENE_SCALE.CAD}
           viewPlaneOffsetRight={viewPlaneOffsetRight}

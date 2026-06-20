@@ -6,6 +6,7 @@ import {
   MousePointer2,
   PanelLeft,
   PanelRight,
+  Pause,
   Play,
   PenTool
 } from "lucide-react";
@@ -129,8 +130,11 @@ function DesktopFloatingToolBar({
   canRedoDrawing,
   drawingStrokes,
   handleEnterPreviewMode,
+  handlePausePreviewOrbit,
   handleScreenshotCopy,
   studioEmbed = false,
+  previewMode = false,
+  previewOrbitPaused = false,,
   navigationAvailable = true,
   sidebarOpen = false,
   onToggleSidebar,
@@ -208,11 +212,23 @@ function DesktopFloatingToolBar({
 
           {!dxfMode ? (
             <ToolbarButton
-              label="Orbit preview"
+              label={previewOrbitPaused ? "Resume orbit" : "Orbit preview"}
+              active={previewMode && !previewOrbitPaused}
               onClick={handleEnterPreviewMode}
               disabled={viewerLoading || !renderReady}
             >
               <Play className="size-3.5" strokeWidth={2} aria-hidden="true" />
+            </ToolbarButton>
+          ) : null}
+
+          {!dxfMode && previewMode ? (
+            <ToolbarButton
+              label="Pause orbit"
+              active={previewOrbitPaused}
+              onClick={handlePausePreviewOrbit}
+              disabled={previewOrbitPaused}
+            >
+              <Pause className="size-3.5" strokeWidth={2} aria-hidden="true" />
             </ToolbarButton>
           ) : null}
 
@@ -252,7 +268,11 @@ function StudioOnlyFloatingToolBar({
   floatingCadToolbarPosition,
   navigationAvailable = true,
   sidebarOpen = false,
-  onToggleSidebar
+  onToggleSidebar,
+  previewMode = false,
+  previewOrbitPaused = false,
+  handleEnterPreviewMode,
+  handlePausePreviewOrbit
 }) {
   return (
     <ToolbarAnchor studioEmbed floatingCadToolbarPosition={floatingCadToolbarPosition}>
@@ -263,6 +283,23 @@ function StudioOnlyFloatingToolBar({
             sidebarOpen={sidebarOpen}
             onToggleSidebar={onToggleSidebar}
           />
+          <ToolbarButton
+            label={previewOrbitPaused ? "Resume orbit" : "Orbit preview"}
+            active={previewMode && !previewOrbitPaused}
+            onClick={handleEnterPreviewMode}
+          >
+            <Play className="size-3.5" strokeWidth={2} aria-hidden="true" />
+          </ToolbarButton>
+          {previewMode ? (
+            <ToolbarButton
+              label="Pause orbit"
+              active={previewOrbitPaused}
+              onClick={handlePausePreviewOrbit}
+              disabled={previewOrbitPaused}
+            >
+              <Pause className="size-3.5" strokeWidth={2} aria-hidden="true" />
+            </ToolbarButton>
+          ) : null}
         </div>
       </TooltipProvider>
     </ToolbarAnchor>
@@ -271,6 +308,7 @@ function StudioOnlyFloatingToolBar({
 
 export default function FloatingToolBar({
   previewMode,
+  previewOrbitPaused = false,
   selectedEntry,
   floatingCadToolbarPosition,
   navigationAvailable = true,
@@ -282,11 +320,10 @@ export default function FloatingToolBar({
   fileSheetKind = "",
   ...toolbarProps
 }) {
-  if (previewMode) {
+  const studioEmbed = isViewerStudioEmbed();
+  if (previewMode && !studioEmbed) {
     return null;
   }
-
-  const studioEmbed = isViewerStudioEmbed();
   const studioPanelProps = {
     navigationAvailable,
     sidebarOpen,
@@ -302,6 +339,10 @@ export default function FloatingToolBar({
       ? (
         <StudioOnlyFloatingToolBar
           floatingCadToolbarPosition={floatingCadToolbarPosition}
+          previewMode={previewMode}
+          previewOrbitPaused={previewOrbitPaused}
+          handleEnterPreviewMode={toolbarProps.handleEnterPreviewMode}
+          handlePausePreviewOrbit={toolbarProps.handlePausePreviewOrbit}
           {...studioPanelProps}
         />
       )
@@ -312,6 +353,8 @@ export default function FloatingToolBar({
     <DesktopFloatingToolBar
       {...toolbarProps}
       {...studioPanelProps}
+      previewMode={previewMode}
+      previewOrbitPaused={previewOrbitPaused}
       floatingCadToolbarPosition={floatingCadToolbarPosition}
       studioEmbed={studioEmbed}
     />

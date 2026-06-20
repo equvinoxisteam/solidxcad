@@ -157,7 +157,7 @@ const COARSE_POINTER_PINCH_ZOOM_SPEED = 2.4;
 const KEYBOARD_ORBIT_NUDGE_RAD = Math.PI / 32;
 const KEYBOARD_ORBIT_SPEED_RAD_PER_SEC = Math.PI * 0.42;
 const KEYBOARD_POLAR_EPSILON = 0.02;
-const PREVIEW_AUTO_ROTATE_SPEED = 1.0;
+const PREVIEW_AUTO_ROTATE_SPEED = 2.2;
 const VIEW_PLANE_ACTIVE_DOT_THRESHOLD = 0.994;
 const VIEW_PLANE_TRANSITION_MS = 280;
 const DEFAULT_VIEW_PLANE_ORIENTATION = Object.freeze({
@@ -945,6 +945,7 @@ const CadViewer = forwardRef(function CadViewer({
   themeSettings = null,
   floorModeOverride = "",
   previewMode = false,
+  previewOrbitPaused = false,
   showViewPlane = true,
   viewPlaneOffsetRight = 16,
   viewPlaneOffsetBottom = 16,
@@ -1962,20 +1963,20 @@ const CadViewer = forwardRef(function CadViewer({
       runtime.interactionState.restoreTimerId = 0;
     }
     clearKeyboardOrbitState(runtime.keyboardOrbitState);
-    runtime.previewOrbitEnabled = !!previewMode;
-    runtime.controls.autoRotate = !!previewMode;
+    runtime.previewOrbitEnabled = !!previewMode && !previewOrbitPaused;
+    runtime.controls.autoRotate = !!previewMode && !previewOrbitPaused;
     runtime.controls.autoRotateSpeed = PREVIEW_AUTO_ROTATE_SPEED;
     runtime.controls.enabled = true;
     runtime.controls.enableDamping = true;
     runtime.controls.dampingFactor = DEFAULT_DAMPING_FACTOR;
-    runtime.interactionState.active = !!previewMode;
+    runtime.interactionState.active = !!previewMode && !previewOrbitPaused;
     if (previewMode) {
       cancelCameraTransition(runtime, { scheduleIdle: false });
     } else {
       runtime.scheduleIdleQuality();
     }
     runtime.requestRender();
-  }, [previewMode, viewerReadyTick]);
+  }, [previewMode, previewOrbitPaused, viewerReadyTick]);
 
   const urdfPosePickerInteractionActive = Boolean(urdfPosePicker?.active && !previewMode);
   const urdfPosePickerCursor = urdfPosePickerInteractionActive

@@ -25,6 +25,7 @@ const DEFAULT_DAMPING_FACTOR = 0.14;
 const DEFAULT_ZOOM_SPEED = 4.5;
 const ACCELERATED_WHEEL_ZOOM_SPEED = 10;
 const TRACKPAD_PINCH_ZOOM_SPEED = 14;
+const PREVIEW_AUTO_ROTATE_SPEED = 2.2;
 const KEYBOARD_ORBIT_NUDGE_RAD = Math.PI / 32;
 const KEYBOARD_ORBIT_SPEED_RAD_PER_SEC = Math.PI * 0.42;
 const KEYBOARD_POLAR_EPSILON = 0.02;
@@ -467,6 +468,7 @@ const ImplicitCadViewer = forwardRef(function ImplicitCadViewer({
   modelKey = "",
   isLoading = false,
   previewMode = false,
+  previewOrbitPaused = false,
   viewportFrameInsets = {},
   viewPlaneOffsetRight = 16,
   themeSettings = null,
@@ -583,10 +585,10 @@ const ImplicitCadViewer = forwardRef(function ImplicitCadViewer({
     if (!runtime?.controls) {
       return;
     }
-    runtime.controls.autoRotate = !!previewMode;
-    runtime.controls.autoRotateSpeed = 1.0;
+    runtime.controls.autoRotate = !!previewMode && !previewOrbitPaused;
+    runtime.controls.autoRotateSpeed = PREVIEW_AUTO_ROTATE_SPEED;
     runtime.requestRender?.();
-  }, [previewMode]);
+  }, [previewMode, previewOrbitPaused]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -984,8 +986,8 @@ const ImplicitCadViewer = forwardRef(function ImplicitCadViewer({
       emitPerspectiveChange();
     }
     if (controls) {
-      controls.autoRotate = !!previewMode;
-      controls.autoRotateSpeed = 1.0;
+      controls.autoRotate = !!previewMode && !previewOrbitPaused;
+      controls.autoRotateSpeed = PREVIEW_AUTO_ROTATE_SPEED;
     }
     requestRender();
 
