@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
-import { Check, CreditCard, Loader2, User } from 'lucide-react';
-import { Navbar } from '@/components/Navbar';
+import { Check, CreditCard, ImagePlus, Loader2, User } from 'lucide-react';
+import { DashboardShell } from '@/components/DashboardShell';
 import { BRAND_NAME } from '@/lib/brand';
 import {
   api,
@@ -25,6 +25,7 @@ declare global {
 
 export default function SettingsPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [user, setUser] = useState<UserType | null>(null);
   const [billing, setBilling] = useState<BillingConfig | null>(null);
   const [name, setName] = useState('');
@@ -96,6 +97,7 @@ export default function SettingsPage() {
       const data = String(reader.result || '');
       setPendingAvatar(data);
       setAvatarPreview(data);
+      setError('');
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -137,68 +139,80 @@ export default function SettingsPage() {
   const usage = user ? creditUsageSummary(user, billing) : null;
 
   return (
-    <div className="dashboard-scene min-h-screen flex flex-col relative overflow-hidden">
-      <div className="auth-bg opacity-60" aria-hidden />
-      <div className="auth-grid opacity-40" aria-hidden />
+    <div className="dashboard-scene min-h-screen relative overflow-hidden">
+      <div className="auth-bg opacity-50" aria-hidden />
+      <div className="auth-grid opacity-30" aria-hidden />
 
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className="relative z-10 min-h-screen">
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
-        <Navbar />
 
-        <main className="flex-1 max-w-lg mx-auto w-full px-4 sm:px-6 py-8">
-          <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Settings</h1>
-          <p className="text-gray-400 text-sm mb-8">Manage your account and subscription</p>
+        <DashboardShell>
+          <header className="dashboard-page-header dashboard-page-header-settings">
+            <div>
+              <p className="dashboard-page-eyebrow">Account</p>
+              <h1 className="dashboard-page-title">Settings</h1>
+              <p className="dashboard-page-subtitle">Manage your profile and subscription</p>
+            </div>
+          </header>
 
           {loading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-brand" />
             </div>
           ) : user ? (
-            <div className="space-y-5">
+            <div className="settings-stack">
               {error && (
-                <div className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl p-3">
-                  {error}
-                </div>
+                <div className="dashboard-alert dashboard-alert-error">{error}</div>
               )}
 
-              <section className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/85 p-6 space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-brand/15 border border-brand/25 flex items-center justify-center">
-                    <User className="w-5 h-5 text-brand" />
+              <section className="settings-card">
+                <div className="settings-card-header">
+                  <div className="settings-card-icon">
+                    <User className="w-5 h-5 text-brand" aria-hidden />
                   </div>
-                  <h2 className="font-semibold text-white">Account</h2>
+                  <h2 className="settings-card-title">Profile</h2>
                 </div>
 
-                <form onSubmit={saveProfile} className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
+                <form onSubmit={saveProfile} className="settings-form">
+                  <div className="settings-avatar-row">
+                    <div className="settings-avatar-preview">
                       {avatarPreview ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={avatarPreview}
-                          alt="Profile"
-                          className="w-16 h-16 rounded-full object-cover border border-white/20"
-                        />
+                        <img src={avatarPreview} alt="Profile" className="settings-avatar-image" />
                       ) : (
-                        <div className="w-16 h-16 rounded-full bg-brand/15 border border-brand/25 flex items-center justify-center">
-                          <User className="w-7 h-7 text-brand" />
+                        <div className="settings-avatar-fallback">
+                          <User className="w-7 h-7 text-brand" aria-hidden />
                         </div>
                       )}
                     </div>
-                    <div>
-                      <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1.5">
-                        Profile photo
-                      </label>
-                      <input type="file" accept="image/*" onChange={onAvatarPick} className="text-xs text-gray-400" />
-                      <p className="text-[10px] text-gray-500 mt-1">Used by the agent for personalization context</p>
+                    <div className="settings-avatar-actions">
+                      <p className="settings-field-label">Profile photo</p>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={onAvatarPick}
+                        className="sr-only"
+                        aria-label="Upload profile photo"
+                      />
+                      <button
+                        type="button"
+                        className="settings-upload-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <ImagePlus className="w-4 h-4 shrink-0" aria-hidden />
+                        Upload photo
+                      </button>
+                      <p className="settings-field-hint">JPG or PNG, max 2.5 MB. Used by the agent for context.</p>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1.5">
+                  <div className="settings-field">
+                    <label className="settings-field-label" htmlFor="settings-name">
                       Display name
                     </label>
                     <input
+                      id="settings-name"
                       className="auth-input"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -207,11 +221,12 @@ export default function SettingsPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1.5">
+                  <div className="settings-field">
+                    <label className="settings-field-label" htmlFor="settings-phone">
                       Phone
                     </label>
                     <input
+                      id="settings-phone"
                       className="auth-input"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
@@ -220,12 +235,13 @@ export default function SettingsPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1.5">
+                  <div className="settings-field">
+                    <label className="settings-field-label" htmlFor="settings-email">
                       Email
                     </label>
                     <input
-                      className="auth-input opacity-70 cursor-not-allowed"
+                      id="settings-email"
+                      className="auth-input settings-input-readonly"
                       value={user.email}
                       readOnly
                       disabled
@@ -239,10 +255,10 @@ export default function SettingsPage() {
                       disabled={saving || !name.trim()}
                     >
                       {saving ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
                       ) : saved ? (
                         <>
-                          <Check className="w-4 h-4" />
+                          <Check className="w-4 h-4" aria-hidden />
                           Saved
                         </>
                       ) : (
@@ -253,43 +269,37 @@ export default function SettingsPage() {
                 </form>
               </section>
 
-              <section className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/85 p-6 space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="font-semibold text-white">Credits</h2>
-                  <span className="text-xs font-medium uppercase tracking-wide text-brand-muted">
-                    {user.plan} plan
-                  </span>
+              <section className="settings-card">
+                <div className="settings-card-header settings-card-header-split">
+                  <h2 className="settings-card-title">Credits</h2>
+                  <span className="settings-plan-pill">{user.plan} plan</span>
                 </div>
 
                 {usage && (
                   <>
-                    <div className="flex items-end justify-between gap-4">
+                    <div className="settings-credits-row">
                       <div>
-                        <p className="text-3xl font-semibold text-white tabular-nums tracking-tight">
-                          {formatCreditCount(usage.remaining)}
-                        </p>
-                        <p className="text-sm text-gray-400 mt-1">credits remaining</p>
+                        <p className="settings-credits-value">{formatCreditCount(usage.remaining)}</p>
+                        <p className="settings-credits-label">credits remaining</p>
                       </div>
                       {usage.unlimited ? (
-                        <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-brand/15 border border-brand/30 text-brand-muted">
-                          No monthly cap
-                        </span>
+                        <span className="settings-plan-pill">No monthly cap</span>
                       ) : usage.limit != null ? (
-                        <p className="text-sm text-gray-400 tabular-nums text-right">
+                        <p className="settings-credits-limit">
                           of {formatCreditCount(usage.limit)}
-                          <span className="block text-xs text-gray-500">monthly allowance</span>
+                          <span>monthly allowance</span>
                         </p>
                       ) : null}
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                    <div className="settings-progress-wrap">
+                      <div className="settings-progress-bar">
                         <div
-                          className="h-full rounded-full bg-brand transition-all"
+                          className="settings-progress-fill"
                           style={{ width: `${usage.percentRemaining}%` }}
                         />
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="settings-field-hint">
                         {usage.unlimited
                           ? 'Unlimited usage is enabled on this workspace. Credits are shown for reference.'
                           : `${formatCreditCount(usage.used)} used · ${formatCreditCount(usage.remaining)} left this cycle`}
@@ -299,27 +309,27 @@ export default function SettingsPage() {
                 )}
               </section>
 
-              <section className="auth-card rounded-2xl border border-white/10 bg-[#0a1628]/85 p-6 space-y-3">
-                <h2 className="font-semibold text-white">Subscription</h2>
-                <div className="flex items-center justify-between py-2 border-b border-white/5">
-                  <span className="text-sm text-gray-400">Plan</span>
-                  <span className="text-sm font-medium text-white uppercase">{user.plan}</span>
+              <section className="settings-card">
+                <h2 className="settings-card-title mb-4">Subscription</h2>
+                <div className="settings-kv-row">
+                  <span className="settings-kv-label">Plan</span>
+                  <span className="settings-kv-value">{user.plan}</span>
                 </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-400">Billing status</span>
-                  <span className="text-sm font-medium text-blue-200">
+                <div className="settings-kv-row">
+                  <span className="settings-kv-label">Billing status</span>
+                  <span className="settings-kv-value settings-kv-value-accent">
                     {usage?.unlimited ? 'Unlimited access' : `${formatCredits(user)} remaining`}
                   </span>
                 </div>
               </section>
 
               {user.plan !== 'pro' && billing && (
-                <section className="auth-card rounded-2xl border border-brand/25 bg-brand/5 p-6">
-                  <h2 className="font-semibold text-white mb-1 flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-brand" />
+                <section className="settings-card settings-card-pro">
+                  <h2 className="settings-card-title flex items-center gap-2 mb-1">
+                    <CreditCard className="w-5 h-5 text-brand" aria-hidden />
                     Upgrade to Pro
                   </h2>
-                  <p className="text-sm text-gray-400 mb-4">
+                  <p className="settings-field-hint mb-4">
                     ${billing.plan.amountUsd}/month · {billing.plan.credits} credits · unlimited projects
                   </p>
                   <button
@@ -328,13 +338,13 @@ export default function SettingsPage() {
                     className="auth-btn-primary flex items-center justify-center gap-2 w-full sm:w-auto px-6"
                     disabled={paying}
                   >
-                    {paying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Pay with Razorpay'}
+                    {paying ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : 'Pay with Razorpay'}
                   </button>
                 </section>
               )}
             </div>
           ) : null}
-        </main>
+        </DashboardShell>
       </div>
     </div>
   );
