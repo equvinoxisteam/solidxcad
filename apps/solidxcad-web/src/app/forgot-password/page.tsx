@@ -122,13 +122,13 @@ export default function ForgotPasswordPage() {
       {error && (
         <div
           role="alert"
-          className="text-sm text-red-200 bg-red-500/10 border border-red-400/25 rounded-lg px-3.5 py-2.5 mb-5"
+          className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5 mb-5"
         >
           {error}
         </div>
       )}
       {info && (
-        <div className="text-sm text-blue-200 bg-brand/10 border border-brand/30 rounded-lg px-3.5 py-2.5 mb-5">
+        <div className="text-sm text-brand bg-brand/5 border border-brand/20 rounded-lg px-3.5 py-2.5 mb-5">
           {info}
         </div>
       )}
@@ -169,7 +169,7 @@ export default function ForgotPasswordPage() {
           <div className="flex items-center justify-between pt-1">
             <button
               type="button"
-              className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+              className="text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1"
               onClick={() => {
                 setStep('email');
                 setOtp('');
@@ -232,7 +232,7 @@ export default function ForgotPasswordPage() {
 
       <Link
         href="/login"
-        className="text-xs text-gray-400 hover:text-white flex items-center gap-1 mt-7 pt-6 border-t border-white/[0.06]"
+        className="text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1 mt-7 pt-6 border-t border-border"
       >
         <ArrowLeft className="w-3 h-3" /> Back to sign in
       </Link>

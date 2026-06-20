@@ -15,7 +15,7 @@ type AuthShellProps = {
 const FEATURES = [
   { icon: Sparkles, text: 'Text-to-STEP: parametric B-rep models from engineering descriptions' },
   { icon: Layers, text: 'Assemblies with catalog fasteners, URDF robots, and multi-body structure' },
-  { icon: Box, text: 'In-browser CAD workbench — orbit, measure, section, and export' },
+  { icon: Box, text: 'In-browser CAD workbench: orbit, measure, section, and export' },
 ];
 
 export function AuthShell({
@@ -32,49 +32,48 @@ export function AuthShell({
       <div className="auth-bg auth-bg-form" aria-hidden />
       <div className="auth-grid auth-grid-form" aria-hidden />
 
-      <aside className="hidden lg:flex lg:w-[min(420px,40%)] xl:w-[44%] shrink-0 flex-col justify-between border-r border-white/[0.06] bg-[#050f1c]/90 px-10 xl:px-12 py-10 relative z-10">
-        <div className="auth-panel-glow pointer-events-none" aria-hidden />
+      <aside className="auth-aside hidden lg:flex shrink-0 flex-col justify-between relative z-10">
         <div>
-          <BrandLogo href="/" size={44} />
-          <div className="mt-12 max-w-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-muted mb-3">
+          <BrandLogo href="/" size={40} />
+          <div className="mt-10 max-w-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand mb-3">
               Cloud CAD workbench
             </p>
-            <h2 className="text-[1.65rem] font-semibold text-white leading-snug tracking-tight">
-              From prompt to STEP — in one engineering workspace
+            <h2 className="text-2xl font-semibold text-gray-900 leading-snug tracking-tight">
+              From prompt to STEP in one engineering workspace
             </h2>
-            <p className="text-sm text-gray-400 mt-3 leading-relaxed">
+            <p className="text-sm text-gray-600 mt-3 leading-relaxed">
               Sign in to generate parametric geometry, inspect assemblies in 3D, and export STL, G-code, and URDF.
             </p>
           </div>
-          <ul className="mt-10 space-y-4">
+          <ul className="mt-8 space-y-3.5">
             {FEATURES.map(({ icon: Icon, text }) => (
-              <li key={text} className="flex gap-3 text-sm text-gray-400 leading-snug">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]">
-                  <Icon className="h-3.5 w-3.5 text-brand-muted" aria-hidden />
+              <li key={text} className="flex gap-3 text-sm text-gray-600 leading-snug">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-brand/5">
+                  <Icon className="h-3.5 w-3.5 text-brand" aria-hidden />
                 </span>
                 <span>{text}</span>
               </li>
             ))}
           </ul>
         </div>
-        <p className="text-[11px] text-gray-600">Powered by Equvinoxis Technologies</p>
+        <p className="text-[11px] text-gray-500">Powered by Equvinoxis Technologies</p>
       </aside>
 
       <div className="relative z-10 flex flex-1 flex-col min-h-screen">
-        <header className="px-5 sm:px-8 py-5 lg:hidden">
+        <header className="px-6 py-5 lg:hidden border-b border-border bg-white/80">
           <BrandLogo href="/" size={36} />
         </header>
 
-        <main className="flex-1 flex items-center justify-center px-5 sm:px-8 pb-6">
-          <div className="w-full max-w-[400px]">
+        <main className="flex-1 flex items-center justify-center px-6 sm:px-10 pb-8">
+          <div className="w-full max-w-[420px]">
             {totalSteps > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between text-[11px] text-gray-500 mb-2">
                   <span>Step {step} of {totalSteps}</span>
                   <span>{progress}%</span>
                 </div>
-                <div className="h-1 rounded-full bg-white/[0.08] overflow-hidden">
+                <div className="h-1 rounded-full bg-gray-200 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-brand transition-all duration-500 ease-out"
                     style={{ width: `${progress}%` }}
@@ -83,11 +82,11 @@ export function AuthShell({
               </div>
             )}
 
-            <div className="auth-panel rounded-2xl border border-white/[0.08] bg-[#0a1628]/95 backdrop-blur-xl p-7 sm:p-8">
-              <div className="mb-7">
-                <h1 className="text-xl sm:text-2xl font-semibold text-white tracking-tight">{title}</h1>
+            <div className="auth-panel rounded-2xl border border-border bg-white p-7 sm:p-8">
+              <div className="mb-6">
+                <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight">{title}</h1>
                 {subtitle && (
-                  <p className="text-sm text-gray-400 mt-1.5 leading-relaxed">{subtitle}</p>
+                  <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">{subtitle}</p>
                 )}
               </div>
               {children}
@@ -95,7 +94,7 @@ export function AuthShell({
           </div>
         </main>
 
-        <footer className="text-center text-[11px] text-gray-600 pb-6 px-4 space-y-1">
+        <footer className="text-center text-[11px] text-gray-500 pb-6 px-4 space-y-1">
           <p>SolidX CAD · Prompt to STEP in the browser</p>
           <p>Powered by Equvinoxis Technologies</p>
         </footer>

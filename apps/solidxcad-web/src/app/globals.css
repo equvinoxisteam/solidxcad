@@ -57,7 +57,7 @@ body {
 .auth-scene,
 .landing-scene,
 .dashboard-scene {
-  background: #f8fafc;
+  background: #ffffff;
   color: #1e293b;
 }
 
@@ -78,9 +78,9 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(16, 58, 142, 0.12), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(16, 58, 142, 0.08), transparent),
-    linear-gradient(160deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%);
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(16, 58, 142, 0.06), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(16, 58, 142, 0.04), transparent),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
 
 .auth-bg-form {
@@ -95,11 +95,10 @@ body {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle, rgba(16, 58, 142, 0.08) 1px, transparent 1px),
-    linear-gradient(rgba(16, 58, 142, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 58, 142, 0.04) 1px, transparent 1px);
-  background-size: 28px 28px, 28px 28px, 28px 28px;
-  mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, black, transparent);
+    linear-gradient(rgba(16, 58, 142, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 58, 142, 0.06) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px;
+  opacity: 0.7;
 }
 
 .auth-grid-form {
@@ -201,7 +200,187 @@ body {
 
 /* Landing — engineering-focused marketing */
 .landing-eyebrow {
-  @apply inline-block text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-muted;
+  @apply inline-block text-[11px] font-semibold uppercase tracking-[0.2em] text-brand;
+}
+
+.marketing-header {
+  border-bottom: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.marketing-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0.875rem 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .marketing-header-inner {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+.marketing-hero {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .marketing-hero {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+.marketing-section-inner {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .marketing-section-inner {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+.marketing-features-section {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 3.5rem 0;
+}
+
+.marketing-cta-section {
+  padding: 4rem 0;
+}
+
+.marketing-footer {
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.marketing-footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 0;
+}
+
+@media (min-width: 640px) {
+  .marketing-footer-inner {
+    flex-direction: row;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+.landing-btn-secondary {
+  @apply px-8 py-3 rounded-xl border border-border text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors text-base font-medium;
+}
+
+.landing-workflow-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .landing-workflow-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: center;
+  }
+}
+
+.landing-workflow-arrow-between {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #103A8E;
+  flex-shrink: 0;
+  justify-self: center;
+}
+
+.landing-feature-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem 0;
+}
+
+@media (min-width: 768px) {
+  .landing-feature-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 2.5rem;
+    padding: 2.5rem 0;
+  }
+
+  .landing-feature-row-reverse {
+    flex-direction: row-reverse;
+  }
+}
+
+.landing-feature-visual {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .landing-feature-visual {
+    width: 42%;
+  }
+}
+
+.landing-feature-visual-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 12rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background:
+    linear-gradient(135deg, rgba(16, 58, 142, 0.06) 0%, rgba(248, 250, 252, 1) 55%, #ffffff 100%),
+    linear-gradient(rgba(16, 58, 142, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 58, 142, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 20px 20px, 20px 20px;
+}
+
+.landing-feature-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.auth-aside {
+  width: min(420px, 40%);
+  padding: 2.5rem 2.5rem;
+  border-right: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+@media (min-width: 1280px) {
+  .auth-aside {
+    width: 44%;
+    padding: 2.5rem 3rem;
+  }
 }
 
 .landing-format-pill {
@@ -259,7 +438,7 @@ body {
 }
 
 .auth-google-fallback {
-  @apply flex w-full items-center justify-center gap-3 rounded-lg border border-white/15 bg-white text-[#3c4043] text-sm font-medium py-2.5 px-4 shadow-sm hover:bg-gray-50 transition-colors no-underline;
+  @apply flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-white text-[#3c4043] text-sm font-medium py-2.5 px-4 shadow-sm hover:bg-gray-50 transition-colors no-underline;
 }
 
 /* Pricing */

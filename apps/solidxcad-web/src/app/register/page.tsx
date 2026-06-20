@@ -134,13 +134,13 @@ export default function RegisterPage() {
       {error && (
         <div
           role="alert"
-          className="text-sm text-red-200 bg-red-500/10 border border-red-400/25 rounded-lg px-3.5 py-2.5 mb-5"
+          className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5 mb-5"
         >
           {error}
         </div>
       )}
       {info && (
-        <div className="text-sm text-blue-200 bg-brand/10 border border-brand/30 rounded-lg px-3.5 py-2.5 mb-5">
+        <div className="text-sm text-brand bg-brand/5 border border-brand/20 rounded-lg px-3.5 py-2.5 mb-5">
           {info}
         </div>
       )}
@@ -152,11 +152,11 @@ export default function RegisterPage() {
           </div>
 
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-white/[0.08]" />
+            <div className="flex-1 h-px bg-border" />
             <span className="text-[10px] text-gray-500 uppercase tracking-[0.14em] font-medium">
               or email
             </span>
-            <div className="flex-1 h-px bg-white/[0.08]" />
+            <div className="flex-1 h-px bg-border" />
           </div>
 
           <form onSubmit={continueToOtp} className="space-y-4">
@@ -235,7 +235,7 @@ export default function RegisterPage() {
           <div className="flex items-center justify-between pt-1">
             <button
               type="button"
-              className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+              className="text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1"
               onClick={() => {
                 setStep('credentials');
                 setOtp('');
@@ -273,8 +273,8 @@ export default function RegisterPage() {
               autoFocus
             />
           </div>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            Signed in as <span className="text-gray-300">{email}</span>. You can update your profile
+          <p className="text-xs text-gray-600 leading-relaxed">
+            Signed in as <span className="text-gray-900 font-medium">{email}</span>. You can update your profile
             later in settings.
           </p>
           <button type="submit" className="auth-btn-primary w-full" disabled={loading}>
@@ -287,9 +287,9 @@ export default function RegisterPage() {
         </form>
       )}
 
-      <p className="text-sm text-gray-500 text-center mt-7 pt-6 border-t border-white/[0.06]">
+      <p className="text-sm text-gray-600 text-center mt-7 pt-6 border-t border-border">
         Have an account?{' '}
-        <Link href="/login" className="text-white hover:text-brand-muted font-medium transition-colors">
+        <Link href="/login" className="text-brand hover:text-brand-hover font-medium transition-colors">
           Sign in
         </Link>
       </p>

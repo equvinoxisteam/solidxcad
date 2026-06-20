@@ -47,7 +47,7 @@ export function OtpInput({
           value={d.trim()}
           onChange={(e) => setDigit(i, e.target.value)}
           onKeyDown={(e) => onKeyDown(i, e)}
-          className="w-11 h-12 text-center text-lg font-semibold rounded-xl bg-white/5 border border-white/15 text-white focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/50"
+          className="w-11 h-12 text-center text-lg font-semibold rounded-xl bg-white border border-border text-gray-900 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
         />
       ))}
     </div>

@@ -47,13 +47,13 @@ export default function PricingPage() {
       <div className="relative z-10 flex flex-col min-h-screen w-full">
         <MarketingHeader />
 
-        <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16">
-          <section className="text-center pt-4 sm:pt-8 pb-10 sm:pb-14 max-w-3xl mx-auto">
+        <main className="flex-1 w-full marketing-section-inner pb-12 sm:pb-16">
+          <section className="text-center pt-6 sm:pt-10 pb-10 sm:pb-14 max-w-3xl mx-auto">
             <p className="landing-eyebrow mb-3 sm:mb-4">Pricing</p>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 tracking-tight leading-tight">
               Start free. Upgrade when you need more throughput.
             </h1>
-            <p className="text-sm sm:text-base text-gray-400 leading-relaxed px-2">
+            <p className="text-sm sm:text-base text-gray-600 leading-relaxed px-2">
               Credits power CAD generation and exports. Keep your projects, files, and inspections
               in one cloud workspace.
             </p>
@@ -71,22 +71,22 @@ export default function PricingPage() {
 
                 <div className="pricing-card-body">
                   <div className="mb-6">
-                    <h2 className="text-lg sm:text-xl font-bold text-white">{plan.name}</h2>
-                    <p className="text-sm text-gray-500 mt-2 leading-relaxed">{plan.description}</p>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900">{plan.name}</h2>
+                    <p className="text-sm text-gray-600 mt-2 leading-relaxed">{plan.description}</p>
                   </div>
 
                   <div className="mb-6 sm:mb-8">
                     <div className="flex items-end gap-1">
-                      <span className="text-3xl sm:text-4xl font-bold text-white">{plan.price}</span>
-                      <span className="text-sm sm:text-base text-gray-400 pb-1">{plan.period}</span>
+                      <span className="text-3xl sm:text-4xl font-bold text-gray-900">{plan.price}</span>
+                      <span className="text-sm sm:text-base text-gray-500 pb-1">{plan.period}</span>
                     </div>
                   </div>
 
                   <ul className="space-y-3 sm:space-y-3.5">
                     {plan.features.map((feature) => (
-                      <li key={feature} className="flex gap-2.5 text-sm text-gray-300 leading-snug">
+                      <li key={feature} className="flex gap-2.5 text-sm text-gray-700 leading-snug">
                         {plan.id === 'pro' && feature.includes('credits') ? (
-                          <Zap className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" aria-hidden />
+                          <Zap className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" aria-hidden />
                         ) : plan.id === 'pro' && feature.includes('Faster') ? (
                           <Sparkles className="w-4 h-4 text-brand shrink-0 mt-0.5" aria-hidden />
                         ) : (
@@ -107,9 +107,9 @@ export default function PricingPage() {
             ))}
           </section>
 
-          <section className="max-w-3xl mx-auto mt-10 sm:mt-14 rounded-2xl border border-white/[0.08] bg-[#0a1628]/50 px-5 sm:px-8 py-6 sm:py-8 text-center">
-            <h2 className="text-base sm:text-lg font-semibold text-white mb-2">What are credits?</h2>
-            <p className="text-sm text-gray-400 leading-relaxed">
+          <section className="max-w-3xl mx-auto mt-10 sm:mt-14 rounded-2xl border border-border bg-white px-5 sm:px-8 py-6 sm:py-8 text-center shadow-sm">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">What are credits?</h2>
+            <p className="text-sm text-gray-600 leading-relaxed">
               Each CAD generation, refinement, or export uses credits. Free is enough to explore the
               studio; Pro gives you monthly capacity for production work.
             </p>
@@ -117,29 +117,29 @@ export default function PricingPage() {
 
           <p className="text-center mt-8 sm:mt-10 text-xs sm:text-sm text-gray-500 px-4 leading-relaxed">
             Already have an account?{' '}
-            <Link href="/login?fresh=1" className="text-gray-300 hover:text-white transition-colors">
+            <Link href="/login?fresh=1" className="text-brand hover:text-brand-hover font-medium transition-colors">
               Sign in
             </Link>{' '}
             to manage billing in settings.
           </p>
         </main>
 
-        <footer className="relative z-10 border-t border-white/5 py-6 sm:py-8 mt-auto">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-gray-500">
-            <p>© {new Date().getFullYear()} SolidX CAD</p>
+        <footer className="marketing-footer mt-auto">
+          <div className="marketing-footer-inner">
+            <p className="text-sm text-gray-500">© {new Date().getFullYear()} SolidX CAD</p>
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-              <Link href="/" className="hover:text-gray-300 transition-colors">
+              <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 Home
               </Link>
-              <Link href="/login?fresh=1" className="hover:text-gray-300 transition-colors">
+              <Link href="/login?fresh=1" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 Sign in
               </Link>
-              <Link href="/register" className="hover:text-gray-300 transition-colors">
+              <Link href="/register" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 Sign up
               </Link>
             </div>
           </div>
-          <p className="text-center text-xs text-gray-600 mt-4">
+          <p className="text-center text-xs text-gray-500 mt-4 pb-6">
             Powered by Equvinoxis Technologies
           </p>
         </footer>
