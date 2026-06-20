@@ -134,7 +134,7 @@ function DesktopFloatingToolBar({
   handleScreenshotCopy,
   studioEmbed = false,
   previewMode = false,
-  previewOrbitPaused = false,,
+  previewOrbitPaused = false,
   navigationAvailable = true,
   sidebarOpen = false,
   onToggleSidebar,
