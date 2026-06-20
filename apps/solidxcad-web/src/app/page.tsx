@@ -3,6 +3,7 @@ import { ArrowRight, Box, Download, Sparkles } from 'lucide-react';
 import { BRAND_EXPORT_FORMATS, BRAND_NAME } from '@/lib/brand';
 import { MarketingFooter } from '@/components/MarketingFooter';
 import { MarketingHeader } from '@/components/MarketingHeader';
+import { HomeShowcase } from '@/components/HomeShowcase';
 
 const PILLARS = [
   { icon: Sparkles, title: 'Describe your part', subtitle: 'TEXT TO CAD' },
@@ -20,10 +21,6 @@ export default function HomePage() {
 
         <main className="landing-home-main flex-1">
           <section className="landing-home-hero">
-            <p className="landing-home-badge landing-home-badge-light">
-              AI-NATIVE CAD <span aria-hidden>|</span> In Your Browser
-            </p>
-
             <h1 className="landing-home-title landing-home-title-light">
               From design intent
               <span className="landing-home-title-accent-light">to production-ready files.</span>
@@ -64,6 +61,8 @@ export default function HomePage() {
               FREE TO START · NO INSTALL REQUIRED
             </p>
           </section>
+
+          <HomeShowcase />
         </main>
 
         <MarketingFooter />
