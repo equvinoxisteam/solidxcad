@@ -169,14 +169,15 @@ export default function ForgotPasswordPage() {
           <div className="flex items-center justify-between pt-1">
             <button
               type="button"
-              className="text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1"
+              className="auth-back-link"
               onClick={() => {
                 setStep('email');
                 setOtp('');
                 setError('');
               }}
             >
-              <ArrowLeft className="w-3 h-3" /> Change email
+              <ArrowLeft className="w-4 h-4" aria-hidden />
+              Change email
             </button>
             <button
               type="button"
@@ -230,11 +231,9 @@ export default function ForgotPasswordPage() {
         </form>
       )}
 
-      <Link
-        href="/login"
-        className="text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1 mt-7 pt-6 border-t border-border"
-      >
-        <ArrowLeft className="w-3 h-3" /> Back to sign in
+      <Link href="/login" className="auth-back-link mt-7 pt-6 border-t border-border">
+        <ArrowLeft className="w-4 h-4" aria-hidden />
+        Back to sign in
       </Link>
     </AuthShell>
   );

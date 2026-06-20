@@ -1,7 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Box, Layers, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, Box, Layers, Sparkles } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 
 type AuthShellProps = {
@@ -35,7 +36,7 @@ export function AuthShell({
       <aside className="auth-aside hidden lg:flex shrink-0 flex-col justify-between relative z-10">
         <div>
           <BrandLogo href="/" size={40} />
-          <div className="mt-10 max-w-sm">
+          <div className="mt-8 max-w-sm">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand mb-3">
               Cloud CAD workbench
             </p>
@@ -60,13 +61,22 @@ export function AuthShell({
         <p className="text-[11px] text-gray-500">Powered by Equvinoxis Technologies</p>
       </aside>
 
-      <div className="relative z-10 flex flex-1 flex-col min-h-screen">
-        <header className="px-6 py-5 lg:hidden border-b border-border bg-white/80">
+      <div className="relative z-10 flex flex-1 flex-col min-h-screen min-w-0">
+        <header className="auth-mobile-header lg:hidden">
           <BrandLogo href="/" size={36} />
+          <Link href="/" className="auth-back-link">
+            <ArrowLeft className="w-4 h-4" aria-hidden />
+            Home
+          </Link>
         </header>
 
-        <main className="flex-1 flex items-center justify-center px-6 sm:px-10 pb-8">
+        <main className="flex-1 flex items-center justify-center px-4 sm:px-6 pb-6">
           <div className="w-full max-w-[420px]">
+            <Link href="/" className="auth-back-link hidden lg:inline-flex mb-5">
+              <ArrowLeft className="w-4 h-4" aria-hidden />
+              Back to home
+            </Link>
+
             {totalSteps > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between text-[11px] text-gray-500 mb-2">
@@ -82,7 +92,7 @@ export function AuthShell({
               </div>
             )}
 
-            <div className="auth-panel rounded-2xl border border-border bg-white p-7 sm:p-8">
+            <div className="auth-panel rounded-2xl border border-border bg-white p-6 sm:p-8">
               <div className="mb-6">
                 <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight">{title}</h1>
                 {subtitle && (
@@ -94,9 +104,12 @@ export function AuthShell({
           </div>
         </main>
 
-        <footer className="text-center text-[11px] text-gray-500 pb-6 px-4 space-y-1">
-          <p>SolidX CAD · Prompt to STEP in the browser</p>
-          <p>Powered by Equvinoxis Technologies</p>
+        <footer className="auth-page-footer">
+          <span>SolidX CAD · Prompt to STEP in the browser</span>
+          <span className="auth-page-footer-dot" aria-hidden>
+            ·
+          </span>
+          <span>Powered by Equvinoxis Technologies</span>
         </footer>
       </div>
     </div>

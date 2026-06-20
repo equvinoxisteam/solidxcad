@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Check, Sparkles, Zap } from 'lucide-react';
+import { MarketingFooter } from '@/components/MarketingFooter';
 import { MarketingHeader } from '@/components/MarketingHeader';
 
 const PLANS = [
@@ -124,25 +125,7 @@ export default function PricingPage() {
           </p>
         </main>
 
-        <footer className="marketing-footer mt-auto">
-          <div className="marketing-footer-inner">
-            <p className="text-sm text-gray-500">© {new Date().getFullYear()} SolidX CAD</p>
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-              <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                Home
-              </Link>
-              <Link href="/login?fresh=1" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                Sign in
-              </Link>
-              <Link href="/register" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                Sign up
-              </Link>
-            </div>
-          </div>
-          <p className="text-center text-xs text-gray-500 mt-4 pb-6">
-            Powered by Equvinoxis Technologies
-          </p>
-        </footer>
+        <MarketingFooter />
       </div>
     </div>
   );

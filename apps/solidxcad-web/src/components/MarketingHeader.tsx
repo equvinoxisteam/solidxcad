@@ -25,14 +25,14 @@ export function MarketingHeader() {
           nameClassName="font-semibold text-gray-900 tracking-tight text-sm sm:text-base"
         />
 
-        <nav className="flex items-center gap-1 sm:gap-2">
+        <nav className="flex items-center gap-1 sm:gap-2 shrink-0">
           <Link href="/pricing" className={navLinkClass(onPricing)}>
             Pricing
           </Link>
           <Link href="/login?fresh=1" className={navLinkClass(false)}>
             Sign in
           </Link>
-          <Link href="/register" className="auth-btn-primary text-sm py-2 px-4 sm:px-5 ml-1">
+          <Link href="/register" className="auth-btn-primary text-sm py-2 px-4 sm:px-5">
             Sign up
           </Link>
         </nav>
