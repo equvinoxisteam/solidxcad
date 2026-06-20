@@ -1,16 +1,10 @@
 import Link from 'next/link';
-import { BRAND_COMPANY, BRAND_NAME } from '@/lib/brand';
+import { BRAND_COMPANY, BRAND_NAME, BRAND_SOCIAL } from '@/lib/brand';
 
-type MarketingFooterProps = {
-  variant?: 'light' | 'dark';
-};
-
-export function MarketingFooter({ variant = 'light' }: MarketingFooterProps) {
-  const dark = variant === 'dark';
-
+export function MarketingFooter() {
   return (
-    <footer className={dark ? 'marketing-footer-dark' : 'marketing-footer'}>
-      <div className={dark ? 'marketing-footer-line-dark' : 'marketing-footer-line'}>
+    <footer className="marketing-footer">
+      <div className="marketing-footer-line">
         <div className="marketing-footer-meta">
           <span>© {new Date().getFullYear()} {BRAND_NAME}</span>
           <span className="marketing-footer-dot" aria-hidden>
@@ -18,10 +12,13 @@ export function MarketingFooter({ variant = 'light' }: MarketingFooterProps) {
           </span>
           <span>Powered by {BRAND_COMPANY}</span>
         </div>
-        <nav className="marketing-footer-links" aria-label="Footer">
-          <Link href="/pricing">Pricing</Link>
-          <Link href="/login?fresh=1">Sign in</Link>
-          <Link href="/register">Start free</Link>
+        <nav className="marketing-footer-links" aria-label="Social">
+          <a href={BRAND_SOCIAL.instagram} target="_blank" rel="noopener noreferrer">
+            Instagram
+          </a>
+          <a href={BRAND_SOCIAL.linkedin} target="_blank" rel="noopener noreferrer">
+            LinkedIn
+          </a>
         </nav>
       </div>
     </footer>

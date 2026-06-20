@@ -23,8 +23,8 @@ export const metadata: Metadata = {
   ],
   icons: {
     icon: [
-      { url: BRAND_LOGO_SRC, type: 'image/svg+xml' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: BRAND_LOGO_SRC, type: 'image/png' },
+      { url: BRAND_LOGO_SRC, sizes: '32x32', type: 'image/png' },
     ],
     apple: BRAND_LOGO_SRC,
     shortcut: BRAND_LOGO_SRC,
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     url: 'https://solidxcad.equvinoxis.com',
     siteName: BRAND_NAME,
     type: 'website',
-    images: [{ url: BRAND_LOGO_SRC, width: 32, height: 32, alt: BRAND_NAME }],
+    images: [{ url: BRAND_LOGO_SRC, width: 512, height: 512, alt: BRAND_NAME }],
   },
   twitter: {
     card: 'summary',

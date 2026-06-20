@@ -467,6 +467,73 @@ body {
   letter-spacing: 0.14em;
 }
 
+.landing-home-light {
+  background: #ffffff;
+  color: #1e293b;
+}
+
+.landing-home-grid {
+  opacity: 0.45;
+}
+
+.landing-home-badge-light {
+  border-color: rgba(16, 58, 142, 0.35);
+  background: rgba(16, 58, 142, 0.08);
+  color: #103A8E;
+}
+
+.landing-home-title-light {
+  color: #0f172a;
+}
+
+.landing-home-title-accent-light {
+  display: block;
+  margin-top: 0.25rem;
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  color: #103A8E;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.landing-home-lead-light {
+  color: #475569;
+}
+
+.landing-home-cta-light {
+  margin-bottom: 3rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 9999px;
+  font-size: 0.9375rem;
+}
+
+.landing-home-pillar-icon-light {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: #103A8E;
+}
+
+.landing-home-pillar-title-light {
+  margin: 0;
+  color: #1e293b;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.landing-home-pillar-sub-light {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.landing-home-proof-light {
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
 .marketing-footer-dark {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: #050508;
