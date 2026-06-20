@@ -4,6 +4,8 @@ import {
   Crosshair,
   FolderTree,
   MousePointer2,
+  PanelLeft,
+  PanelRight,
   Play,
   PenTool
 } from "lucide-react";
@@ -21,9 +23,70 @@ import { CAD_WORKSPACE_TOOLBAR_DESKTOP_WIDTH_CLASS } from "./ToolbarShell";
 const FLOATING_TOOL_BAR_SURFACE_CLASS =
   "cad-glass-surface border border-sidebar-border text-sidebar-foreground shadow-sm";
 
-function StudioPanelButtons() {
+function studioFileSheetToggleLabel(fileSheetKind) {
+  if (fileSheetKind === "gcode") {
+    return "Toolpath";
+  }
+  if (fileSheetKind === "step") {
+    return "Parameters";
+  }
+  if (fileSheetKind === "implicit") {
+    return "Implicit CAD";
+  }
+  return "Properties";
+}
+
+function ToolbarAnchor({ studioEmbed, floatingCadToolbarPosition, children }) {
+  if (studioEmbed) {
+    return (
+      <div className="pointer-events-none absolute left-1/2 top-3.5 z-30 flex -translate-x-1/2 flex-col items-center gap-1.5">
+        {children}
+      </div>
+    );
+  }
+  return (
+    <div
+      className="absolute z-20 flex flex-col items-end gap-1.5"
+      style={floatingCadToolbarPosition}
+    >
+      {children}
+    </div>
+  );
+}
+
+function StudioLayoutButtons({
+  navigationAvailable = true,
+  sidebarOpen = false,
+  onToggleSidebar,
+  hasFileSheet = false,
+  fileSheetOpen = false,
+  onToggleFileSheet,
+  fileSheetKind = ""
+}) {
   return (
     <>
+      <ToolbarButton
+        label={sidebarOpen ? "Hide files" : "Show files"}
+        active={sidebarOpen}
+        onClick={onToggleSidebar}
+        disabled={!navigationAvailable || typeof onToggleSidebar !== "function"}
+        aria-pressed={sidebarOpen}
+      >
+        <PanelLeft className="size-3.5" strokeWidth={2} aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton
+        label={
+          fileSheetOpen
+            ? `Hide ${studioFileSheetToggleLabel(fileSheetKind)}`
+            : `Show ${studioFileSheetToggleLabel(fileSheetKind)}`
+        }
+        active={fileSheetOpen}
+        onClick={onToggleFileSheet}
+        disabled={!hasFileSheet || typeof onToggleFileSheet !== "function"}
+        aria-pressed={fileSheetOpen}
+      >
+        <PanelRight className="size-3.5" strokeWidth={2} aria-hidden="true" />
+      </ToolbarButton>
       <ToolbarButton
         label="Workspace files"
         onClick={() => postStudioPanelToggle("workspace")}
@@ -67,8 +130,14 @@ function DesktopFloatingToolBar({
   drawingStrokes,
   handleEnterPreviewMode,
   handleScreenshotCopy,
-  handleScreenshotDownload,
-  studioEmbed = false
+  studioEmbed = false,
+  navigationAvailable = true,
+  sidebarOpen = false,
+  onToggleSidebar,
+  hasFileSheet = false,
+  fileSheetOpen = false,
+  onToggleFileSheet,
+  fileSheetKind = ""
 }) {
   const dxfMode = renderFormat === RENDER_FORMAT.DXF;
   const implicitMode = renderFormat === RENDER_FORMAT.IMPLICIT;
@@ -86,12 +155,21 @@ function DesktopFloatingToolBar({
   const selectLabel = referenceSelectionPending ? "Preparing selection" : "Select";
 
   return (
-    <div
-      className="absolute z-20 flex flex-col items-end gap-1.5"
-      style={floatingCadToolbarPosition}
-    >
+    <ToolbarAnchor studioEmbed={studioEmbed} floatingCadToolbarPosition={floatingCadToolbarPosition}>
       <TooltipProvider delayDuration={250}>
-        <div className={`pointer-events-auto inline-flex w-fit items-center gap-1 self-end rounded-md p-1 ${FLOATING_TOOL_BAR_SURFACE_CLASS}`}>
+        <div className={`pointer-events-auto inline-flex w-fit max-w-[min(100vw-1.5rem,56rem)] items-center gap-1 self-end overflow-x-auto rounded-md p-1 ${FLOATING_TOOL_BAR_SURFACE_CLASS}`}>
+          {studioEmbed ? (
+            <StudioLayoutButtons
+              navigationAvailable={navigationAvailable}
+              sidebarOpen={sidebarOpen}
+              onToggleSidebar={onToggleSidebar}
+              hasFileSheet={hasFileSheet}
+              fileSheetOpen={fileSheetOpen}
+              onToggleFileSheet={onToggleFileSheet}
+              fileSheetKind={fileSheetKind}
+            />
+          ) : null}
+
           {!dxfMode && !implicitMode && !robotMode && !meshOnlyMode ? (
             <>
               <ToolbarButton
@@ -138,8 +216,6 @@ function DesktopFloatingToolBar({
             </ToolbarButton>
           ) : null}
 
-          {studioEmbed ? <StudioPanelButtons /> : null}
-
           {!dxfMode ? (
             <ToolbarButton
               label="Screenshot"
@@ -168,22 +244,28 @@ function DesktopFloatingToolBar({
           drawingStrokes={drawingStrokes}
         />
       ) : null}
-    </div>
+    </ToolbarAnchor>
   );
 }
 
-function StudioOnlyFloatingToolBar({ floatingCadToolbarPosition }) {
+function StudioOnlyFloatingToolBar({
+  floatingCadToolbarPosition,
+  navigationAvailable = true,
+  sidebarOpen = false,
+  onToggleSidebar
+}) {
   return (
-    <div
-      className="absolute z-20 flex flex-col items-end gap-1.5"
-      style={floatingCadToolbarPosition}
-    >
+    <ToolbarAnchor studioEmbed floatingCadToolbarPosition={floatingCadToolbarPosition}>
       <TooltipProvider delayDuration={250}>
         <div className={`pointer-events-auto inline-flex w-fit items-center gap-1 self-end rounded-md p-1 ${FLOATING_TOOL_BAR_SURFACE_CLASS}`}>
-          <StudioPanelButtons />
+          <StudioLayoutButtons
+            navigationAvailable={navigationAvailable}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={onToggleSidebar}
+          />
         </div>
       </TooltipProvider>
-    </div>
+    </ToolbarAnchor>
   );
 }
 
@@ -191,6 +273,13 @@ export default function FloatingToolBar({
   previewMode,
   selectedEntry,
   floatingCadToolbarPosition,
+  navigationAvailable = true,
+  sidebarOpen = false,
+  onToggleSidebar,
+  hasFileSheet = false,
+  fileSheetOpen = false,
+  onToggleFileSheet,
+  fileSheetKind = "",
   ...toolbarProps
 }) {
   if (previewMode) {
@@ -198,15 +287,31 @@ export default function FloatingToolBar({
   }
 
   const studioEmbed = isViewerStudioEmbed();
+  const studioPanelProps = {
+    navigationAvailable,
+    sidebarOpen,
+    onToggleSidebar,
+    hasFileSheet,
+    fileSheetOpen,
+    onToggleFileSheet,
+    fileSheetKind
+  };
+
   if (!selectedEntry) {
     return studioEmbed
-      ? <StudioOnlyFloatingToolBar floatingCadToolbarPosition={floatingCadToolbarPosition} />
+      ? (
+        <StudioOnlyFloatingToolBar
+          floatingCadToolbarPosition={floatingCadToolbarPosition}
+          {...studioPanelProps}
+        />
+      )
       : null;
   }
 
   return (
     <DesktopFloatingToolBar
       {...toolbarProps}
+      {...studioPanelProps}
       floatingCadToolbarPosition={floatingCadToolbarPosition}
       studioEmbed={studioEmbed}
     />

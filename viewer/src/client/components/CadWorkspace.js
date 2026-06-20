@@ -2693,16 +2693,6 @@ export default function CadWorkspace({
   const effectiveSidebarOpen = directoryNavigationAvailable && sidebarOpen && !previewMode;
   const desktopSidebarOpen = isDesktop && effectiveSidebarOpen && !previewMode;
 
-  useEffect(() => {
-    if (!studioEmbedMode || previewMode) {
-      return;
-    }
-    setSidebarOpen(true);
-    if (selectedFileSheetKind) {
-      setFileSheetOpenIntent(true);
-    }
-  }, [studioEmbedMode, previewMode, selectedFileSheetKind]);
-
   const setThemeMenuOpen = useCallback(() => {}, []);
 
   const readGlobalThemeState = useCallback(() => (
@@ -6783,6 +6773,45 @@ export default function CadWorkspace({
     </>
   );
 
+  const floatingToolbarProps = {
+    previewMode,
+    selectedEntry,
+    renderFormat: effectiveRenderFormat,
+    floatingCadToolbarPosition,
+    selectionToolActive,
+    referenceSelectionPending,
+    referenceSelectionUnavailable,
+    referenceSelectionDeferred: selectedTopologyDeferredByCost,
+    urdfPosePickerAvailable: selectedUrdfMoveIt2ActionsEnabled,
+    urdfPosePickerActive,
+    handleToggleUrdfPosePicker,
+    drawToolActive,
+    handleSelectTabToolMode,
+    viewerLoading,
+    selectedMeshData,
+    selectedDxfData,
+    selectedImplicitModel: selectedImplicitRuntimeModel,
+    drawingToolOptions,
+    drawingTool,
+    handleSelectDrawingTool,
+    handleUndoDrawing,
+    handleRedoDrawing,
+    handleClearDrawings,
+    canUndoDrawing,
+    canRedoDrawing,
+    drawingStrokes,
+    handleEnterPreviewMode,
+    handleScreenshotCopy,
+    handleScreenshotDownload,
+    navigationAvailable: directoryNavigationAvailable,
+    sidebarOpen: effectiveSidebarOpen,
+    onToggleSidebar: () => handleSidebarOpenChange(!sidebarOpen),
+    hasFileSheet: !!selectedFileSheetKind,
+    fileSheetOpen,
+    onToggleFileSheet: handleToggleFileSheet,
+    fileSheetKind: selectedFileSheetKind
+  };
+
   return (
     <SidebarProvider
       open={effectiveSidebarOpen}
@@ -6903,6 +6932,8 @@ export default function CadWorkspace({
           navigationAvailable={directoryNavigationAvailable}
         />
 
+        {studioEmbedMode ? <FloatingToolBar {...floatingToolbarProps} /> : null}
+
         <div className="pointer-events-none relative min-h-0 flex-1 overflow-hidden">
           <div className="flex h-full min-w-0">
             {directoryNavigationAvailable ? (
@@ -6946,37 +6977,7 @@ export default function CadWorkspace({
             ) : null}
 
             <div className="pointer-events-none relative min-w-0 flex-1 overflow-hidden">
-              <FloatingToolBar
-                previewMode={previewMode}
-                selectedEntry={selectedEntry}
-                renderFormat={effectiveRenderFormat}
-                floatingCadToolbarPosition={floatingCadToolbarPosition}
-                selectionToolActive={selectionToolActive}
-                referenceSelectionPending={referenceSelectionPending}
-                referenceSelectionUnavailable={referenceSelectionUnavailable}
-                referenceSelectionDeferred={selectedTopologyDeferredByCost}
-                urdfPosePickerAvailable={selectedUrdfMoveIt2ActionsEnabled}
-                urdfPosePickerActive={urdfPosePickerActive}
-                handleToggleUrdfPosePicker={handleToggleUrdfPosePicker}
-                drawToolActive={drawToolActive}
-                handleSelectTabToolMode={handleSelectTabToolMode}
-                viewerLoading={viewerLoading}
-                selectedMeshData={selectedMeshData}
-                selectedDxfData={selectedDxfData}
-                selectedImplicitModel={selectedImplicitRuntimeModel}
-                drawingToolOptions={drawingToolOptions}
-                drawingTool={drawingTool}
-                handleSelectDrawingTool={handleSelectDrawingTool}
-                handleUndoDrawing={handleUndoDrawing}
-                handleRedoDrawing={handleRedoDrawing}
-                handleClearDrawings={handleClearDrawings}
-                canUndoDrawing={canUndoDrawing}
-                canRedoDrawing={canRedoDrawing}
-                drawingStrokes={drawingStrokes}
-                handleEnterPreviewMode={handleEnterPreviewMode}
-                handleScreenshotCopy={handleScreenshotCopy}
-                handleScreenshotDownload={handleScreenshotDownload}
-              />
+              {!studioEmbedMode ? <FloatingToolBar {...floatingToolbarProps} /> : null}
 
               {!previewMode && (workspaceSelectionActive || (!selectedEntry && !missingFileRef && !fileParamSelectionPending)) ? (
                 <CadWorkspaceHome
