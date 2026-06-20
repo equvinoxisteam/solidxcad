@@ -2082,6 +2082,32 @@ body {
   border-color: #cbd5e1;
 }
 
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .settings-layout {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    align-items: start;
+  }
+}
+
+.settings-layout-alert {
+  grid-column: 1 / -1;
+}
+
+.settings-layout-main,
+.settings-layout-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
 .settings-stack {
   display: flex;
   flex-direction: column;

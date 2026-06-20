@@ -160,20 +160,14 @@ export default function SettingsPage() {
               <Loader2 className="w-8 h-8 animate-spin text-brand" />
             </div>
           ) : user ? (
-            <div className="settings-stack">
+            <div className="settings-layout">
               {error && (
-                <div className="dashboard-alert dashboard-alert-error">{error}</div>
+                <div className="dashboard-alert dashboard-alert-error settings-layout-alert">{error}</div>
               )}
 
-              <section className="settings-card">
-                <div className="settings-card-header">
-                  <div className="settings-card-icon">
-                    <User className="w-5 h-5 text-brand" aria-hidden />
-                  </div>
-                  <h2 className="settings-card-title">Profile</h2>
-                </div>
-
-                <form onSubmit={saveProfile} className="settings-form">
+              <div className="settings-layout-main">
+                <section className="settings-card">
+                  <form onSubmit={saveProfile} className="settings-form">
                   <div className="settings-avatar-row">
                     <div className="settings-avatar-preview">
                       {avatarPreview ? (
@@ -268,7 +262,9 @@ export default function SettingsPage() {
                   )}
                 </form>
               </section>
+              </div>
 
+              <div className="settings-layout-side">
               <section className="settings-card">
                 <div className="settings-card-header settings-card-header-split">
                   <h2 className="settings-card-title">Credits</h2>
@@ -342,6 +338,7 @@ export default function SettingsPage() {
                   </button>
                 </section>
               )}
+              </div>
             </div>
           ) : null}
         </DashboardShell>
