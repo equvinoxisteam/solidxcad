@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { Bot, FolderTree, PanelRightClose, X } from 'lucide-react';
 import { ChatPanel } from '@/components/ChatPanel';
 import { ModelViewer } from '@/components/ModelViewer';
 import { ToolsPanel } from '@/components/ToolsPanel';
-import { StudioTopBar, type StudioViewMode } from '@/components/StudioTopBar';
+import { StudioTopBar } from '@/components/StudioTopBar';
 import {
   api,
   getToken,
@@ -39,10 +40,9 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
   const [highlightFile, setHighlightFile] = useState('');
-  const [viewMode, setViewMode] = useState<StudioViewMode>('viewer');
   const [showChat, setShowChat] = useState(true);
   const [showWorkspace, setShowWorkspace] = useState(false);
-  const { user, mounted } = useClientUser(true);
+  useClientUser(true);
 
   useEffect(() => {
     setShowChat(readPanelPref(PANEL_CHAT_KEY, true));
@@ -125,9 +125,6 @@ export default function StudioPage() {
       setStatus(`✓ ${label}: ${cadName || 'saved'}${note}`);
       setHighlightFile(cadName || '');
       if (!showWorkspace && cadName) setShowWorkspace(true);
-      if (cadName && (result.skill === 'cad' || result.skill === 'urdf' || !result.skill)) {
-        setViewMode('viewer');
-      }
       try {
         const [{ files: f }] = await Promise.all([
           api.getFiles(id),
@@ -153,65 +150,101 @@ export default function StudioPage() {
   return (
     <div className="h-screen studio-scene flex flex-col overflow-hidden">
       <StudioTopBar
-        projectId={id}
         projectName={project?.name || 'Untitled'}
         status={status}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        showChat={showChat}
-        onToggleChat={toggleChat}
-        showWorkspace={showWorkspace}
-        onToggleWorkspace={toggleWorkspace}
-        user={mounted ? user : null}
-        onDeleted={() => router.push('/dashboard')}
       />
 
-      <div className={`studio-main flex-1 min-h-0 ${showChat || showWorkspace ? 'chat-open' : ''}`}>
-        {(showChat || showWorkspace) && (
-          <button
-            type="button"
-            className="studio-mobile-backdrop lg:hidden"
-            aria-label="Close panel"
-            onClick={() => {
-              if (showChat) toggleChat();
-              else if (showWorkspace) toggleWorkspace();
-            }}
-          />
-        )}
-
-        <div className="studio-viewer-pane">
-          <ModelViewer
-            projectId={id}
-            files={files}
-            mode={viewMode}
-            onModeChange={setViewMode}
-          />
-        </div>
+      <div className="studio-embed-shell flex-1 min-h-0">
+        <ModelViewer projectId={id} files={files} />
 
         {showWorkspace && (
-          <div className="studio-workspace-pane">
-            <ToolsPanel
-              projectId={id}
-              files={files}
-              highlightFile={highlightFile}
-              onRefresh={() => refresh().catch(() => {})}
-              onStatus={setStatus}
-              onHighlightFile={setHighlightFile}
-            />
+          <div className="studio-embed-panel studio-embed-panel-workspace">
+            <div className="studio-embed-panel-header">
+              <p className="studio-embed-panel-title">Workspace files</p>
+              <button
+                type="button"
+                className="studio-embed-panel-close"
+                onClick={toggleWorkspace}
+                aria-label="Close workspace files"
+              >
+                <X className="w-4 h-4" aria-hidden />
+              </button>
+            </div>
+            <div className="studio-embed-panel-body">
+              <ToolsPanel
+                projectId={id}
+                files={files}
+                highlightFile={highlightFile}
+                onRefresh={() => refresh().catch(() => {})}
+                onStatus={setStatus}
+                onHighlightFile={setHighlightFile}
+                embedded
+              />
+            </div>
           </div>
         )}
 
         {showChat && (
-          <div className="studio-chat-pane">
-            <ChatPanel
-              projectId={id}
-              messages={messages}
-              projectFiles={files}
-              onMessagesChange={refresh}
-              onCadGenerated={onCadGenerated}
-            />
+          <div className="studio-embed-panel studio-embed-panel-agent">
+            <div className="studio-embed-panel-header">
+              <p className="studio-embed-panel-title">CAD Agent</p>
+              <button
+                type="button"
+                className="studio-embed-panel-close"
+                onClick={toggleChat}
+                aria-label="Close agent"
+              >
+                <X className="w-4 h-4" aria-hidden />
+              </button>
+            </div>
+            <div className="studio-embed-panel-body">
+              <ChatPanel
+                projectId={id}
+                messages={messages}
+                projectFiles={files}
+                onMessagesChange={refresh}
+                onCadGenerated={onCadGenerated}
+                embedded
+              />
+            </div>
           </div>
         )}
+
+        <div className="studio-embed-dock">
+          {!showWorkspace && (
+            <button
+              type="button"
+              className="studio-embed-dock-btn"
+              onClick={toggleWorkspace}
+              title="Workspace files"
+              aria-label="Open workspace files"
+            >
+              <FolderTree className="w-4 h-4" aria-hidden />
+            </button>
+          )}
+          {!showChat && (
+            <button
+              type="button"
+              className="studio-embed-dock-btn studio-embed-dock-btn-primary"
+              onClick={toggleChat}
+              title="CAD Agent"
+              aria-label="Open CAD agent"
+            >
+              <Bot className="w-4 h-4" aria-hidden />
+            </button>
+          )}
+          {showChat && (
+            <button
+              type="button"
+              className="studio-embed-dock-btn"
+              onClick={toggleChat}
+              title="Hide agent"
+              aria-label="Hide agent"
+            >
+              <PanelRightClose className="w-4 h-4" aria-hidden />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

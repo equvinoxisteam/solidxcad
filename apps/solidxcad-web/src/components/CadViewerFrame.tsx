@@ -80,7 +80,7 @@ export function CadViewerFrame({ projectId, fileRef }: CadViewerFrameProps) {
         <BrandLogo size={56} showName={false} />
         <p className="text-sm text-gray-700 font-medium">CAD Workbench is syncing</p>
         <p className="text-xs text-muted max-w-md">
-          Your files are loading — refresh in a moment or use Mesh view meanwhile.
+          Your files are loading — refresh in a moment.
         </p>
       </div>
     );
@@ -92,7 +92,7 @@ export function CadViewerFrame({ projectId, fileRef }: CadViewerFrameProps) {
         key={`${viewerLink}:${reloadKey}`}
         title={`${BRAND_NAME} Workbench`}
         src={viewerLink}
-        className="w-full h-full border-0 bg-base"
+        className="w-full h-full border-0 bg-white"
         allow="fullscreen"
       />
     </div>

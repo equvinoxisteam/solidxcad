@@ -9,19 +9,29 @@ export function isViewerEmbedMode() {
   return new URLSearchParams(window.location.search).get("embed") === "1";
 }
 
+export function isViewerStudioEmbed() {
+  if (!isViewerEmbedMode()) {
+    return false;
+  }
+  return new URLSearchParams(window.location.search).get("studio") === "1";
+}
+
 export function applyViewerEmbedChrome() {
   if (!isViewerEmbedMode() || typeof document === "undefined") {
     return;
   }
   document.documentElement.classList.add("viewer-embed", "light");
   document.documentElement.classList.remove("dark");
+  if (isViewerStudioEmbed()) {
+    document.documentElement.classList.add("viewer-studio-embed");
+  }
   writeColorSchemePreference(LIGHT_COLOR_SCHEME_ID);
   try {
     window.localStorage.setItem(
       THEME_STORAGE_KEY,
       JSON.stringify({
         version: EMBED_THEME_STORAGE_VERSION,
-        activeThemeId: "blue",
+        activeThemeId: "workbench",
         themes: [],
       }),
     );
@@ -35,7 +45,7 @@ export function embedStudioEmptyCopy() {
   return {
     heading: "What do you want to build?",
     body: "Describe your part in the Agent panel — it will appear here.",
-    sidebar: "No models yet — ask the Agent to generate one.",
+    sidebar: "Use the Agent panel to generate models for this project.",
     searchPlaceholder: "Search workspace files…",
   };
 }

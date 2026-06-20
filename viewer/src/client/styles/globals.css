@@ -358,7 +358,7 @@
   }
 
   .viewer-embed {
-    --background: #f8fafc;
+    --background: #ffffff;
     --foreground: #1e293b;
     --card: #ffffff;
     --sidebar: #ffffff;
@@ -371,10 +371,34 @@
     --muted-foreground: #64748b;
     --primary: #103A8E;
     --primary-foreground: #ffffff;
+    --popover: #ffffff;
+    --popover-foreground: #1e293b;
+    color-scheme: light;
+    background: #ffffff;
+    color: #1e293b;
   }
 
   .viewer-embed .cad-glass-surface {
-    background: color-mix(in srgb, #ffffff 92%, transparent);
+    background: color-mix(in srgb, #ffffff 96%, transparent);
     border-color: #e2e8f0;
+  }
+
+  .viewer-embed .cad-glass-popover {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #1e293b;
+  }
+
+  .viewer-studio-embed [data-sidebar="sidebar"] {
+    display: none !important;
+  }
+
+  .viewer-studio-embed [data-slot="sidebar-gap"] {
+    width: 0 !important;
+  }
+
+  .viewer-studio-embed,
+  .viewer-studio-embed body {
+    background: #ffffff;
   }
 }

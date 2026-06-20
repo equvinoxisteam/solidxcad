@@ -49,18 +49,19 @@ function buildViewerLink({ viewerUrl, file, catalogUrl, workspaceDir }) {
     params.set('catalogUrl', catalogUrl);
     if (fileParam) params.set('file', fileParam);
     params.set('embed', '1');
+    params.set('studio', '1');
     return `${base}/?${params.toString()}`;
   }
 
   if (workspaceDir) {
     return fileParam
-      ? `${base}/?dir=${encodeURIComponent(workspaceDir)}&file=${encodeURIComponent(fileParam)}&embed=1`
-      : `${base}/?dir=${encodeURIComponent(workspaceDir)}&embed=1`;
+      ? `${base}/?dir=${encodeURIComponent(workspaceDir)}&file=${encodeURIComponent(fileParam)}&embed=1&studio=1`
+      : `${base}/?dir=${encodeURIComponent(workspaceDir)}&embed=1&studio=1`;
   }
 
   return fileParam
-    ? `${base}/?file=${encodeURIComponent(fileParam)}&embed=1`
-    : `${base}/?embed=1`;
+    ? `${base}/?file=${encodeURIComponent(fileParam)}&embed=1&studio=1`
+    : `${base}/?embed=1&studio=1`;
 }
 
 router.get('/public/catalog', asyncHandler(async (req, res) => {

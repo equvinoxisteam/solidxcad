@@ -2305,7 +2305,151 @@ body {
   border: 0;
 }
 
-/* Studio — mobile chat drawer + viewer stack */
+/* Studio — embedded workbench with in-viewer panels */
+.studio-embed-shell {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.studio-embed-panel {
+  position: absolute;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+  overflow: hidden;
+}
+
+.studio-embed-panel-agent {
+  top: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  width: min(400px, calc(100% - 1.5rem));
+}
+
+.studio-embed-panel-workspace {
+  top: 0.75rem;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  width: min(300px, calc(100% - 1.5rem));
+}
+
+.studio-embed-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.studio-embed-panel-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.studio-embed-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.studio-embed-panel-close:hover {
+  color: #0f172a;
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.studio-embed-panel-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.studio-embed-dock {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.studio-embed-dock-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  color: #475569;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.studio-embed-dock-btn:hover {
+  color: #103A8E;
+  border-color: rgba(16, 58, 142, 0.35);
+  background: rgba(16, 58, 142, 0.06);
+}
+
+.studio-embed-dock-btn-primary {
+  background: #103A8E;
+  border-color: #103A8E;
+  color: #ffffff;
+}
+
+.studio-embed-dock-btn-primary:hover {
+  background: #0d3278;
+  border-color: #0d3278;
+  color: #ffffff;
+}
+
+@media (max-width: 1023px) {
+  .studio-embed-panel-agent,
+  .studio-embed-panel-workspace {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    max-height: min(58vh, 32rem);
+    border-radius: 1rem 1rem 0 0;
+  }
+
+  .studio-embed-dock {
+    flex-direction: row;
+    left: auto;
+    right: 0.75rem;
+  }
+}
+
+/* Legacy studio panes — kept for reference if reused */
 .studio-main {
   position: relative;
   flex: 1 1 auto;

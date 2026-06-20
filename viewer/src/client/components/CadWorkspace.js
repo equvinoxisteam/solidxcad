@@ -63,7 +63,7 @@ import {
   renderedFileSheetSectionIds,
   shouldOpenFileSheetForSelectionReveal
 } from "@/workbench/fileSheetSections";
-import { embedUserFacingViewerAlert, isViewerEmbedMode } from "@/workbench/embedMode.js";
+import { embedUserFacingViewerAlert, isViewerEmbedMode, isViewerStudioEmbed } from "@/workbench/embedMode.js";
 import {
   entrySourceFormat,
   fileSheetKindForEntry,
@@ -672,15 +672,23 @@ export default function CadWorkspace({
   const [motionErrorStatus, setMotionErrorStatus] = useState("");
   const [moveit2ServerLive, setMoveIt2ServerLive] = useState(false);
   const [workspaceLayoutMode, setWorkspaceLayoutMode] = useState(readWorkspaceLayoutMode);
-  const [sidebarOpen, setSidebarOpen] = useState(() => (
-    readWorkspaceSessionState().fileViewerOpen
-  ));
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (isViewerStudioEmbed()) {
+      return false;
+    }
+    return readWorkspaceSessionState().fileViewerOpen;
+  });
   const [sidebarWidth, setSidebarWidth] = useState(() => (
     readWorkspaceSessionState().fileViewerWidthPx || DEFAULT_SIDEBAR_WIDTH
   ));
   const [layoutViewportWidth, setLayoutViewportWidth] = useState(readWorkspaceViewportWidth);
   const isDesktop = workspaceLayoutMode === CAD_WORKSPACE_LAYOUT_MODE.DESKTOP;
-  const [fileSheetOpenIntent, setFileSheetOpenIntent] = useState(readInitialFileSheetOpen);
+  const [fileSheetOpenIntent, setFileSheetOpenIntent] = useState(() => {
+    if (isViewerStudioEmbed()) {
+      return false;
+    }
+    return readInitialFileSheetOpen();
+  });
   const [viewerAlertOpen, setViewerAlertOpen] = useState(false);
   const [viewerRuntimeAlert, setViewerRuntimeAlert] = useState(null);
   const [customThemePresets, setCustomThemePresets] = useState(readCustomThemePresets);
@@ -2684,8 +2692,9 @@ export default function CadWorkspace({
     }
     setTabToolsWidth(defaultFileSheetWidth);
   }, [defaultFileSheetWidth, fileSheetWidthIsCustom]);
-  const desktopFileSheetOpen = isDesktop && tabToolsOpen && !!selectedFileSheetKind && !previewMode;
-  const effectiveSidebarOpen = directoryNavigationAvailable && sidebarOpen && !previewMode;
+  const studioEmbedMode = isViewerStudioEmbed();
+  const desktopFileSheetOpen = isDesktop && tabToolsOpen && !!selectedFileSheetKind && !previewMode && !studioEmbedMode;
+  const effectiveSidebarOpen = directoryNavigationAvailable && sidebarOpen && !previewMode && !studioEmbedMode;
   const desktopSidebarOpen = isDesktop && effectiveSidebarOpen && !previewMode;
 
   const setThemeMenuOpen = useCallback(() => {}, []);
@@ -6696,7 +6705,7 @@ export default function CadWorkspace({
   ]);
   const canUndoDrawing = drawingUndoStack.length > 0;
   const canRedoDrawing = drawingRedoStack.length > 0;
-  const fileSheetOpen = !!selectedFileSheetKind && tabToolsOpen && !previewMode;
+  const fileSheetOpen = !!selectedFileSheetKind && tabToolsOpen && !previewMode && !studioEmbedMode;
   const activeSidebarWidth = desktopSidebarOpen
     ? resolvedDesktopPanelWidths.sidebarWidth
     : 0;
@@ -6719,10 +6728,10 @@ export default function CadWorkspace({
       }).sidebarWidth
     : DEFAULT_SIDEBAR_WIDTH;
   const viewportFrameInsets = {
-    top: previewMode ? 0 : CAD_WORKSPACE_TOP_BAR_HEIGHT,
-    right: activeSheetWidth,
+    top: previewMode || studioEmbedMode ? 0 : CAD_WORKSPACE_TOP_BAR_HEIGHT,
+    right: studioEmbedMode ? 0 : activeSheetWidth,
     bottom: 0,
-    left: activeSidebarWidth
+    left: studioEmbedMode ? 0 : activeSidebarWidth
   };
   const floatingCadToolbarPosition = {
     top: "14px",
@@ -6844,7 +6853,7 @@ export default function CadWorkspace({
 
       <SidebarInset className="pointer-events-none relative z-10 h-svh min-w-0 overflow-hidden bg-transparent">
         <CadWorkspaceTopBar
-          previewMode={previewMode}
+          previewMode={previewMode || studioEmbedMode}
           sidebarLabelForEntry={sidebarLabelForEntry}
           directoryTree={allEntriesTree}
           selectedKey={selectedKey}
