@@ -53,9 +53,22 @@ router.get('/:id', validateObjectId(), asyncHandler(async (req, res) => {
 }));
 
 router.patch('/:id', validateObjectId(), asyncHandler(async (req, res) => {
+  const updates = {};
+  if (typeof req.body.name === 'string') {
+    const trimmed = req.body.name.trim();
+    if (!trimmed) return res.status(400).json({ error: 'Project name cannot be empty' });
+    updates.name = trimmed;
+  }
+  if (typeof req.body.description === 'string') {
+    updates.description = req.body.description;
+  }
+  if (!Object.keys(updates).length) {
+    return res.status(400).json({ error: 'No valid fields to update' });
+  }
+
   const project = await Project.findOneAndUpdate(
     { _id: req.params.id, userId: req.user._id },
-    { $set: { name: req.body.name, description: req.body.description } },
+    { $set: updates },
     { new: true },
   );
   if (!project) return res.status(404).json({ error: 'Project not found' });

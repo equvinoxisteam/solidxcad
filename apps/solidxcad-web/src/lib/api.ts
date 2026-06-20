@@ -131,6 +131,9 @@ export const api = {
 
   getProject: (id: string) => request<{ project: Project }>(`/api/projects/${id}`),
 
+  updateProject: (id: string, body: { name?: string; description?: string }) =>
+    request<{ project: Project }>(`/api/projects/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
   deleteProject: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}`, { method: 'DELETE' }),
 
   getFiles: (projectId: string) => request<{ files: ProjectFile[] }>(`/api/projects/${projectId}/files`),

@@ -10,11 +10,13 @@ import {
   FolderOpen,
   FolderPlus,
   Loader2,
+  Pencil,
   Plus,
   Search,
 } from 'lucide-react';
 import { DashboardShell } from '@/components/DashboardShell';
 import { NewProjectModal } from '@/components/NewProjectModal';
+import { RenameProjectModal } from '@/components/RenameProjectModal';
 import { ProjectSortMenu, type ProjectSortKey } from '@/components/ProjectSortMenu';
 import { api, getToken, projectId, type Project } from '@/lib/api';
 
@@ -64,6 +66,11 @@ export default function DashboardPage() {
   const [modalError, setModalError] = useState('');
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('updated-desc');
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<Project | null>(null);
+  const [renameName, setRenameName] = useState('');
+  const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState('');
 
   useEffect(() => {
     if (!getToken()) {
@@ -127,6 +134,43 @@ export default function DashboardPage() {
       setModalError(err instanceof Error ? err.message : 'Failed to create project');
     } finally {
       setCreating(false);
+    }
+  }
+
+  function openRename(project: Project) {
+    setRenameTarget(project);
+    setRenameName(project.name || '');
+    setRenameError('');
+    setRenameOpen(true);
+  }
+
+  function closeRename() {
+    if (renaming) return;
+    setRenameOpen(false);
+    setRenameTarget(null);
+    setRenameName('');
+    setRenameError('');
+  }
+
+  async function renameProject(e: React.FormEvent) {
+    e.preventDefault();
+    if (!renameTarget || !renameName.trim()) return;
+    const trimmed = renameName.trim();
+    if (trimmed === (renameTarget.name || '').trim()) {
+      closeRename();
+      return;
+    }
+
+    setRenaming(true);
+    setRenameError('');
+    try {
+      const { project } = await api.updateProject(renameTarget._id, { name: trimmed });
+      setProjects((list) => list.map((p) => (p._id === project._id ? project : p)));
+      closeRename();
+    } catch (err) {
+      setRenameError(err instanceof Error ? err.message : 'Failed to rename project');
+    } finally {
+      setRenaming(false);
     }
   }
 
@@ -223,27 +267,34 @@ export default function DashboardPage() {
           ) : (
             <div className="dashboard-folder-grid">
               {visibleProjects.map((p) => (
-                <Link
-                  key={p._id}
-                  href={`/projects/${p._id}`}
-                  className="dashboard-folder-card group"
-                >
-                  <div className="dashboard-folder-card-top">
-                    <div className="dashboard-folder-icon">
-                      <FolderOpen className="w-6 h-6 text-brand" aria-hidden />
+                <article key={p._id} className="dashboard-folder-card group">
+                  <Link href={`/projects/${p._id}`} className="dashboard-folder-card-link">
+                    <div className="dashboard-folder-card-top">
+                      <div className="dashboard-folder-icon">
+                        <FolderOpen className="w-6 h-6 text-brand" aria-hidden />
+                      </div>
+                      <ChevronRight
+                        className="w-4 h-4 text-gray-400 group-hover:text-brand transition-colors shrink-0"
+                        aria-hidden
+                      />
                     </div>
-                    <ChevronRight
-                      className="w-4 h-4 text-gray-400 group-hover:text-brand transition-colors shrink-0"
-                      aria-hidden
-                    />
-                  </div>
-                  <p className="dashboard-folder-name">{p.name || 'Untitled project'}</p>
-                  <p className="dashboard-folder-meta">
-                    <Calendar className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                    <span>Updated {formatDate(p.updatedAt)}</span>
-                  </p>
-                  <p className="dashboard-folder-created">Created {formatDate(p.createdAt)}</p>
-                </Link>
+                    <p className="dashboard-folder-name">{p.name || 'Untitled project'}</p>
+                    <p className="dashboard-folder-meta">
+                      <Calendar className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                      <span>Updated {formatDate(p.updatedAt)}</span>
+                    </p>
+                    <p className="dashboard-folder-created">Created {formatDate(p.createdAt)}</p>
+                  </Link>
+                  <button
+                    type="button"
+                    className="dashboard-folder-rename"
+                    title={`Rename ${p.name || 'project'}`}
+                    aria-label={`Rename ${p.name || 'project'}`}
+                    onClick={() => openRename(p)}
+                  >
+                    <Pencil className="w-4 h-4" aria-hidden />
+                  </button>
+                </article>
               ))}
             </div>
           )}
@@ -258,6 +309,16 @@ export default function DashboardPage() {
         onNameChange={setName}
         onClose={closeModal}
         onSubmit={createProject}
+      />
+
+      <RenameProjectModal
+        open={renameOpen}
+        name={renameName}
+        saving={renaming}
+        error={renameError}
+        onNameChange={setRenameName}
+        onClose={closeRename}
+        onSubmit={renameProject}
       />
     </div>
   );
