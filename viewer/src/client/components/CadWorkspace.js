@@ -7279,6 +7279,7 @@ export default function CadWorkspace({
           </div>
         </div>
 
+        {!studioEmbedMode ? (
         <StatusToast
           copyStatus={copyStatus}
           screenshotStatus={screenshotStatus}
@@ -7293,6 +7294,7 @@ export default function CadWorkspace({
             lastPersistenceFailureKeyRef.current = "";
           }}
         />
+        ) : null}
 
         <ViewerAlertDialog
           viewerAlertOpen={viewerAlertOpen}

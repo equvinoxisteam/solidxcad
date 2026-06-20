@@ -14,7 +14,7 @@ import {
 import { VIEWER_SCENE_SCALE } from "cadjs/lib/viewer/sceneScale";
 import { VIEWER_PICK_MODE } from "cadjs/lib/viewer/constants";
 import { useStepAnimationSnapshot } from "@/workbench/stepAnimationStore";
-import { EMBED_STUDIO_ERROR, isViewerEmbedMode } from "@/workbench/embedMode.js";
+import { EMBED_STUDIO_ERROR, isViewerEmbedMode, isViewerStudioEmbed } from "@/workbench/embedMode.js";
 
 const EMPTY_LIST = Object.freeze([]);
 const VIEWPORT_ISSUE_META = Object.freeze({
@@ -145,6 +145,8 @@ export default function CadRenderPane({
     : selectionCount > 0
       ? "selection"
       : "";
+  const studioEmbed = isViewerStudioEmbed();
+  const showSelectionCta = !studioEmbed && !previewMode && ctaMode && !stepUpdateInProgress && !topologySelectionPending && !topologySelectionUnavailable && !topologySelectionDeferred;
   const bottomOverlayStyle = {
     bottom: "1rem"
   };
@@ -401,7 +403,7 @@ export default function CadRenderPane({
           </Alert>
         </div>
       ) : null}
-      {!previewMode && ctaMode && !stepUpdateInProgress && !topologySelectionPending && !topologySelectionUnavailable && !topologySelectionDeferred ? (
+      {showSelectionCta ? (
         <div
           className="pointer-events-none absolute z-20 flex min-w-0 justify-center"
           style={ctaOverlayStyle}
