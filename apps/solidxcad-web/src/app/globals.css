@@ -43,6 +43,10 @@ body {
   white-space: nowrap;
 }
 
+.brand-logo-name-dark {
+  color: #ffffff !important;
+}
+
 @media (min-width: 640px) {
   .brand-logo-name {
     font-size: 1rem;
@@ -50,7 +54,7 @@ body {
 }
 
 .brand-logo-mark {
-  background: #103A8E;
+  display: block;
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -242,6 +246,257 @@ body {
   .marketing-header-inner {
     padding: 0.875rem 1.25rem;
   }
+}
+
+/* Home — dark hero (CadX-style) */
+.landing-home {
+  position: relative;
+  min-height: 100vh;
+  background: #050508;
+  color: #f8fafc;
+  overflow: hidden;
+}
+
+.landing-home-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 42% at 50% 38%, rgba(59, 130, 246, 0.22), transparent 68%),
+    radial-gradient(ellipse 40% 30% at 50% 55%, rgba(16, 58, 142, 0.35), transparent 72%);
+  pointer-events: none;
+}
+
+.marketing-header-dark {
+  position: relative;
+  z-index: 20;
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 5, 8, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.marketing-header-inner-dark {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .marketing-header-inner-dark {
+    padding: 0.875rem 1.25rem;
+  }
+}
+
+.landing-home-header-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #050508;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+@media (min-width: 640px) {
+  .landing-home-header-cta {
+    padding: 0.5625rem 1.125rem;
+    font-size: 0.875rem;
+  }
+}
+
+.landing-home-header-cta:hover {
+  background: #e2e8f0;
+}
+
+.landing-home-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-home-hero {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.5rem 1rem 2rem;
+  min-height: calc(100vh - 8rem);
+}
+
+.landing-home-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid rgba(96, 165, 250, 0.45);
+  border-radius: 9999px;
+  background: rgba(16, 58, 142, 0.15);
+  color: #93c5fd;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 640px) {
+  .landing-home-badge {
+    font-size: 0.6875rem;
+  }
+}
+
+.landing-home-title {
+  max-width: 18ch;
+  margin: 0 0 1.25rem;
+  color: #ffffff;
+  font-size: clamp(2rem, 6vw, 3.75rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.landing-home-title-accent {
+  display: block;
+  margin-top: 0.25rem;
+  background: linear-gradient(90deg, #dbeafe 0%, #60a5fa 55%, #93c5fd 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.landing-home-lead {
+  max-width: 42rem;
+  margin: 0 0 2rem;
+  color: #94a3b8;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+@media (min-width: 640px) {
+  .landing-home-lead {
+    font-size: 1.0625rem;
+  }
+}
+
+.landing-home-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 3rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #050508;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-decoration: none;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.landing-home-cta:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.landing-home-pillars {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 56rem;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .landing-home-pillars {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem;
+  }
+}
+
+.landing-home-pillar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.landing-home-pillar-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: #60a5fa;
+}
+
+.landing-home-pillar-title {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.landing-home-pillar-sub {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.landing-home-proof {
+  margin: 0;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #64748b;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.marketing-footer-dark {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #050508;
+}
+
+.marketing-footer-line-dark {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+@media (min-width: 640px) {
+  .marketing-footer-line-dark {
+    padding: 0.875rem 1.25rem;
+    flex-wrap: nowrap;
+  }
+}
+
+.marketing-footer-line-dark .marketing-footer-links a {
+  color: #94a3b8;
+}
+
+.marketing-footer-line-dark .marketing-footer-links a:hover {
+  color: #ffffff;
 }
 
 .marketing-hero {

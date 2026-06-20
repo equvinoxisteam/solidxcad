@@ -11,7 +11,7 @@ const nextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../../'),
   env: {
     NEXT_PUBLIC_API_URL: apiTarget,
-    NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'SolidX CAD',
+    NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'SolidXCad',
     NEXT_PUBLIC_VIEWER_URL: process.env.NEXT_PUBLIC_VIEWER_URL || process.env.VIEWER_URL || 'http://127.0.0.1:4178',
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '',
   },

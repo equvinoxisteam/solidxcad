@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { BRAND_NAME } from '@/lib/brand';
 import {
   Calendar,
   ChevronRight,
@@ -196,7 +197,7 @@ export default function DashboardPage() {
               </div>
               <h2 className="text-lg font-semibold text-gray-900 mb-2">No projects yet</h2>
               <p className="text-gray-500 text-sm max-w-md mx-auto leading-relaxed">
-                Create your first project above, then describe parts in chat. SolidX CAD will generate
+                Create your first project above, then describe parts in chat. {BRAND_NAME} will generate
                 your STEP, STL, and manufacturing files.
               </p>
             </div>

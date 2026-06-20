@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import { Check, CreditCard, Loader2, User } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
+import { BRAND_NAME } from '@/lib/brand';
 import {
   api,
   creditUsageSummary,
@@ -109,7 +110,7 @@ export default function SettingsPage() {
         key: order.keyId,
         amount: order.amount,
         currency: order.currency,
-        name: 'SolidX CAD Pro',
+        name: `${BRAND_NAME} Pro`,
         description: 'Pro plan subscription',
         order_id: order.orderId,
         handler: async (response: Record<string, string>) => {

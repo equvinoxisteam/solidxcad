@@ -1,10 +1,16 @@
 import Link from 'next/link';
 import { BRAND_COMPANY, BRAND_NAME } from '@/lib/brand';
 
-export function MarketingFooter() {
+type MarketingFooterProps = {
+  variant?: 'light' | 'dark';
+};
+
+export function MarketingFooter({ variant = 'light' }: MarketingFooterProps) {
+  const dark = variant === 'dark';
+
   return (
-    <footer className="marketing-footer">
-      <div className="marketing-footer-line">
+    <footer className={dark ? 'marketing-footer-dark' : 'marketing-footer'}>
+      <div className={dark ? 'marketing-footer-line-dark' : 'marketing-footer-line'}>
         <div className="marketing-footer-meta">
           <span>© {new Date().getFullYear()} {BRAND_NAME}</span>
           <span className="marketing-footer-dot" aria-hidden>
