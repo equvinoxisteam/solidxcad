@@ -3,13 +3,18 @@
 import { BRAND_NAME } from '@/lib/brand';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlertCircle,
   ArrowUp,
   AtSign,
+  Bot,
+  CheckCircle2,
   ChevronDown,
+  Circle,
   Globe,
   ImagePlus,
   Loader2,
   Sparkles,
+  User,
   X,
 } from 'lucide-react';
 import {
@@ -73,6 +78,7 @@ const SKILL_LABELS: Record<string, string> = {
   srdf: 'SRDF',
   sdf: 'SDF',
   'implicit-cad': 'Implicit CAD',
+  gcode: 'G-code',
   'step-parts': 'Parts catalog',
   sendcutsend: 'SendCutSend',
   agent: 'Assistant',
@@ -91,6 +97,93 @@ function activityLabel(msg: string) {
 
 function friendlyError() {
   return 'Adjusting approach — resend your message or try a simpler prompt.';
+}
+
+function skillLabel(skill?: string) {
+  if (!skill) return null;
+  return SKILL_LABELS[skill] || skill;
+}
+
+function StepStatusIcon({
+  status,
+  isActive,
+}: {
+  status?: string;
+  isActive: boolean;
+}) {
+  if (isActive && status !== 'done' && status !== 'asking') {
+    return <Loader2 className="chat-activity-icon animate-spin text-brand" />;
+  }
+  if (status === 'asking' || status === 'waiting') {
+    return <Circle className="chat-activity-icon text-amber-500" />;
+  }
+  if (status === 'error') {
+    return <AlertCircle className="chat-activity-icon text-red-500" />;
+  }
+  return <CheckCircle2 className="chat-activity-icon text-emerald-500" />;
+}
+
+function AgentActivityTimeline({
+  steps,
+  phaseLabel,
+  streaming,
+}: {
+  steps: AgentStep[];
+  phaseLabel: string;
+  streaming: boolean;
+}) {
+  if (!steps.length && !streaming) return null;
+
+  return (
+    <div className="chat-activity-card">
+      <div className="chat-activity-header">
+        {streaming ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
+        ) : (
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+        )}
+        <span>Agent activity</span>
+        {phaseLabel && (
+          <span className="normal-case font-normal text-muted ml-auto truncate">
+            {phaseLabel}
+          </span>
+        )}
+      </div>
+      {steps.length > 0 ? (
+        <ul className="chat-activity-list">
+          {steps.map((step, i) => {
+            const isActive = streaming && i === steps.length - 1;
+            const label = skillLabel(step.skill);
+            return (
+              <li
+                key={`${i}-${step.message.slice(0, 24)}`}
+                className={`chat-activity-item${isActive ? ' chat-activity-item-active' : ''}`}
+              >
+                <StepStatusIcon status={step.status} isActive={isActive} />
+                <div className="min-w-0 flex-1">
+                  {label && <span className="chat-skill-badge">{label}</span>}
+                  <p className="m-0 whitespace-pre-wrap break-words">{step.message}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="text-xs text-muted m-0">Starting…</p>
+      )}
+    </div>
+  );
+}
+
+function ChatStatusBadge({ streaming, phaseLabel }: { streaming: boolean; phaseLabel: string }) {
+  return (
+    <span className="text-[10px] font-medium text-muted flex items-center gap-1.5">
+      <span
+        className={`chat-status-dot ${streaming ? 'chat-status-dot-live' : 'chat-status-dot-ready'}`}
+      />
+      {streaming ? phaseLabel || 'Working' : 'Ready'}
+    </span>
+  );
 }
 
 export function ChatPanel({
@@ -123,7 +216,7 @@ export function ChatPanel({
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
   const [modelUsedLabel, setModelUsedLabel] = useState('');
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const threadRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -137,6 +230,10 @@ export function ChatPanel({
     if (!q) return mentionableFiles.slice(0, 8);
     return mentionableFiles.filter((f) => f.name.toLowerCase().includes(q)).slice(0, 8);
   }, [mentionFilter, mentionableFiles]);
+
+  const phaseLabel = PHASE_LABELS[agentPhase] || '';
+  const displayLiveReply = sanitizeAssistantForDisplay(liveReply);
+  const showLiveBubble = streaming && Boolean(displayLiveReply);
 
   useEffect(() => {
     setWebSearch(getStoredWebSearch());
@@ -160,8 +257,10 @@ export function ChatPanel({
   }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, liveReply, agentSteps, agentPhase, generatedItems]);
+    const el = threadRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, displayLiveReply, agentSteps, agentPhase, generatedItems, streaming, assemblyHint]);
 
   function onModelChange(modelId: string) {
     setSelectedModel(modelId);
@@ -280,7 +379,7 @@ export function ChatPanel({
         setStreaming(false);
         setLiveReply('');
         setAgentPhase('idle');
-        setAgentSteps((steps) => [...steps, { message: friendlyError(), skill: 'agent', status: 'running' }]);
+        setAgentSteps((steps) => [...steps, { message: friendlyError(), skill: 'agent', status: 'error' }]);
         onMessagesChange();
       },
       (msg, skill, status) => {
@@ -302,124 +401,132 @@ export function ChatPanel({
     );
   }
 
-  const phaseLabel = PHASE_LABELS[agentPhase] || '';
-  const showLiveThinking = streaming && !sanitizeAssistantForDisplay(liveReply);
-
   return (
     <aside
-      className={`${
-        embedded ? 'w-full h-full' : 'w-full lg:w-[380px]'
-      } border-0 lg:border-l border-border bg-white flex flex-col shrink-0 flex-1 min-h-0`}
+      className={`chat-panel ${
+        embedded ? 'w-full h-full' : 'w-full lg:w-[380px] border-0 lg:border-l border-border shrink-0 flex-1 min-h-0'
+      }`}
     >
-      {!embedded && (
-      <div className="bg-brand text-white px-4 py-3 flex items-center justify-between shrink-0">
-        <div className="font-semibold text-sm">Agent</div>
-        <span className="text-[10px] font-medium bg-white/15 px-2 py-0.5 rounded-full flex items-center gap-1.5">
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${streaming ? 'bg-amber-300 animate-pulse' : 'bg-emerald-300'}`}
-          />
-          {streaming ? phaseLabel || 'Working' : 'Ready'}
-        </span>
-      </div>
+      {!embedded ? (
+        <div className="bg-brand text-white px-4 py-3 flex items-center justify-between shrink-0">
+          <div className="font-semibold text-sm">Agent</div>
+          <span className="text-[10px] font-medium bg-white/15 px-2 py-0.5 rounded-full flex items-center gap-1.5">
+            <span
+              className={`chat-status-dot ${streaming ? 'chat-status-dot-live' : 'chat-status-dot-ready'}`}
+            />
+            {streaming ? phaseLabel || 'Working' : 'Ready'}
+          </span>
+        </div>
+      ) : (
+        <div className="chat-panel-embedded-header">
+          <span className="text-xs font-semibold text-gray-700">Agent</span>
+          <ChatStatusBadge streaming={streaming} phaseLabel={phaseLabel} />
+        </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0 flex flex-col">
-        {messages.length > 0 && (
-          <div className="space-y-3 flex-1 min-h-0">
-        {messages.map((m) => (
-          <div
-            key={m._id}
-            className={`text-sm rounded-xl p-3 border ${
-              m.role === 'user'
-                ? 'bg-brand/15 border-brand/30 ml-4'
-                : 'bg-panel/50 border-border mr-1'
-            }`}
-          >
-            {m.role === 'assistant' && (
-              <div className="text-[10px] uppercase text-brand-muted font-semibold mb-1.5 tracking-wide">
-                {BRAND_NAME} Assistant
+      <div ref={threadRef} className="chat-thread">
+        {messages.map((m) =>
+          m.role === 'user' ? (
+            <div key={m._id} className="chat-row chat-row-user">
+              <div className="chat-avatar chat-avatar-user">
+                <User className="w-3.5 h-3.5" />
               </div>
-            )}
-            <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-gray-800">
-              {m.role === 'assistant' ? sanitizeAssistantForDisplay(m.content) : m.content}
+              <div className="chat-bubble chat-bubble-user">
+                <div className="chat-bubble-label">You</div>
+                <div className="whitespace-pre-wrap break-words">{m.content}</div>
+              </div>
+            </div>
+          ) : (
+            <div key={m._id} className="chat-row chat-row-assistant">
+              <div className="chat-avatar chat-avatar-assistant">
+                <Bot className="w-3.5 h-3.5" />
+              </div>
+              <div className="chat-bubble chat-bubble-assistant">
+                <div className="chat-bubble-label">{BRAND_NAME} Assistant</div>
+                <div className="whitespace-pre-wrap break-words">
+                  {sanitizeAssistantForDisplay(m.content)}
+                </div>
+              </div>
+            </div>
+          ),
+        )}
+
+        {!messages.length && !streaming && (
+          <div className="chat-empty-state">
+            <p className="text-xs text-gray-600 leading-relaxed m-0 mb-3">
+              Describe parts, assemblies, robots (URDF/SRDF/SDF), or attach an image. Use{' '}
+              <span className="text-brand-muted">@filename</span> to target a workspace file.
+            </p>
+            <p className="text-[11px] text-muted mb-2">Try a prompt:</p>
+            <div className="flex flex-col gap-2">
+              {PROMPTS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => send(p)}
+                  className="block w-full text-left text-xs bg-elevated border border-border rounded-lg p-2.5 hover:border-brand/50 hover:bg-brand/5 text-gray-800 transition-colors"
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(streaming || agentSteps.length > 0) && (
+          <AgentActivityTimeline
+            steps={agentSteps}
+            phaseLabel={phaseLabel}
+            streaming={streaming}
+          />
+        )}
+
+        {showLiveBubble && (
+          <div className="chat-row chat-row-assistant">
+            <div className="chat-avatar chat-avatar-assistant">
+              <Bot className="w-3.5 h-3.5" />
+            </div>
+            <div className="chat-bubble chat-bubble-assistant">
+              <div className="chat-bubble-label">{BRAND_NAME} Assistant</div>
+              <div className="whitespace-pre-wrap break-words">{displayLiveReply}</div>
+            </div>
+          </div>
+        )}
+
+        {generatedItems.map((item) => (
+          <div key={item.id} className="chat-result-card">
+            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+            <div>
+              {item.skill && (
+                <span className="chat-skill-badge">{skillLabel(item.skill)}</span>
+              )}
+              <p className="m-0 font-medium">{item.label}</p>
             </div>
           </div>
         ))}
 
-          </div>
-        )}
-
-        {!messages.length && !streaming && (
-          <div className="space-y-3">
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Describe parts, assemblies, robots (URDF/SRDF/SDF), or attach an image. Use{' '}
-              <span className="text-brand-muted">@filename</span> to target a workspace file.
-            </p>
-            <p className="text-[11px] text-muted">Try a prompt:</p>
-            {PROMPTS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => send(p)}
-                className="block w-full text-left text-xs bg-elevated border border-border rounded-lg p-2.5 hover:border-brand/50 hover:bg-brand/5 text-gray-800 transition-colors"
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {showLiveThinking && (
-          <div className="text-sm rounded-xl p-3 bg-panel/50 border border-border mr-1">
-            <div className="text-[10px] uppercase text-brand-muted font-semibold mb-1.5">{BRAND_NAME} Assistant</div>
-            <div className="whitespace-pre-wrap break-words text-[13px] text-gray-800">
-              {sanitizeAssistantForDisplay(liveReply)}
-            </div>
-          </div>
-        )}
-
         {assemblyHint && !streaming && (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 mr-1 space-y-2">
-            <div className="text-[10px] uppercase text-amber-200 font-semibold">Assembly workflow</div>
-            <p className="text-[12px] text-amber-50/90 whitespace-pre-wrap leading-relaxed">{assemblyHint}</p>
+          <div className="chat-assembly-hint">
+            <div className="chat-assembly-hint-title">Assembly workflow</div>
+            <p>{assemblyHint}</p>
             <div className="flex flex-col gap-1.5">
               <button
                 type="button"
                 onClick={() => send(ASSEMBLY_STEP1)}
-                className="text-left text-xs bg-panel/80 border border-border rounded-lg px-2.5 py-2 hover:border-brand"
+                className="text-left text-xs bg-white border border-amber-200 rounded-lg px-2.5 py-2 hover:border-brand text-gray-800"
               >
                 Step 1: {ASSEMBLY_STEP1}
               </button>
               <button
                 type="button"
                 onClick={() => send(ASSEMBLY_STEP2)}
-                className="text-left text-xs bg-panel/80 border border-border rounded-lg px-2.5 py-2 hover:border-brand"
+                className="text-left text-xs bg-white border border-amber-200 rounded-lg px-2.5 py-2 hover:border-brand text-gray-800"
               >
                 Step 2: {ASSEMBLY_STEP2}
               </button>
             </div>
           </div>
         )}
-
-        {generatedItems[0] && !streaming && (
-          <p className="text-[11px] text-brand-muted mr-1 px-1">
-            ✓ {generatedItems[0].label}
-          </p>
-        )}
-
-        {streaming && (
-          <div className="flex items-center gap-2 text-[11px] text-gray-500 mr-1 px-1 py-0.5">
-            <Loader2 className="w-3 h-3 animate-spin shrink-0" />
-            <span className="truncate">
-              {phaseLabel || 'Working'}
-              {agentSteps.length > 0
-                ? ` — ${activityLabel(agentSteps[agentSteps.length - 1].message)}`
-                : ''}
-            </span>
-          </div>
-        )}
-
-        <div ref={bottomRef} />
       </div>
 
       <div className="p-3 border-t border-border bg-elevated shrink-0 relative">
@@ -545,6 +652,7 @@ export function ChatPanel({
           Code runs in the background — chat shows activity and generated files only.
           {webSearch && ' Web search is on.'}
           {modelAuto && ' Auto model is on.'}
+          {modelUsedLabel && ` Last reply: ${modelUsedLabel}.`}
         </p>
       </div>
     </aside>
