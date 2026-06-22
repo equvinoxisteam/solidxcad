@@ -50,15 +50,9 @@ type AgentPhase =
 
 type GeneratedItem = { id: string; skill?: string; label: string };
 
-const ASSEMBLY_STEP1 = 'Import M3 socket head cap screw from step.parts';
-const ASSEMBLY_STEP2 =
-  'Assembly: 50×30×5 mm mount plate with 4 corner holes and the imported screws at each hole.';
-
 const PROMPTS = [
   '30mm cube with 4× M3 holes',
-  ASSEMBLY_STEP1,
-  ASSEMBLY_STEP2,
-  'Make a 20mm cube with 2mm fillets on all edges',
+  'Build a 6-axis robot arm URDF',
 ];
 
 const PHASE_LABELS: Record<string, string> = {
@@ -87,16 +81,9 @@ const SKILL_LABELS: Record<string, string> = {
 
 const CHAT_MODEL = 'anthropic/claude-opus-4.7';
 
-const SKILL_CATALOG = [
-  { id: 'cad', label: 'CAD', hint: 'STEP · STL · GLB' },
-  { id: 'urdf', label: 'URDF', hint: 'Robots' },
-  { id: 'srdf', label: 'SRDF', hint: 'MoveIt' },
-  { id: 'sdf', label: 'SDF', hint: 'Gazebo' },
-  { id: 'implicit-cad', label: 'Implicit', hint: 'Raymarch' },
-  { id: 'gcode', label: 'G-code', hint: 'Slice & print' },
-  { id: 'step-parts', label: 'Parts', hint: 'Catalog import' },
-  { id: 'sendcutsend', label: 'Sheet', hint: 'Laser preflight' },
-] as const;
+const ASSEMBLY_STEP1 = 'Import M3 socket head cap screw from step.parts';
+const ASSEMBLY_STEP2 =
+  'Assembly: 50×30×5 mm mount plate with 4 corner holes and the imported screws at each hole.';
 
 function extractPlanSteps(text: string): string[] {
   const match = text.match(/\[AGENT_PLAN\]([\s\S]*?)\[\/AGENT_PLAN\]/i);
@@ -487,18 +474,6 @@ export function ChatPanel({
 
         {!messages.length && !streaming && (
           <div className="chat-empty-state">
-            <div className="chat-skills-strip">
-              {SKILL_CATALOG.map((skill) => (
-                <span key={skill.id} className="chat-skill-pill" title={skill.hint}>
-                  {skill.label}
-                </span>
-              ))}
-            </div>
-            <p className="text-xs text-gray-600 leading-relaxed m-0 mb-3">
-              Describe parts, assemblies, robots (URDF/SRDF/SDF), or attach an image. Use{' '}
-              <span className="text-brand-muted">@filename</span> to target a workspace file.
-            </p>
-            <p className="text-[11px] text-muted mb-2">Try a prompt:</p>
             <div className="flex flex-col gap-2">
               {PROMPTS.map((p) => (
                 <button
@@ -641,7 +616,7 @@ export function ChatPanel({
                 onClick={() => fileInputRef.current?.click()}
                 className="p-1.5 text-muted hover:text-gray-900"
                 aria-label="Attach image"
-                title="Attach reference image — works for CAD, URDF, SDF, robots, and parts"
+                title="Attach image"
               >
                 <ImagePlus className="w-4 h-4" />
               </button>
@@ -657,9 +632,6 @@ export function ChatPanel({
             </button>
           </div>
         </div>
-        <p className="text-[10px] text-muted mt-2 px-1 leading-relaxed">
-          Claude Opus 4.7 · agent auto-searches web and knowledge when needed · attach images for any skill
-        </p>
       </div>
     </aside>
   );
