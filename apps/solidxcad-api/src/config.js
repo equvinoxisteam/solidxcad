@@ -90,7 +90,7 @@ export const config = {
     modelFast: process.env.OPENROUTER_MODEL_FAST || 'anthropic/claude-opus-4.7',
     modelCad: process.env.OPENROUTER_MODEL_CAD || 'anthropic/claude-opus-4.7',
     modelFallback: process.env.OPENROUTER_MODEL_FALLBACK || 'anthropic/claude-opus-4.7',
-    maxTokens: Number(process.env.OPENROUTER_MAX_TOKENS || 1024),
+    maxTokens: Number(process.env.OPENROUTER_MAX_TOKENS || 8192),
     appName: process.env.OPENROUTER_APP_NAME || 'SolidX CAD',
     siteUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   },
@@ -105,6 +105,14 @@ export const config = {
   textToCadRoot: process.env.TEXT_TO_CAD_ROOT
     || path.resolve(__dirname, '../../..'),
   pythonBin: process.env.PYTHON_BIN || '',
+
+  pinecone: {
+    apiKey: process.env.PINECONE_API_KEY || '',
+    indexHost: process.env.PINECONE_INDEX_HOST || '',
+    namespace: process.env.PINECONE_NAMESPACE || 'engineering',
+    topK: Number(process.env.PINECONE_TOP_K || 5),
+    embedModel: process.env.PINECONE_EMBED_MODEL || 'openai/text-embedding-3-small',
+  },
 
   viewerUrl: process.env.VIEWER_URL || 'http://127.0.0.1:4178',
   autoStartViewer: process.env.AUTO_START_VIEWER !== 'false' && (process.env.NODE_ENV || 'development') === 'development',

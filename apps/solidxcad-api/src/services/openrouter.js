@@ -400,20 +400,24 @@ const PROMPTS = {
   sendcutsend: `You help prepare STEP/DXF files for SendCutSend.com laser cutting. Ask for material/thickness if missing. The agent writes a preflight report from project files.`,
 };
 
-export async function getSystemPromptForSkill(skillId, { projectFiles } = {}) {
+export async function getSystemPromptForSkill(skillId, { projectFiles, hasImage = false } = {}) {
   const base = PROMPTS[skillId] || CAD_SYSTEM_PROMPT;
   const ctx = await projectFilesContext(projectFiles || []);
-  const skillBlock = ctx ? `${base}${ctx}` : base;
+  let skillBlock = ctx ? `${base}${ctx}` : base;
+  if (hasImage) {
+    skillBlock += '\n\nThe user may have attached a reference image — infer geometry and choose the correct generator for this skill.';
+  }
   return `${AGENT_CORE_PROMPT}\n\n---\n\n${skillBlock}`;
 }
 
 export function maxTokensForSkill(skillId, { userMessage = '' } = {}) {
   const msg = [userMessage].filter(Boolean).join('\n');
-  const complex = detectComplexCadRequest(msg) || detectFromScratchBuild(msg);
-  if (['urdf', 'srdf', 'sdf'].includes(skillId)) return complex ? 6144 : 4096;
-  if (skillId === 'implicit-cad') return complex ? 4096 : 3072;
-  if (skillId === 'cad') return complex ? 8192 : 4096;
-  return undefined;
+  const complex = detectComplexCadRequest(msg) || detectFromScratchBuild(msg)
+    || /\b(rocket|engine|turbopump|assembly|complete|from scratch)\b/i.test(msg);
+  if (['urdf', 'srdf', 'sdf'].includes(skillId)) return complex ? 8192 : 4096;
+  if (skillId === 'implicit-cad') return complex ? 6144 : 3072;
+  if (skillId === 'cad') return complex ? 12288 : 6144;
+  return complex ? 6144 : undefined;
 }
 
 export async function* streamChatCompletion(messages, { model, system, maxTokens, webSearch = false, imageDataUrl } = {}) {

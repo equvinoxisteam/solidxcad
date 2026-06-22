@@ -15,7 +15,8 @@ import {
 import { shouldDeferPipeline } from '../services/agentBehavior.js';
 import { searchStepParts } from '../services/cadWorker.js';
 import { resolveChatModel, getChatModels } from '../services/models.js';
-import { modelLabel } from '../services/modelPicker.js';
+import { modelLabel, inferWebSearchNeeded } from '../services/modelPicker.js';
+import { retrieveKnowledgeContext } from '../services/knowledgeRetrieval.js';
 import { buildFocusedFileContext } from '../services/projectAgentContext.js';
 import { runPipelineWithRecovery } from '../services/agentPipelineRecovery.js';
 import { resolveSkillFromChat, runSkillPipeline, normalizePipelineResult } from '../services/skillOrchestrator.js';
@@ -70,7 +71,7 @@ router.post('/chat', async (req, res) => {
     generateCad = true,
     model: requestedModel,
     modelMode = 'manual',
-    webSearch = false,
+    webSearch: _webSearchIgnored = false,
     contextFileIds = [],
     imageDataUrl = '',
     selectionContext = '',
@@ -97,7 +98,7 @@ router.post('/chat', async (req, res) => {
     focusedFiles.push(viewerFile);
   }
   const hasImage = Boolean(imageDataUrl && String(imageDataUrl).startsWith('data:image/'));
-  const effectiveWebSearch = Boolean(webSearch);
+  const effectiveWebSearch = inferWebSearchNeeded(trimmedMessage, { hasImage, skill: skillIntent });
   const chatModel = resolveChatModel();
 
   try {
@@ -119,8 +120,10 @@ router.post('/chat', async (req, res) => {
 
   const history = await ChatMessage.find({ projectId }).sort({ createdAt: 1 }).limit(30);
   const messages = history.map((m) => ({ role: m.role, content: m.content }));
-  let systemPrompt = await getSystemPromptForSkill(skillIntent, { projectFiles });
+  let systemPrompt = await getSystemPromptForSkill(skillIntent, { projectFiles, hasImage });
   systemPrompt += buildUserContextPrompt(req.user);
+  const knowledgeContext = await retrieveKnowledgeContext(trimmedMessage, { skill: skillIntent });
+  if (knowledgeContext) systemPrompt += knowledgeContext;
   const fileFocus = await buildFocusedFileContext(projectFiles, [
     ...new Set([...contextFileIds.map(String), viewerFile?._id].filter(Boolean)),
   ]);
@@ -132,10 +135,17 @@ router.post('/chat', async (req, res) => {
     systemPrompt += `\n\n---\nThe user is viewing **${viewerFile.name}** in the workbench — prefer modifying that design unless they ask for something new.`;
   }
   if (effectiveWebSearch) {
-    systemPrompt += '\n\n---\nWeb search is enabled for this turn. Use current web results for standards, dimensions, and product data when the user needs factual grounding.';
+    systemPrompt += '\n\n---\nWeb grounding is active for this turn when needed. Use current web results for standards, dimensions, materials, and product data.';
   }
   if (hasImage) {
-    systemPrompt += '\n\n---\nThe user attached a reference image. Infer dimensions, shape language, and features from the image; generate runnable CAD with reasonable estimates. Use [AGENT_PHASE: execute] when ready — avoid long clarification loops.';
+    systemPrompt += `\n\n---\n## Reference image (all skills)
+The user attached an image. Analyze it for shape, proportions, interfaces, and likely manufacturing intent.
+- **CAD:** build123d gen_step() from visual geometry; estimate mm dimensions
+- **URDF/SRDF/SDF:** infer linkage, joint axes, and simulation masses from the mechanism shown
+- **Implicit:** match overall envelope with SDF raymarch when organic/lattice
+- **Parts:** identify catalog fasteners if visible (bolts, bearings)
+- **G-code:** if the image is a printed part, generate mesh then offer slicing
+Decompose complex systems (rocket engines, robots, machines) into subassemblies in [AGENT_PLAN], then execute with [AGENT_PHASE: execute] when estimates are reasonable.`;
   }
   const maxTokens = maxTokensForSkill(skillIntent, { userMessage: trimmedMessage });
 
@@ -150,7 +160,7 @@ router.post('/chat', async (req, res) => {
         res.write(`data: ${JSON.stringify({
           type: 'agent_phase',
           phase: 'searching',
-          message: 'Searching the web for reference data…',
+          message: 'Searching references and standards…',
         })}\n\n`);
       }
       if (focusedFiles.length) {

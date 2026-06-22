@@ -9,15 +9,12 @@ import {
   Bot,
   CheckCircle2,
   Circle,
-  Globe,
   ImagePlus,
   Loader2,
   User,
   X,
 } from 'lucide-react';
 import {
-  getStoredWebSearch,
-  setStoredWebSearch,
   streamChat,
 } from '@/lib/api';
 import type { CadResult, ChatMessage, ProjectFile } from '@/lib/api';
@@ -224,7 +221,6 @@ export function ChatPanel({
   const [liveReply, setLiveReply] = useState('');
   const [agentSteps, setAgentSteps] = useState<AgentStep[]>([]);
   const [agentPhase, setAgentPhase] = useState<AgentPhase>('idle');
-  const [webSearch, setWebSearch] = useState(false);
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
   const [assemblyHint, setAssemblyHint] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -259,22 +255,10 @@ export function ChatPanel({
   );
 
   useEffect(() => {
-    setWebSearch(getStoredWebSearch());
-  }, []);
-
-  useEffect(() => {
     const el = threadRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [messages, displayLiveReply, agentSteps, agentPhase, generatedItems, streaming, assemblyHint]);
-
-  function toggleWebSearch() {
-    setWebSearch((v) => {
-      const next = !v;
-      setStoredWebSearch(next);
-      return next;
-    });
-  }
 
   function onInputChange(value: string) {
     setInput(value);
@@ -315,7 +299,7 @@ export function ChatPanel({
     if ((!rawText && !imageDataUrl) || streaming) return;
 
     const text = rawText
-      || 'Build a CAD model matching the attached reference image. Estimate dimensions from the image and generate STEP and STL.';
+      || 'Analyze the attached image and build the correct SolidX CAD output (CAD STEP, URDF, SDF, implicit, or parts import as appropriate). Estimate dimensions from the image.';
 
     const contextFileIds = resolveMentionedFileIds(text, mentionableFiles);
 
@@ -324,14 +308,13 @@ export function ChatPanel({
     setStreaming(true);
     setLiveReply('');
     setAgentSteps([]);
-    setAgentPhase(webSearch ? 'searching' : 'reading');
+    setAgentPhase('reading');
     setAssemblyHint(null);
 
     await streamChat(
       projectId,
       text,
       CHAT_MODEL,
-      webSearch,
       (delta) => {
         setAgentPhase((p) => (p === 'searching' || p === 'reading' ? 'thinking' : p));
         setLiveReply((s) => s + delta);
@@ -614,22 +597,9 @@ export function ChatPanel({
                 onClick={() => fileInputRef.current?.click()}
                 className="p-1.5 text-muted hover:text-gray-900"
                 aria-label="Attach image"
-                title="Attach reference image for CAD"
+                title="Attach reference image — works for CAD, URDF, SDF, robots, and parts"
               >
                 <ImagePlus className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={toggleWebSearch}
-                title="Web search for specs, standards, and product data"
-                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] border transition-colors ${
-                  webSearch
-                    ? 'bg-brand/25 border-brand text-brand-muted'
-                    : 'border-border text-muted hover:text-gray-900 hover:border-brand/40'
-                }`}
-              >
-                <Globe className="w-3.5 h-3.5" />
-                Web
               </button>
             </div>
             <button
@@ -644,8 +614,7 @@ export function ChatPanel({
           </div>
         </div>
         <p className="text-[10px] text-muted mt-2 px-1 leading-relaxed">
-          Claude Opus 4.7 · code runs in the background — chat shows activity and generated files only.
-          {webSearch && ' Web search is on.'}
+          Claude Opus 4.7 · agent auto-searches web and knowledge when needed · attach images for any skill
         </p>
       </div>
     </aside>

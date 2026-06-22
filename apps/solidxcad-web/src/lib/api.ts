@@ -204,7 +204,6 @@ export type ChatModelsResponse = {
 
 const MODEL_STORAGE_KEY = 'solidxcad_chat_model';
 const MODEL_AUTO_STORAGE_KEY = 'solidxcad_model_auto';
-const WEB_SEARCH_STORAGE_KEY = 'solidxcad_web_search';
 
 export function getStoredModelAuto(): boolean {
   if (typeof window === 'undefined') return true;
@@ -215,15 +214,6 @@ export function getStoredModelAuto(): boolean {
 
 export function setStoredModelAuto(auto: boolean) {
   localStorage.setItem(MODEL_AUTO_STORAGE_KEY, auto ? '1' : '0');
-}
-
-export function getStoredWebSearch(): boolean {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem(WEB_SEARCH_STORAGE_KEY) === '1';
-}
-
-export function setStoredWebSearch(enabled: boolean) {
-  localStorage.setItem(WEB_SEARCH_STORAGE_KEY, enabled ? '1' : '0');
 }
 
 export function getStoredChatModel(): string | null {
@@ -363,7 +353,6 @@ export async function streamChat(
   projectId: string,
   message: string,
   model: string,
-  webSearch: boolean,
   onDelta: (text: string) => void,
   onDone: (payload: {
     cadResult?: CadResult;
@@ -392,7 +381,6 @@ export async function streamChat(
       modelMode,
       stream: true,
       generateCad: true,
-      webSearch: Boolean(webSearch),
       contextFileIds: options.contextFileIds || [],
       imageDataUrl: options.imageDataUrl || '',
       selectionContext: options.selectionContext || '',
