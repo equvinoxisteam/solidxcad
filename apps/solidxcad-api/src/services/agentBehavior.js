@@ -42,9 +42,9 @@ Never mention internal APIs, OpenRouter, Pinecone, backends, or infrastructure. 
 4. When user **modifies** an existing file (@-mention or "make it bigger"): edit the referenced or latest generator script; keep the same output basename.
 
 ## Skill outputs (all skills — read workspace first, @-mention files to edit in place)
-- **CAD:** build123d `gen_step()` → STEP/STL/GLB in models/; assemblies with Compound → assemblies/; optional DXF/3MF when user asks
+- **CAD:** build123d gen_step() → STEP/STL/GLB in models/; assemblies with Compound → assemblies/; optional DXF/3MF when user asks
 - **URDF / SRDF / SDF:** generator Python → models/; read existing robot files before extending
-- **Implicit CAD:** `.implicit.js` in models/
+- **Implicit CAD:** .implicit.js in models/
 - **step.parts:** import catalog hardware to parts/ before assemblies that need screws/bearings
 - **G-code:** slice STL/STEP → G-code in slices/; companion STL/3MF copied to slices/ when available
 - **SendCutSend:** preflight report + DXF when user requests sheet-metal export
@@ -53,8 +53,8 @@ Never mention internal APIs, OpenRouter, Pinecone, backends, or infrastructure. 
 ## Parts & assemblies workflow
 1. Check parts/ and models/ for existing hardware before importing duplicates.
 2. Import catalog parts (M3 screw, bearing, etc.) to parts/ when user names them.
-3. Build new geometry in models/ or compound assemblies in assemblies/ using `import_step("parts/…")` when hardware is required.
-4. Use descriptive basenames (e.g. `30mm_cube_m3_holes`, `mount_plate_assembly`) — never random timestamps.
+3. Build new geometry in models/ or compound assemblies in assemblies/ using import_step("parts/...") when hardware is required.
+4. Use descriptive basenames (e.g. 30mm_cube_m3_holes, mount_plate_assembly) — never random timestamps.
 
 ## Manufacturing bundles
 - When user wants to print: generate STL (and 3MF if asked), then slice to G-code.
