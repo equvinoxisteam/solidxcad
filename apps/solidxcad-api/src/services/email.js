@@ -2,15 +2,52 @@ import nodemailer from 'nodemailer';
 import { google } from 'googleapis';
 import { config } from '../config.js';
 
+const SEND_TIMEOUT_MS = 15_000;
+
+function withTimeout(promise, ms = SEND_TIMEOUT_MS, label = 'email') {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+    Promise.resolve(promise)
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
+function resolvedGmailConfig() {
+  return {
+    clientId: config.gmail.clientId || config.google.clientId || '',
+    clientSecret: config.gmail.clientSecret || config.google.clientSecret || '',
+    refreshToken: config.gmail.refreshToken || '',
+    user: config.gmail.user || config.mail.user || '',
+    redirectUri: config.gmail.redirectUri || `${config.apiUrl.replace(/\/$/, '')}/api/auth/google/callback`,
+  };
+}
+
+export function isEmailConfigured() {
+  const gmail = resolvedGmailConfig();
+  const hasGmailApi = Boolean(gmail.clientId && gmail.clientSecret && gmail.refreshToken && gmail.user);
+  const hasSmtp = Boolean(config.mail.user && config.mail.pass);
+  return hasGmailApi || hasSmtp;
+}
+
 async function getGmailApiClient() {
-  if (!config.gmail.clientId || !config.gmail.refreshToken) return null;
+  const gmail = resolvedGmailConfig();
+  if (!gmail.clientId || !gmail.clientSecret || !gmail.refreshToken) return null;
 
   const oauth2 = new google.auth.OAuth2(
-    config.gmail.clientId,
-    config.gmail.clientSecret,
-    config.gmail.redirectUri,
+    gmail.clientId,
+    gmail.clientSecret,
+    gmail.redirectUri,
   );
-  oauth2.setCredentials({ refresh_token: config.gmail.refreshToken });
+  oauth2.setCredentials({ refresh_token: gmail.refreshToken });
   return google.gmail({ version: 'v1', auth: oauth2 });
 }
 
@@ -28,29 +65,41 @@ function encodeMessage(to, subject, html, from) {
 }
 
 async function sendViaGmailApi(to, subject, html) {
+  const gmailCfg = resolvedGmailConfig();
   const gmail = await getGmailApiClient();
-  if (!gmail || !config.gmail.user) return false;
+  if (!gmail || !gmailCfg.user) return false;
 
   await gmail.users.messages.send({
     userId: 'me',
-    requestBody: { raw: encodeMessage(to, subject, html, config.gmail.user) },
+    requestBody: { raw: encodeMessage(to, subject, html, gmailCfg.user) },
   });
   return true;
 }
 
-async function sendViaSmtp(to, subject, html) {
-  if (!config.mail.user || !config.mail.pass) return false;
+function createSmtpTransporter() {
+  if (!config.mail.user || !config.mail.pass) return null;
 
-  const transporter = nodemailer.createTransport({
-    service: config.mail.provider === 'gmail' ? 'gmail' : undefined,
-    host: config.mail.provider === 'gmail' ? undefined : 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-      user: config.mail.user,
-      pass: config.mail.pass.replace(/\s+/g, ''),
-    },
+  const auth = {
+    user: config.mail.user,
+    pass: config.mail.pass.replace(/\s+/g, ''),
+  };
+
+  // Port 587 (STARTTLS) is more reliable from cloud hosts than 465.
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    auth,
+    connectionTimeout: SEND_TIMEOUT_MS,
+    greetingTimeout: SEND_TIMEOUT_MS,
+    socketTimeout: SEND_TIMEOUT_MS,
   });
+}
+
+async function sendViaSmtp(to, subject, html) {
+  const transporter = createSmtpTransporter();
+  if (!transporter) return false;
 
   await transporter.sendMail({
     from: config.mail.from || config.mail.user,
@@ -62,14 +111,20 @@ async function sendViaSmtp(to, subject, html) {
 }
 
 async function sendHtmlEmail(to, subject, html) {
-  try {
-    if (await sendViaGmailApi(to, subject, html)) return true;
-  } catch (err) {
-    console.warn('[email] Gmail API failed:', err.message);
+  if (resolvedGmailConfig().refreshToken) {
+    try {
+      if (await withTimeout(sendViaGmailApi(to, subject, html), SEND_TIMEOUT_MS, 'Gmail API')) {
+        return true;
+      }
+    } catch (err) {
+      console.warn('[email] Gmail API failed:', err.message);
+    }
   }
 
   try {
-    if (await sendViaSmtp(to, subject, html)) return true;
+    if (await withTimeout(sendViaSmtp(to, subject, html), SEND_TIMEOUT_MS, 'SMTP')) {
+      return true;
+    }
   } catch (err) {
     console.warn('[email] SMTP failed:', err.message);
   }

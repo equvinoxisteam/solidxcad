@@ -13,6 +13,7 @@ import viewerRoutes from './routes/viewer.js';
 import manufacturingRoutes from './routes/manufacturing.js';
 import { ensureViewerRunning } from './services/viewerLauncher.js';
 import { userFacingError } from './services/userFacingErrors.js';
+import { isEmailConfigured } from './services/email.js';
 
 const app = express();
 
@@ -43,6 +44,8 @@ app.get('/health', (req, res) => {
     storage: config.storageBackend,
     s3Bucket: config.aws.bucket ? true : false,
     openrouter: Boolean(config.openrouter.apiKey),
+    email: isEmailConfigured(),
+    googleAuth: Boolean(config.google.clientId),
     unlimitedCredits: config.credits.unlimited,
     pythonBin: config.pythonBin || null,
     slicerBackend: config.slicerBackend,

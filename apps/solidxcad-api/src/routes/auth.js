@@ -4,7 +4,7 @@ import { User } from '../models/User.js';
 import { signToken, requireAuth } from '../middleware/auth.js';
 import { config } from '../config.js';
 import { displayCredits, grantCredits, isUnlimitedCredits } from '../services/credits.js';
-import { sendWelcomeEmail, sendOtpEmail } from '../services/email.js';
+import { sendWelcomeEmail, sendOtpEmail, isEmailConfigured } from '../services/email.js';
 import { issueOtp, verifyOtp } from '../services/otpService.js';
 import {
   exchangeGoogleCode,
@@ -124,15 +124,37 @@ router.post('/otp/send', async (req, res) => {
       return res.status(400).json({ error: 'This account uses Google sign-in. Continue with Google.' });
     }
 
-    const code = await issueOtp(normalized, purpose);
-    const sent = await sendOtpEmail(normalized, code, purpose);
-
-    const payload = { ok: true, message: 'Verification code sent' };
-    if (!sent && config.nodeEnv === 'development') {
-      payload.devOtp = code;
-      payload.message = 'Verification code generated (check API console in dev)';
+    if (!isEmailConfigured()) {
+      console.error('[auth/otp/send] email not configured — set MAIL_USER/MAIL_PASS or GMAIL_REFRESH_TOKEN + GOOGLE_CLIENT_ID');
+      return res.status(503).json({
+        error: 'Email verification is temporarily unavailable. Use Google sign-in or contact support.',
+        code: 'EMAIL_NOT_CONFIGURED',
+      });
     }
-    res.json(payload);
+
+    const code = await issueOtp(normalized, purpose);
+    let sent = false;
+    try {
+      sent = await sendOtpEmail(normalized, code, purpose);
+    } catch (err) {
+      console.error('[auth/otp/send] email delivery error:', err.message);
+    }
+
+    if (!sent) {
+      if (config.nodeEnv === 'development') {
+        return res.json({
+          ok: true,
+          devOtp: code,
+          message: 'Verification code generated (check API console in dev)',
+        });
+      }
+      return res.status(503).json({
+        error: 'Could not deliver the verification email. Try Google sign-in or request a new code in a minute.',
+        code: 'EMAIL_DELIVERY_FAILED',
+      });
+    }
+
+    res.json({ ok: true, message: 'Verification code sent' });
   } catch (err) {
     console.error('[auth/otp/send]', err);
     res.status(500).json({ error: 'Could not send verification code' });

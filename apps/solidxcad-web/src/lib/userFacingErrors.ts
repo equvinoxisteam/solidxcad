@@ -26,6 +26,10 @@ const ALLOWED = [
   /request a new code/i,
   /wrong password/i,
   /email already/i,
+  /verification email/i,
+  /google sign-in/i,
+  /deliver the verification/i,
+  /email verification is temporarily/i,
 ];
 
 export function isAllowedUserMessage(message = '') {

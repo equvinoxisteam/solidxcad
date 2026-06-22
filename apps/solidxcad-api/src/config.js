@@ -65,10 +65,10 @@ export const config = {
   },
 
   gmail: {
-    clientId: process.env.GMAIL_CLIENT_ID || '',
-    clientSecret: process.env.GMAIL_CLIENT_SECRET || '',
+    clientId: process.env.GMAIL_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GMAIL_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '',
     refreshToken: process.env.GMAIL_REFRESH_TOKEN || '',
-    user: process.env.GMAIL_USER || '',
+    user: process.env.GMAIL_USER || process.env.MAIL_USER || '',
     redirectUri: process.env.GMAIL_REDIRECT_URI || '',
   },
 
