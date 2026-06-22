@@ -12,6 +12,7 @@ import {
   isRobotRenderFormat
 } from "cadjs/lib/fileFormats";
 import { VIEWER_SCENE_SCALE } from "cadjs/lib/viewer/sceneScale";
+import { THEME_FLOOR_MODES } from "cadjs/lib/themeSettings";
 import { VIEWER_PICK_MODE } from "cadjs/lib/viewer/constants";
 import { useStepAnimationSnapshot } from "@/workbench/stepAnimationStore";
 import { EMBED_STUDIO_ERROR, isViewerEmbedMode, isViewerStudioEmbed } from "@/workbench/embedMode.js";
@@ -245,6 +246,7 @@ export default function CadRenderPane({
           showEdges={!gcodeMode}
           recomputeNormals={false}
           themeSettings={themeSettings}
+          floorModeOverride={studioEmbed ? THEME_FLOOR_MODES.GRID : ""}
           displaySettings={dxfMode || pathPreviewMode ? null : displaySettings}
           previewMode={dxfMode ? false : previewMode}
           previewOrbitPaused={previewOrbitPaused}

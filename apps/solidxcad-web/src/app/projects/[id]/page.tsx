@@ -84,6 +84,8 @@ export default function StudioPage() {
           fileName: data.fileName,
           kind: data.kind,
           selectedParts: Array.isArray(data.selectedParts) ? data.selectedParts : [],
+          selectedReferenceIds: Array.isArray(data.selectedReferenceIds) ? data.selectedReferenceIds : [],
+          selectedReferences: Array.isArray(data.selectedReferences) ? data.selectedReferences : [],
         });
         if (data.fileName) setHighlightFile(String(data.fileName));
         return;

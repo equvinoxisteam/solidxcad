@@ -65,7 +65,6 @@ export function stripCodeFromReply(text = '') {
   out = out.replace(/^\s*from\s+[\w.]+\s+import\s+.*$/gm, '').trim();
   out = out.replace(/^\s*def\s+gen_\w+[\s\S]*?(?=^\S|\Z)/gm, '').trim();
   out = out.replace(/^\s*@[\w.]+\s*$/gm, '').trim();
-  out = stripFileReferencesFromReply(out);
   return out.replace(/\n{3,}/g, '\n\n').trim();
 }
 

@@ -223,7 +223,7 @@ export default function StepFileSheet({
     () => visibleRows.map((row) => String(row?.id || "")).join("\n"),
     [visibleRows]
   );
-  const hasAssemblyTree = isAssemblyView ? visibleRows.length > 0 : visibleRows.some((row) => row?.hasChildren);
+  const hasAssemblyTree = visibleRows.length > 0;
   const activeTreeNodeId = String(activeTreeNodeIdProp || selectedIds[selectedIds.length - 1] || "").trim();
   const selectedPartCount = selectedIds.length;
   const hiddenPartCount = hiddenIds.length;
@@ -507,7 +507,7 @@ export default function StepFileSheet({
 
               {!hasAssemblyTree && !viewerLoading ? (
                 <p className="px-1.5 py-2 text-xs text-[var(--ui-text-muted)]">
-                  No assembly tree
+                  No model tree
                 </p>
               ) : null}
               </div>

@@ -20,13 +20,11 @@ import {
 } from '@/lib/api';
 import type { CadResult, ChatMessage, ProjectFile } from '@/lib/api';
 import {
-  buildGeneratedItemLabels,
   isUserVisibleFile,
   looksLikeGeneratorCode,
   parseChatError,
   resolveMentionedFileIds,
   sanitizeAssistantForDisplay,
-  stripFileReferencesFromDisplay,
   INSUFFICIENT_CREDITS_ERROR,
 } from '@/lib/agentDisplay';
 import { USER_ERRORS } from '@/lib/userFacingErrors';
@@ -47,8 +45,6 @@ type AgentPhase =
   | 'executing'
   | 'waiting'
   | 'searching';
-
-type GeneratedItem = { id: string; skill?: string; label: string };
 
 const PROMPTS = [
   '30mm cube with 4× M3 holes',
@@ -95,7 +91,7 @@ function extractPlanSteps(text: string): string[] {
 }
 
 function activityLabel(msg: string) {
-  const cleaned = stripFileReferencesFromDisplay(msg).trim();
+  const cleaned = msg.trim();
   if (/^✗|failed|error|traceback|exception/i.test(cleaned)) {
     return USER_ERRORS.chat;
   }
@@ -217,7 +213,6 @@ export function ChatPanel({
   const [liveReply, setLiveReply] = useState('');
   const [agentSteps, setAgentSteps] = useState<AgentStep[]>([]);
   const [agentPhase, setAgentPhase] = useState<AgentPhase>('idle');
-  const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
   const [assemblyHint, setAssemblyHint] = useState<string | null>(null);
   const [creditsBlocked, setCreditsBlocked] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -258,7 +253,7 @@ export function ChatPanel({
     const el = threadRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages, displayLiveReply, agentSteps, agentPhase, generatedItems, streaming, assemblyHint]);
+  }, [messages, displayLiveReply, agentSteps, agentPhase, streaming, assemblyHint, selectionSummary]);
 
   function onInputChange(value: string) {
     setInput(value);
@@ -338,21 +333,6 @@ export function ChatPanel({
             { message: 'Reply in chat to continue the build', skill: 'agent', status: 'asking' },
           ]);
         } else if (cadResult && !cadResult.deferred && cadResult.ok) {
-          const labels = buildGeneratedItemLabels(cadResult);
-          const items: GeneratedItem[] = labels.map((row, i) => ({
-            id: `${Date.now()}-${i}-${row.skill}`,
-            skill: row.skill,
-            label: row.label,
-          }));
-          if (!items.length) {
-            const skill = cadResult.skill || 'cad';
-            items.push({
-              id: `${Date.now()}-${skill}`,
-              skill,
-              label: `${SKILL_LABELS[skill] || 'Design'} saved to workspace`,
-            });
-          }
-          setGeneratedItems((prev) => [...items, ...prev].slice(0, 12));
           onCadGenerated(cadResult);
         }
       },
@@ -423,11 +403,19 @@ export function ChatPanel({
       <div ref={threadRef} className="chat-thread">
         {(selectionSummary || activeFileName) && (
           <div className="chat-viewer-context">
-            <p className="chat-viewer-context-label">Workbench focus</p>
-            <p className="chat-viewer-context-text">
+            <p className="chat-viewer-context-label">
+              {viewerContext?.selectedReferences?.length ? '3D selection' : 'Workbench focus'}
+            </p>
+            <p className="chat-viewer-context-text whitespace-pre-wrap">
               {selectionSummary || activeFileName}
             </p>
-            <p className="chat-viewer-context-hint">Use @ to attach another file · changes apply to the focused design</p>
+            {viewerContext?.selectedReferences?.length ? (
+              <p className="chat-viewer-context-hint">
+                Your next message will apply to this selection — e.g. add holes, fillet, or cut features.
+              </p>
+            ) : (
+              <p className="chat-viewer-context-hint">Use @ to attach another file · changes apply to the focused design</p>
+            )}
           </div>
         )}
 
@@ -519,18 +507,6 @@ export function ChatPanel({
             </div>
           </div>
         )}
-
-        {generatedItems.map((item) => (
-          <div key={item.id} className="chat-result-card">
-            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
-            <div>
-              {item.skill && (
-                <span className="chat-skill-badge">{skillLabel(item.skill)}</span>
-              )}
-              <p className="m-0 font-medium">{item.label}</p>
-            </div>
-          </div>
-        ))}
 
         {assemblyHint && !streaming && (
           <div className="chat-assembly-hint">

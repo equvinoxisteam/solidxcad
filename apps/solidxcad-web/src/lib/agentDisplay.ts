@@ -42,7 +42,7 @@ export function stripFileReferencesFromDisplay(text: string) {
 }
 
 export function sanitizeAssistantForDisplay(text: string) {
-  const stripped = stripFileReferencesFromDisplay(stripCodeFromDisplay(text));
+  const stripped = stripCodeFromDisplay(text);
   if (stripped) return stripped;
   if (looksLikeGeneratorCode(text)) {
     return 'Design prepared — see workspace for generated files.';

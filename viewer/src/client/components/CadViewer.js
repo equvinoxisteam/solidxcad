@@ -63,6 +63,7 @@ import {
   updateSpotLightTarget
 } from "cadjs/lib/viewer/stageTheme";
 import { updateGridHelper as updateStageGridHelper } from "cadjs/lib/viewer/stageGrid";
+import { updateAxesHelper as updateStageAxesHelper } from "cadjs/lib/viewer/stageAxes";
 import { applyMaterialSettingsToRecord } from "cadjs/lib/viewer/surfaceMaterials";
 import {
   applyPartVisualState,
@@ -933,6 +934,10 @@ function updateGridHelper(
   });
 }
 
+function updateAxesHelper(runtime, radius, floorZ = 0) {
+  return updateStageAxesHelper(runtime, radius, floorZ, { disposeSceneObject });
+}
+
 const CadViewer = forwardRef(function CadViewer({
   meshData,
   modelKey,
@@ -1097,6 +1102,9 @@ const CadViewer = forwardRef(function CadViewer({
     floorMode,
     normalizedThemeSettings.floor
   ), [normalizedThemeSettings.floor]);
+  const updateActiveAxesHelper = useCallback((runtime, radius, floorZ = 0) => {
+    updateAxesHelper(runtime, radius, floorZ);
+  }, []);
   const edgesVisible = showEdges && shouldUseCadEdgeSource && (displayEdgeSettings.enabled || wireframeMode);
   const topologyDisplayEdgesVisible = shouldRenderTopologyDisplayEdges({
     edgesVisible,
@@ -1839,6 +1847,11 @@ const CadViewer = forwardRef(function CadViewer({
       normalizedSceneScaleMode,
       resolvedFloorMode
     );
+    updateActiveAxesHelper(
+      runtime,
+      runtime.gridRadius ?? defaultGridRadius,
+      runtime.gridFloorZ ?? 0
+    );
     updateSpotLightTarget(runtime);
     if (runtime.hasVisibleModel) {
       updateStageEffects(
@@ -1860,7 +1873,8 @@ const CadViewer = forwardRef(function CadViewer({
     resolvedFloorMode,
     viewerReadyTick,
     viewerTheme,
-    updateActiveGridHelper
+    updateActiveGridHelper,
+    updateActiveAxesHelper
   ]);
 
   useEffect(() => {
@@ -2247,6 +2261,7 @@ const CadViewer = forwardRef(function CadViewer({
       normalizedSceneScaleMode,
       resolvedFloorMode
     );
+    updateActiveAxesHelper(runtime, radius, runtime.gridFloorZ ?? 0);
     updateSpotLightTarget(runtime);
     updateStageEffects(runtime, viewerTheme, normalizedThemeSettings, radius, runtime.gridFloorZ ?? 0, resolvedFloorMode);
 
@@ -2347,7 +2362,8 @@ const CadViewer = forwardRef(function CadViewer({
     displayEdgeSettings,
     visualEdgeSettings,
     wireframeEdgeColor,
-    updateActiveGridHelper
+    updateActiveGridHelper,
+    updateActiveAxesHelper
   ]);
 
   useEffect(() => {
@@ -2393,6 +2409,7 @@ const CadViewer = forwardRef(function CadViewer({
       normalizedSceneScaleMode,
       resolvedFloorMode
     );
+    updateActiveAxesHelper(runtime, radius, runtime.gridFloorZ ?? 0);
     updateSpotLightTarget(runtime);
     updateStageEffects(runtime, viewerTheme, normalizedThemeSettings, radius, runtime.gridFloorZ ?? 0, resolvedFloorMode);
     runtime.requestRender();
@@ -2406,7 +2423,8 @@ const CadViewer = forwardRef(function CadViewer({
     resolvedFloorMode,
     viewerTheme,
     viewerReadyTick,
-    updateActiveGridHelper
+    updateActiveGridHelper,
+    updateActiveAxesHelper
   ]);
 
   useEffect(() => {

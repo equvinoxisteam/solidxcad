@@ -1628,20 +1628,6 @@ export default function CadWorkspace({
     }, "*");
   }, [selectedEntry]);
 
-  useEffect(() => {
-    if (!isViewerEmbedMode() || !selectedEntry?.file) {
-      return;
-    }
-    const fileName = String(selectedEntry.file || "").split("/").pop() || selectedEntry.file;
-    window.parent.postMessage({
-      type: "solidxcad-viewer-context",
-      stepFile: selectedEntry.file,
-      fileName,
-      kind: selectedEntry.kind || "",
-      selectedParts: selectedPartIds.slice(0, 12)
-    }, "*");
-  }, [selectedEntry, selectedPartIds]);
-
   const handleCopyStepModuleParams = useCallback(async () => {
     setScreenshotStatus("");
     if (!selectedStepModuleDefinition?.parameters?.length) {
@@ -4764,6 +4750,31 @@ export default function CadWorkspace({
     }
     return map;
   }, [activeReferenceMap, effectiveVisibleReferences]);
+
+  useEffect(() => {
+    if (!isViewerEmbedMode() || !selectedEntry?.file) {
+      return;
+    }
+    const fileName = String(selectedEntry.file || "").split("/").pop() || selectedEntry.file;
+    const selectedReferences = selectedReferenceIds
+      .map((id) => effectiveActiveReferenceMap.get(id))
+      .filter(Boolean)
+      .slice(0, 12)
+      .map((reference) => ({
+        id: String(reference.id || "").trim(),
+        label: String(reference.label || reference.id || "Selection").trim() || "Selection",
+        copyText: String(reference.copyText || "").trim()
+      }));
+    window.parent.postMessage({
+      type: "solidxcad-viewer-context",
+      stepFile: selectedEntry.file,
+      fileName,
+      kind: selectedEntry.kind || "",
+      selectedParts: selectedPartIds.slice(0, 12),
+      selectedReferenceIds: selectedReferenceIds.slice(0, 12),
+      selectedReferences
+    }, "*");
+  }, [effectiveActiveReferenceMap, selectedEntry, selectedPartIds, selectedReferenceIds]);
 
   const viewerPickableReferences = useMemo(() => {
     if (viewerInAssemblyMode || stepModuleTreeSelectionDisabled) {

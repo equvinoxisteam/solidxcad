@@ -2,22 +2,48 @@
 
 import type { ProjectFile } from '@/lib/api';
 
+export type ViewerReferenceSelection = {
+  id: string;
+  label: string;
+  copyText?: string;
+};
+
 export type ViewerSelectionContext = {
   stepFile?: string;
   fileName?: string;
   kind?: string;
   selectedParts?: string[];
+  selectedReferenceIds?: string[];
+  selectedReferences?: ViewerReferenceSelection[];
 };
 
 export function buildSelectionContextText(ctx: ViewerSelectionContext | null | undefined): string {
-  if (!ctx?.stepFile && !ctx?.fileName) return '';
+  if (!ctx?.stepFile && !ctx?.fileName && !ctx?.selectedReferences?.length) return '';
   const parts: string[] = [];
   if (ctx.fileName || ctx.stepFile) {
     parts.push(`Active file: ${ctx.fileName || ctx.stepFile}`);
   }
   if (ctx.kind) parts.push(`Kind: ${ctx.kind}`);
   if (ctx.selectedParts?.length) {
-    parts.push(`Selected parts/faces: ${ctx.selectedParts.slice(0, 8).join(', ')}`);
+    parts.push(`Selected parts: ${ctx.selectedParts.slice(0, 8).join(', ')}`);
+  }
+  if (ctx.selectedReferences?.length) {
+    const labels = ctx.selectedReferences
+      .map((ref) => ref.label || ref.id)
+      .filter(Boolean)
+      .slice(0, 8);
+    if (labels.length) {
+      parts.push(`Selected geometry: ${labels.join(', ')}`);
+    }
+    const tokens = ctx.selectedReferences
+      .map((ref) => String(ref.copyText || '').trim())
+      .filter(Boolean)
+      .slice(0, 4);
+    if (tokens.length) {
+      parts.push(`CAD refs: ${tokens.join('; ')}`);
+    }
+  } else if (ctx.selectedReferenceIds?.length) {
+    parts.push(`Selected references: ${ctx.selectedReferenceIds.slice(0, 8).join(', ')}`);
   }
   return parts.join('\n');
 }
