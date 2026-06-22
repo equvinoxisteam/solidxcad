@@ -1,4 +1,5 @@
 import { stripAgentMarkers } from './agentBehavior.js';
+import { USER_ERRORS } from './userFacingErrors.js';
 
 const SKILL_SUMMARY = {
   cad: 'Solid model',
@@ -93,8 +94,9 @@ export function buildGenerationSummary(cadResult = null, { reply = '' } = {}) {
   if (!cadResult) return narrative || 'Done.';
 
   if (!cadResult.ok) {
-    const err = String(cadResult.error || 'Build failed').replace(/\.py\b/gi, '').trim();
-    return narrative ? `${narrative}\n\nCould not finish: ${err}` : `Could not finish: ${err}`;
+    const lead = narrative && !/^Design prepared/i.test(narrative) ? narrative : '';
+    const tail = USER_ERRORS.cad;
+    return lead ? `${lead}\n\n${tail}` : tail;
   }
 
   if (cadResult.deferred) return narrative || 'Reply in chat to continue the build.';

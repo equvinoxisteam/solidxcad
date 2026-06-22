@@ -12,6 +12,7 @@ import {
   maxTokensForSkill,
 } from '../services/openrouter.js';
 import { buildGenerationSummary } from '../services/agentReply.js';
+import { userFacingError, USER_ERRORS } from '../services/userFacingErrors.js';
 import { shouldDeferPipeline } from '../services/agentBehavior.js';
 import { searchStepParts } from '../services/cadWorker.js';
 import { resolveChatModel, getChatModels } from '../services/models.js';
@@ -265,10 +266,11 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
       })}\n\n`);
       res.end();
     } catch (err) {
-      const safeError = /openrouter|api key|fetch failed/i.test(err.message || '')
-        ? 'Design request interrupted — please try again.'
-        : (err.message || 'Design request interrupted — please try again.');
-      res.write(`data: ${JSON.stringify({ type: 'error', error: safeError })}\n\n`);
+      console.error('[agent/chat stream]', err);
+      res.write(`data: ${JSON.stringify({
+        type: 'error',
+        error: userFacingError(err?.message, 'chat'),
+      })}\n\n`);
       res.end();
     }
     return;
@@ -338,7 +340,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
     });
   } catch (err) {
     console.error('[agent/chat]', err);
-    res.status(500).json({ error: err.message || 'AI request failed' });
+    res.status(500).json({ error: userFacingError(err?.message, 'chat') });
   }
 });
 
@@ -359,7 +361,7 @@ router.post('/parts/search', async (req, res) => {
         message: 'You are out of design credits. Add credits in Settings or upgrade to Pro to continue.',
       });
     }
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: userFacingError(err?.message, 'parts') });
   }
 });
 

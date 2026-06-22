@@ -8,6 +8,7 @@ import { AuthShell } from '@/components/auth/AuthShell';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { OtpInput } from '@/components/auth/OtpInput';
 import { api, setStoredUser, setToken } from '@/lib/api';
+import { sanitizeUserError } from '@/lib/userFacingErrors';
 import { finishAuth } from '@/lib/auth';
 
 type Step = 'credentials' | 'otp' | 'profile';
@@ -47,7 +48,7 @@ export default function RegisterPage() {
       setOtp('');
       setStep('otp');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send verification code');
+      setError(sanitizeUserError(err instanceof Error ? err.message : '', 'auth'));
     } finally {
       setLoading(false);
     }
@@ -60,7 +61,7 @@ export default function RegisterPage() {
       const res = await api.sendOtp({ email, purpose: 'signup' });
       setInfo(res.devOtp ? `Dev code: ${res.devOtp}` : 'New code sent to your email');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not resend code');
+      setError(sanitizeUserError(err instanceof Error ? err.message : '', 'auth'));
     } finally {
       setLoading(false);
     }
@@ -80,7 +81,7 @@ export default function RegisterPage() {
       setInfo('');
       setStep('profile');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid verification code');
+      setError(sanitizeUserError(err instanceof Error ? err.message : '', 'auth'));
     } finally {
       setLoading(false);
     }
@@ -106,7 +107,7 @@ export default function RegisterPage() {
       setStoredUser(user);
       await finishAuth(router, user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(sanitizeUserError(err instanceof Error ? err.message : '', 'auth'));
     } finally {
       setLoading(false);
     }

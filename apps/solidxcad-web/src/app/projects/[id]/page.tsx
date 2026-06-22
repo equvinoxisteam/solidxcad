@@ -19,7 +19,7 @@ import {
 import type { ViewerSelectionContext } from '@/lib/viewerContext';
 import { Loader2 } from 'lucide-react';
 import { useClientUser } from '@/hooks/useClientUser';
-import { USER_ERROR_LOAD_PROJECT } from '@/lib/userMessages';
+import { sanitizeUserError } from '@/lib/userFacingErrors';
 
 const PANEL_CHAT_KEY = 'solidxcad_studio_chat_open';
 const PANEL_WORKSPACE_KEY = 'solidxcad_studio_workspace_open';
@@ -122,16 +122,16 @@ export default function StudioPage() {
       setStoredUser(me);
       api.syncViewerWorkspace(id).catch(() => {});
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to load project';
-      if (msg.includes('log in') || msg.includes('Authentication') || msg.includes('401')) {
+      const raw = err instanceof Error ? err.message : '';
+      if (raw.includes('log in') || raw.includes('Authentication') || raw.includes('401')) {
         router.push('/login');
         return;
       }
-      if (msg.includes('not found') || msg.includes('404')) {
+      if (raw.includes('not found') || raw.includes('404')) {
         router.push('/dashboard');
         return;
       }
-      setStatus(USER_ERROR_LOAD_PROJECT);
+      setStatus(sanitizeUserError(raw, 'load'));
       throw err;
     }
   }, [id, router]);

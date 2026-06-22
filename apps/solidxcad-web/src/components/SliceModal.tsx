@@ -10,6 +10,7 @@ import {
   saveSliceSettings,
   type SliceSettings,
 } from '@/lib/sliceSettings';
+import { sanitizeUserError } from '@/lib/userFacingErrors';
 
 type SliceModalProps = {
   open: boolean;
@@ -74,13 +75,13 @@ export function SliceModal({
         settings,
       });
       if (!result.ok || !result.file) {
-        throw new Error(result.error || 'Slicing failed');
+        throw new Error(sanitizeUserError(result.error, 'slice'));
       }
       onStatus(`G-code saved to Toolpaths: ${result.file.name}`);
       onSuccess(result.file.name);
       onClose();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Slicing failed';
+      const msg = sanitizeUserError(err instanceof Error ? err.message : '', 'slice');
       setError(msg);
       onStatus(msg);
     } finally {
@@ -260,7 +261,7 @@ export function SliceModal({
             Enable support material
           </label>
 
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-xs text-amber-700">{error}</p>}
         </div>
 
         <div className="flex gap-2 justify-end p-4 border-t border-border shrink-0">

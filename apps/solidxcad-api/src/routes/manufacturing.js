@@ -4,6 +4,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js';
 import { validateObjectId } from '../middleware/validateObjectId.js';
 import { Project } from '../models/Project.js';
 import { chargeCredits, CREDIT_COSTS } from '../services/credits.js';
+import { userFacingError } from '../services/userFacingErrors.js';
 import { executeSliceJob } from '../services/sliceService.js';
 import { importStepPart } from '../services/partsImport.js';
 import { searchStepParts, browseStepParts } from '../services/cadWorker.js';
@@ -111,7 +112,7 @@ router.post('/parts/search', asyncHandler(async (req, res) => {
     if (err.code === 'INSUFFICIENT_CREDITS') {
       return res.status(402).json({ error: 'Insufficient credits', balance: err.balance });
     }
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: userFacingError(err?.message, 'slice') });
   }
 }));
 

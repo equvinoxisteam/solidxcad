@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Loader2, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { sanitizeUserError } from '@/lib/userFacingErrors';
 
 type DeleteProjectButtonProps = {
   projectId: string;
@@ -35,7 +36,7 @@ export function DeleteProjectButton({
       setOpen(false);
       onDeleted?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      setError(sanitizeUserError(err instanceof Error ? err.message : '', 'save'));
     } finally {
       setDeleting(false);
     }

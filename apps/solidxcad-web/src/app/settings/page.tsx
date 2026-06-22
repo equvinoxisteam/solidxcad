@@ -16,6 +16,7 @@ import {
   type BillingConfig,
   type User as UserType,
 } from '@/lib/api';
+import { sanitizeUserError } from '@/lib/userFacingErrors';
 
 declare global {
   interface Window {
@@ -79,7 +80,7 @@ export default function SettingsPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save profile');
+      setError(sanitizeUserError(err instanceof Error ? err.message : '', 'save'));
     } finally {
       setSaving(false);
     }
@@ -125,7 +126,7 @@ export default function SettingsPage() {
       });
       rzp.open();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment failed');
+      setError(sanitizeUserError(err instanceof Error ? err.message : '', 'billing'));
     } finally {
       setPaying(false);
     }

@@ -12,6 +12,7 @@ import assetRoutes from './routes/assets.js';
 import viewerRoutes from './routes/viewer.js';
 import manufacturingRoutes from './routes/manufacturing.js';
 import { ensureViewerRunning } from './services/viewerLauncher.js';
+import { userFacingError } from './services/userFacingErrors.js';
 
 const app = express();
 
@@ -65,7 +66,7 @@ app.use((err, req, res, next) => {
   console.error('[api error]', req.method, req.path, err);
   const status = err.status || err.statusCode || 500;
   res.status(status).json({
-    error: err.message || 'Internal server error',
+    error: userFacingError(err?.message, 'generic'),
   });
 });
 

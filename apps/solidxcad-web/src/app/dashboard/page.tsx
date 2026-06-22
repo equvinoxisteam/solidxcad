@@ -21,6 +21,7 @@ import { NewProjectModal } from '@/components/NewProjectModal';
 import { RenameProjectModal } from '@/components/RenameProjectModal';
 import { ProjectSortMenu, type ProjectSortKey } from '@/components/ProjectSortMenu';
 import { api, getToken, projectId, type Project } from '@/lib/api';
+import { sanitizeUserError } from '@/lib/userFacingErrors';
 
 type SortKey = ProjectSortKey;
 
@@ -101,12 +102,12 @@ export default function DashboardPage() {
       const { projects: list } = await api.getProjects();
       setProjects(list);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to load projects';
-      if (msg.includes('log in') || msg.includes('Authentication')) {
+      const raw = err instanceof Error ? err.message : '';
+      if (raw.includes('log in') || raw.includes('Authentication')) {
         router.push('/login');
         return;
       }
-      setError(msg);
+      setError(sanitizeUserError(raw, 'load'));
     } finally {
       setLoading(false);
     }
@@ -138,7 +139,7 @@ export default function DashboardPage() {
       setName('');
       router.push(`/projects/${id}`);
     } catch (err) {
-      setModalError(err instanceof Error ? err.message : 'Failed to create project');
+      setModalError(sanitizeUserError(err instanceof Error ? err.message : '', 'save'));
     } finally {
       setCreating(false);
     }
@@ -175,7 +176,7 @@ export default function DashboardPage() {
       setProjects((list) => list.map((p) => (p._id === project._id ? project : p)));
       closeRename();
     } catch (err) {
-      setRenameError(err instanceof Error ? err.message : 'Failed to rename project');
+      setRenameError(sanitizeUserError(err instanceof Error ? err.message : '', 'save'));
     } finally {
       setRenaming(false);
     }
@@ -207,7 +208,7 @@ export default function DashboardPage() {
       setProjects((list) => list.filter((p) => p._id !== deleteTarget._id));
       closeDelete();
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Failed to delete project');
+      setDeleteError(sanitizeUserError(err instanceof Error ? err.message : '', 'save'));
     } finally {
       setDeleting(false);
     }

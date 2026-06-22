@@ -1,5 +1,6 @@
 // Browser: same-origin /api via Next rewrite. Long jobs (slice) can bypass proxy.
 import type { SliceSettings } from '@/lib/sliceSettings';
+import { sanitizeUserError } from '@/lib/userFacingErrors';
 
 const DIRECT_API_URL =
   typeof window !== 'undefined'
@@ -64,16 +65,17 @@ async function request<T>(
   try {
     res = await fetch(`${base}${path}`, { ...options, headers });
   } catch {
-    throw new Error(
-      'Cannot reach API. Start the API: cd apps/solidxcad-api && npm run dev',
-    );
+    throw new Error(sanitizeUserError('', 'network'));
   }
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    if (res.status === 401) throw new ApiError(data.error || 'Please log in again');
-    throw new ApiError(data.error || `Request failed (${res.status})`, {
-      googleRequired: Boolean(data.googleRequired),
+    if (res.status === 401) throw new ApiError('Please log in again');
+    if (res.status === 402 && (data as { code?: string }).code === 'INSUFFICIENT_CREDITS') {
+      throw new ApiError((data as { message?: string }).message || 'You are out of design credits. Add credits to continue.');
+    }
+    throw new ApiError(sanitizeUserError((data as { error?: string }).error || (data as { message?: string }).message), {
+      googleRequired: Boolean((data as { googleRequired?: boolean }).googleRequired),
     });
   }
   return data as T;
@@ -398,7 +400,7 @@ export async function streamChat(
       }));
       return;
     }
-    onError(data.error || data.message || 'Request could not complete — try again');
+    onError(data.message || sanitizeUserError(data.error, 'chat'));
     return;
   }
 
@@ -434,7 +436,7 @@ export async function streamChat(
             webSearchUsed: json.webSearchUsed,
           });
         }
-        if (json.type === 'error') onError(json.error);
+        if (json.type === 'error') onError(sanitizeUserError(json.error, 'chat'));
       } catch {
         // ignore
       }

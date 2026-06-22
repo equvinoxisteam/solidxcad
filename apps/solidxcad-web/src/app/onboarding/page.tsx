@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2, Rocket, Wrench, GraduationCap } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { api, getToken, setStoredUser } from '@/lib/api';
+import { sanitizeUserError } from '@/lib/userFacingErrors';
 import { BRAND_NAME } from '@/lib/brand';
 
 const USE_CASES = [
@@ -62,7 +63,7 @@ export default function OnboardingPage() {
         setStep(nextStep);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save');
+      setError(sanitizeUserError(err instanceof Error ? err.message : '', 'save'));
     } finally {
       setSaving(false);
     }

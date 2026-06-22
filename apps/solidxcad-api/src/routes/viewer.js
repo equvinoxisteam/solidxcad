@@ -13,6 +13,7 @@ import { syncProjectWorkspace, projectWorkspaceDir, fileRefForDoc, storageFolder
 import { buildProjectCatalog } from '../services/viewerCatalog.js';
 import { getObjectStream } from '../services/s3.js';
 import { signViewerCatalogToken, verifyViewerCatalogToken } from '../services/viewerSession.js';
+import { userFacingError } from '../services/userFacingErrors.js';
 import { repairProjectStorageIfNeeded, repairProjectStorage } from '../services/projectStorageRepair.js';
 import {
   buildStepModuleScript,
@@ -229,7 +230,7 @@ router.get('/public/content', asyncHandler(async (req, res) => {
     }
     if (!res.headersSent) {
       res.status(storageErrorStatus(err)).json({
-        error: err.message || 'Failed to load file',
+        error: userFacingError(err?.message, 'viewer'),
       });
     }
   }
@@ -459,7 +460,7 @@ router.get('/projects/:id/content', validateObjectId('id'), asyncHandler(async (
   } catch (err) {
     if (!res.headersSent) {
       res.status(storageErrorStatus(err)).json({
-        error: err.message || 'Failed to load file',
+        error: userFacingError(err?.message, 'viewer'),
       });
     }
   }

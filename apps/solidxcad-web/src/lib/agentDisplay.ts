@@ -1,4 +1,4 @@
-/** Display helpers for agent chat — never show raw code blocks to users. */
+import { sanitizeUserError } from '@/lib/userFacingErrors';
 
 export function stripAgentMarkers(text: string) {
   return text
@@ -151,5 +151,5 @@ export function parseChatError(err: string): { code: string; message: string } {
   if (/insufficient credits/i.test(err)) {
     return { code: INSUFFICIENT_CREDITS_ERROR, message: 'You are out of design credits. Add credits to continue.' };
   }
-  return { code: 'error', message: err };
+  return { code: 'error', message: sanitizeUserError(err, 'chat') };
 }

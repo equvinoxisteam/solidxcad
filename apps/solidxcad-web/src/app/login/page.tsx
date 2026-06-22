@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { api, ApiError, clearToken, setStoredUser, setToken } from '@/lib/api';
+import { sanitizeUserError } from '@/lib/userFacingErrors';
 import { finishAuth } from '@/lib/auth';
 
 function LoginForm() {
@@ -49,7 +50,7 @@ function LoginForm() {
         setGoogleHint(true);
         setError('This account uses Google sign-in. Continue with Google below.');
       } else {
-        setError(err instanceof Error ? err.message : 'Login failed');
+        setError(sanitizeUserError(err instanceof Error ? err.message : '', 'auth'));
       }
     } finally {
       setLoading(false);

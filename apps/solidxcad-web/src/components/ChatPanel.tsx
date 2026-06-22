@@ -29,6 +29,7 @@ import {
   stripFileReferencesFromDisplay,
   INSUFFICIENT_CREDITS_ERROR,
 } from '@/lib/agentDisplay';
+import { USER_ERRORS } from '@/lib/userFacingErrors';
 import {
   buildSelectionContextText,
   resolveViewerFileId,
@@ -108,11 +109,14 @@ function extractPlanSteps(text: string): string[] {
 
 function activityLabel(msg: string) {
   const cleaned = stripFileReferencesFromDisplay(msg).trim();
+  if (/^✗|failed|error|traceback|exception/i.test(cleaned)) {
+    return USER_ERRORS.chat;
+  }
   return cleaned || 'Working…';
 }
 
 function friendlyError() {
-  return 'Adjusting approach — resend your message or try a simpler prompt.';
+  return USER_ERRORS.chat;
 }
 
 function skillLabel(skill?: string) {

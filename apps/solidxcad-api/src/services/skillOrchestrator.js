@@ -19,6 +19,7 @@ import { executeSliceJob } from './sliceService.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 import { CREDIT_COSTS, chargeCredits } from './credits.js';
 import { ASSEMBLY_PARTS_HINT, assemblyNeedsCatalogParts, extractAgentPlan } from './agentBehavior.js';
+import { USER_ERRORS, userFacingError } from './userFacingErrors.js';
 import { groupProjectFiles, resolvePipelineOutputBase, wantsModifyExisting, loadLatestProjectUrdf } from './projectAgentContext.js';
 
 function emit(res, message, skill, status = 'info') {
@@ -71,7 +72,7 @@ export function normalizePipelineResult(result) {
   const out = {
     ok: Boolean(result.ok),
     skill: result.skill,
-    error: result.error,
+    error: result.error ? userFacingError(result.error, result.skill || 'generic') : undefined,
     repaired: result.repaired,
     deferred: result.deferred,
     hint: result.hint,
@@ -103,11 +104,12 @@ async function runSlice({ res, userId, projectId, fileId, label = 'mesh' }) {
       }
       return sliceResult;
     }
-    emit(res, `✗ Slice failed: ${sliceResult.error}`, 'gcode', 'error');
+    emit(res, USER_ERRORS.slice, 'gcode', 'error');
     return sliceResult;
   } catch (err) {
-    emit(res, `✗ Slice: ${err.message}`, 'gcode', 'error');
-    return { ok: false, error: err.message };
+    console.error('[slice]', err);
+    emit(res, USER_ERRORS.slice, 'gcode', 'error');
+    return { ok: false, error: USER_ERRORS.slice };
   }
 }
 
@@ -187,10 +189,11 @@ export async function runSkillPipeline({
         result = partResult;
         stepEmit('✓ Catalog part imported to workspace', 'step-parts', 'done');
       } else {
-        stepEmit(`✗ ${partResult.error}`, 'step-parts', 'error');
+        stepEmit(USER_ERRORS.parts, 'step-parts', 'error');
       }
     } catch (err) {
-      emit(res, `✗ Parts import: ${err.message}`, 'step-parts', 'error');
+      console.error('[parts import]', err);
+      emit(res, USER_ERRORS.parts, 'step-parts', 'error');
     }
   }
 
@@ -203,7 +206,8 @@ export async function runSkillPipeline({
         onProgress: (msg) => emit(res, msg, 'sendcutsend'),
       });
     } catch (err) {
-      result = { ok: false, skill: 'sendcutsend', error: err.message };
+      console.error('[sendcutsend]', err);
+      result = { ok: false, skill: 'sendcutsend', error: USER_ERRORS.sendcutsend };
     }
   } else if (skill === 'gcode' && wantsStandaloneSlice(userMessage)) {
     stepEmit('G-code — slice latest mesh with OrcaSlicer', 'gcode', 'running');
@@ -223,8 +227,8 @@ export async function runSkillPipeline({
         stepEmit('✓ G-code saved to workspace', 'gcode', 'done');
       }
     } else {
-      emit(res, 'No STL/STEP in project — generate a part first', 'gcode', 'error');
-      result = { ok: false, skill: 'gcode', error: 'No mesh to slice' };
+      emit(res, USER_ERRORS.noMesh, 'gcode', 'error');
+      result = { ok: false, skill: 'gcode', error: USER_ERRORS.noMesh };
     }
   } else if (skill === 'implicit-cad' && (hasCode || hasImplicitPayload(assistantText) || detectFromScratchBuild(cadContext))) {
     try {
@@ -240,7 +244,8 @@ export async function runSkillPipeline({
         onProgress: (msg) => emit(res, msg, 'implicit-cad'),
       });
     } catch (err) {
-      result = { ok: false, skill: 'implicit-cad', error: err.message };
+      console.error('[implicit]', err);
+      result = { ok: false, skill: 'implicit-cad', error: USER_ERRORS.implicit };
     }
   } else if (skill === 'srdf' && (hasCode || hasGeneratorPayload(assistantText, 'srdf') || detectFromScratchBuild(cadContext))) {
     try {
@@ -257,7 +262,8 @@ export async function runSkillPipeline({
         onProgress: (msg) => emit(res, msg, 'srdf'),
       });
     } catch (err) {
-      result = { ok: false, skill: 'srdf', error: err.message };
+      console.error('[srdf]', err);
+      result = { ok: false, skill: 'srdf', error: USER_ERRORS.srdf };
     }
   } else if (skill === 'sdf' && (hasCode || hasGeneratorPayload(assistantText, 'sdf') || detectFromScratchBuild(cadContext))) {
     try {
@@ -273,7 +279,8 @@ export async function runSkillPipeline({
         onProgress: (msg) => emit(res, msg, 'sdf'),
       });
     } catch (err) {
-      result = { ok: false, skill: 'sdf', error: err.message };
+      console.error('[sdf]', err);
+      result = { ok: false, skill: 'sdf', error: USER_ERRORS.sdf };
     }
   } else if (skill === 'urdf' && (hasCode || hasGeneratorPayload(assistantText, 'urdf') || detectFromScratchBuild(cadContext))) {
     try {
@@ -289,7 +296,8 @@ export async function runSkillPipeline({
         onProgress: (msg) => emit(res, msg, 'urdf'),
       });
     } catch (err) {
-      result = { ok: false, skill: 'urdf', error: err.message };
+      console.error('[urdf]', err);
+      result = { ok: false, skill: 'urdf', error: USER_ERRORS.urdf };
     }
   } else if (skill === 'step-parts' && !result?.ok) {
     emit(res, 'Try: "import M3 socket head screw from step.parts"', 'step-parts');
@@ -347,18 +355,19 @@ export async function runSkillPipeline({
           const note = cadResult.fallback ? ' (reliable fallback solid)' : '';
           stepEmit(`✓ Solid model saved to workspace${note}`, 'cad', 'done');
         } else if (cadResult?.complexBuildFailed) {
-          stepEmit(`✗ ${cadResult.error}`, 'cad', 'error');
+          stepEmit(USER_ERRORS.cad, 'cad', 'error');
         } else if (cadResult?.error) {
-          stepEmit('Adjusting design — using tested fallback…', 'cad', 'running');
+          stepEmit('Adjusting design — trying again…', 'cad', 'running');
         }
         if (project) {
           project.lastPrompt = userMessage;
           await project.save();
         }
       } catch (err) {
-        cadResult = { ok: false, skill: 'cad', error: err.message };
+        console.error('[cad]', err);
+        cadResult = { ok: false, skill: 'cad', error: USER_ERRORS.cad };
         result = cadResult;
-        stepEmit(`✗ ${err.message}`, 'cad', 'error');
+        stepEmit(USER_ERRORS.cad, 'cad', 'error');
       }
     }
   }
@@ -381,10 +390,10 @@ export async function runSkillPipeline({
         result = cadResult;
         stepEmit('✓ G-code saved to workspace', 'gcode', 'done');
       } else if (sliceResult?.error) {
-        stepEmit(`✗ Slice failed: ${sliceResult.error}`, 'gcode', 'error');
+        stepEmit(USER_ERRORS.slice, 'gcode', 'error');
       }
     } else {
-      stepEmit('No STL mesh to slice', 'gcode', 'error');
+      stepEmit(USER_ERRORS.noMesh, 'gcode', 'error');
     }
   }
 
@@ -406,7 +415,8 @@ export async function runSkillPipeline({
       });
       if (srdfResult.ok) result = { ...result, srdfResult };
     } catch (err) {
-      emit(res, `✗ SRDF: ${err.message}`, 'srdf', 'error');
+      console.error('[srdf post]', err);
+      emit(res, USER_ERRORS.srdf, 'srdf', 'error');
     }
   }
 
@@ -416,7 +426,8 @@ export async function runSkillPipeline({
     await syncProjectWorkspace({ userId: userId.toString(), projectId: projectId.toString() });
     stepEmit('✓ Workspace synced — open CAD Viewer', 'cad-viewer', 'done');
   } catch (syncErr) {
-    stepEmit(`✗ Workspace sync: ${syncErr.message}`, 'cad-viewer', 'error');
+    console.error('[workspace sync]', syncErr);
+    stepEmit(USER_ERRORS.sync, 'cad-viewer', 'error');
   }
 
   const primarySkill = cadResult?.ok ? 'cad' : partsResult?.ok ? 'step-parts' : skill;
@@ -442,7 +453,7 @@ export async function runSkillPipeline({
   } else if (result?.error || cadResult?.error) {
     emit(res, 'Pipeline finished — try "30mm cube" for a quick solid part', primarySkill, 'info');
   } else if (!hasCode && !hasCadPayload(assistantText, cadContext) && !['gcode', 'sendcutsend', 'step-parts'].includes(skill)) {
-    emit(res, 'No executable code in response — try a clearer prompt', skill, 'error');
+    emit(res, USER_ERRORS.noCode, skill, 'error');
   }
 
   const rawResult = cadResult || partsResult || result;
