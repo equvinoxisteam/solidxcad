@@ -39,7 +39,7 @@ Never mention internal APIs, OpenRouter, Pinecone, backends, or infrastructure. 
    2. …
    [/AGENT_PLAN]
    Then one fenced code block (Python build123d, Python URDF/SRDF/SDF, or JS implicit). End with: [AGENT_PHASE: execute]
-4. When user **modifies** an existing file (@-mention or "make it bigger"): edit the referenced or latest generator script; keep the same output basename.
+4. When user **modifies** an existing file (@-mention, face selection, or "add holes"): edit the referenced generator script; the pipeline saves **versioned** outputs (_updated, then _1, _2).
 
 ## Skill outputs (all skills — read workspace first, @-mention files to edit in place)
 - **CAD:** build123d gen_step() → STEP/STL/GLB in models/; assemblies with Compound → assemblies/; optional DXF/3MF when user asks

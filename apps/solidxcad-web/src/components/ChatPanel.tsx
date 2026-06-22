@@ -401,21 +401,15 @@ export function ChatPanel({
       )}
 
       <div ref={threadRef} className="chat-thread">
-        {(selectionSummary || activeFileName) && (
+        {(viewerContext?.selectedReferences?.length ?? 0) > 0 && (
           <div className="chat-viewer-context">
-            <p className="chat-viewer-context-label">
-              {viewerContext?.selectedReferences?.length ? '3D selection' : 'Workbench focus'}
-            </p>
+            <p className="chat-viewer-context-label">3D selection</p>
             <p className="chat-viewer-context-text whitespace-pre-wrap">
-              {selectionSummary || activeFileName}
+              {selectionSummary}
             </p>
-            {viewerContext?.selectedReferences?.length ? (
-              <p className="chat-viewer-context-hint">
-                Your next message will apply to this selection — e.g. add holes, fillet, or cut features.
-              </p>
-            ) : (
-              <p className="chat-viewer-context-hint">Use @ to attach another file · changes apply to the focused design</p>
-            )}
+            <p className="chat-viewer-context-hint">
+              Your next message applies to this selection — e.g. add holes, fillet, or cut features.
+            </p>
           </div>
         )}
 

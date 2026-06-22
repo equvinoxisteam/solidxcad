@@ -30,6 +30,7 @@ export async function runPipelineWithRecovery({
   assistantText,
   conversationContext,
   focusedFiles,
+  selectionContext = '',
   chatModel,
   systemPrompt,
   messages,
@@ -47,7 +48,7 @@ export async function runPipelineWithRecovery({
       history: messages,
       conversationContext,
       hasImage,
-      focusedFileCount: focusedFiles.length,
+      focusedFileCount: focusedFiles.length + (selectionContext ? 1 : 0),
     })) {
       return {
         cadResult: { ok: true, skill: 'agent', deferred: true, hint: 'clarify' },
@@ -66,6 +67,7 @@ export async function runPipelineWithRecovery({
       project,
       conversationContext,
       focusedFiles,
+      selectionContext,
     });
     const cadResult = normalizePipelineResult(pipeline.result);
     if (cadResult && pipeline.skill) cadResult.skill = cadResult.skill || pipeline.skill;

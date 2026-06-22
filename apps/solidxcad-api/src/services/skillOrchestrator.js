@@ -131,6 +131,7 @@ export async function runSkillPipeline({
   project,
   conversationContext = '',
   focusedFiles = [],
+  selectionContext = '',
 }) {
   const skill = resolveSkillFromChat(userMessage, assistantText);
   const cadContext = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
@@ -139,7 +140,8 @@ export async function runSkillPipeline({
   const stepEmit = createStepEmitter(res, totalSteps);
   const meta = skillMeta(skill);
   const plan = extractAgentPlan(assistantText);
-  const modifyIntent = wantsModifyExisting(userMessage) || focusedFiles.length > 0;
+  const hasSelectionContext = Boolean(String(selectionContext || '').trim());
+  const modifyIntent = wantsModifyExisting(userMessage) || focusedFiles.length > 0 || hasSelectionContext;
   if (plan.length) {
     emit(res, 'Plan', 'agent', 'planning');
     for (const item of plan) {
@@ -166,9 +168,11 @@ export async function runSkillPipeline({
   const outputBase = resolvePipelineOutputBase({
     userMessage,
     focusedFiles,
+    projectFiles,
     skill,
     isAssembly: isAssemblyBuild,
     modifyIntent,
+    storageFolder: cadStorageFolder,
   });
   const cadStorageFolder = isAssemblyBuild ? 'assemblies' : 'models';
   const urdfContext = await loadLatestProjectUrdf(projectFiles);

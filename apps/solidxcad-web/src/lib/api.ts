@@ -307,6 +307,7 @@ export type ProjectFile = {
   downloadUrl: string;
   s3Key: string;
   createdAt?: string;
+  updatedAt?: string;
 };
 
 export type ChatMessage = {

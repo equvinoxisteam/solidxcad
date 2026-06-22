@@ -3,7 +3,7 @@ import { fileRefForDoc } from './projectWorkspace.js';
 
 const MAX_TEXT_CHARS = 12000;
 
-import { deriveFriendlyFileBase } from './fileNaming.js';
+import { deriveFriendlyFileBase, resolveNextVersionedBase } from './fileNaming.js';
 
 export function baseNameFromFileName(name = '') {
   return String(name).replace(/\.[^.]+$/, '');
@@ -12,16 +12,34 @@ export function baseNameFromFileName(name = '') {
 export function resolvePipelineOutputBase({
   userMessage = '',
   focusedFiles = [],
+  projectFiles = [],
   skill = 'cad',
   isAssembly = false,
   modifyIntent = false,
+  storageFolder = 'models',
 } = {}) {
+  const pickVersioned = (base) => (
+    modifyIntent
+      ? resolveNextVersionedBase(base, projectFiles, storageFolder)
+      : base
+  );
+
   for (const file of focusedFiles) {
     const base = baseNameFromFileName(file.name);
     if (/\.(step|stp|stl|glb|urdf|srdf|sdf|implicit\.js|py)$/i.test(file.name) || modifyIntent) {
-      return base;
+      return pickVersioned(base);
     }
   }
+
+  if (modifyIntent) {
+    const latestStep = [...projectFiles]
+      .filter((f) => /\.(step|stp)$/i.test(f.name) && String(f.s3Key || '').includes(`/${storageFolder}/`))
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))[0];
+    if (latestStep) {
+      return pickVersioned(baseNameFromFileName(latestStep.name));
+    }
+  }
+
   return deriveFriendlyFileBase(userMessage, { skill, isAssembly });
 }
 
@@ -79,7 +97,7 @@ export function groupProjectFiles(files = []) {
 }
 
 export function wantsModifyExisting(text = '') {
-  return /\b(change|modify|update|edit|resize|adjust|make it|add\s+(a\s+)?hole|remove|bigger|smaller|thicker|thinner|longer|shorter|redo|revise|iterate|version\s*2|tweak|fix|improve)\b/i.test(text);
+  return /\b(change|modify|update|edit|resize|adjust|make it|add\s+(?:\d+\s*)?(?:\w+\s+)?holes?|remove|bigger|smaller|thicker|thinner|longer|shorter|redo|revise|iterate|version\s*2|tweak|fix|improve|fillet|chamfer|drill|pocket|cut)\b/i.test(text);
 }
 
 export async function buildFocusedFileContext(files = [], fileIds = []) {
@@ -89,8 +107,8 @@ export async function buildFocusedFileContext(files = [], fileIds = []) {
   if (!selected.length) return '';
 
   const lines = [
-    '\n\n## User @-referenced files (update these in place — keep the same base filename)',
-    'When modifying: edit the generator script and regenerate the paired artifact (STEP/URDF/etc.).',
+    '\n\n## User @-referenced files (update these — pipeline saves a new versioned basename)',
+    'When modifying: edit the generator script from the source design; output uses _updated then _1, _2, …',
   ];
 
   const seen = new Set();
@@ -146,7 +164,7 @@ export async function buildRichProjectContext(files = []) {
   lines.push(`
 Workspace folders: models/ (single parts), assemblies/ (multi-part compounds), parts/ (catalog STEP imports), slices/ (G-code).
 Use descriptive basenames from the design (e.g. 30mm_cube_m3_holes, mount_plate_assembly) — never random timestamps.
-When user modifies an existing design: update the matching .py / generator script; pipeline overwrites the same basename.
+When user modifies an existing design: update the matching .py / generator script; pipeline writes a new versioned basename (_updated, then _1, _2).
 For new designs: output complete runnable code in the same turn with [AGENT_PHASE: execute].
 Physics: use realistic proportions, joint limits, masses/inertias for robots, structural sizing for frames, and standard units (mm for CAD, meters for URDF/SDF unless stated).
 For assemblies: import_step("parts/…") only when user names specific hardware; otherwise model simplified geometry.

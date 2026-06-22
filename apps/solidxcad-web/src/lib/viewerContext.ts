@@ -55,9 +55,12 @@ export function resolveViewerFileId(
   if (!ctx) return '';
   const name = String(ctx.fileName || '').trim();
   const ref = String(ctx.stepFile || '').trim();
+  const refBase = ref.split('/').pop() || ref;
   const match = files.find((f) => {
     if (name && f.name === name) return true;
+    if (refBase && f.name === refBase) return true;
     if (ref && (f.name === ref || ref.endsWith(`/${f.name}`))) return true;
+    if (name && ref && f.name.replace(/\.[^.]+$/, '') === name.replace(/\.[^.]+$/, '')) return true;
     return false;
   });
   return match?._id || '';

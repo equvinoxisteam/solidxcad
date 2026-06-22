@@ -9,9 +9,10 @@ import { BRAND_NAME } from '@/lib/brand';
 type CadViewerFrameProps = {
   projectId: string;
   fileRef?: string;
+  reloadToken?: number;
 };
 
-export function CadViewerFrame({ projectId, fileRef }: CadViewerFrameProps) {
+export function CadViewerFrame({ projectId, fileRef, reloadToken = 0 }: CadViewerFrameProps) {
   const [viewerLink, setViewerLink] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,7 @@ export function CadViewerFrame({ projectId, fileRef }: CadViewerFrameProps) {
         const session = await api.getViewerSession(projectId, fileRef);
         if (cancelled) return;
         setViewerLink(session.viewerLink);
+        setReloadKey((k) => k + 1);
         setLoading(false);
       } catch (err) {
         if (cancelled) return;
@@ -63,7 +65,7 @@ export function CadViewerFrame({ projectId, fileRef }: CadViewerFrameProps) {
     return () => {
       cancelled = true;
     };
-  }, [projectId, fileRef, reloadKey]);
+  }, [projectId, fileRef, reloadToken]);
 
   if (loading) {
     return (

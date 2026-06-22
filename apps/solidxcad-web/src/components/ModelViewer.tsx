@@ -4,39 +4,62 @@ import { useMemo } from 'react';
 import type { ProjectFile } from '@/lib/api';
 import { CadViewerFrame } from '@/components/CadViewerFrame';
 
-function viewerPrimaryRef(files: ProjectFile[]): string | undefined {
-  const step = files.find((f) => f.kind === 'step' || /\.(step|stp)$/i.test(f.name));
-  if (step) {
-    return step.s3Key.includes('/models/') ? `models/${step.name}` : step.name;
+function fileRefFor(file: ProjectFile): string {
+  if (file.s3Key?.includes('/models/')) return `models/${file.name}`;
+  if (file.s3Key?.includes('/assemblies/')) return `assemblies/${file.name}`;
+  if (file.s3Key?.includes('/parts/')) return `parts/${file.name}`;
+  return file.name;
+}
+
+function viewerPrimaryRef(files: ProjectFile[], preferName?: string): string | undefined {
+  if (preferName) {
+    const match = files.find((f) => f.name === preferName);
+    if (match) return fileRefFor(match);
   }
-  const urdf = files.find((f) => f.kind === 'urdf' || /\.urdf$/i.test(f.name));
-  if (urdf) {
-    return urdf.s3Key.includes('/models/') ? `models/${urdf.name}` : urdf.name;
-  }
-  const implicit = files.find((f) => f.kind === 'implicit' || /\.implicit\.(js|mjs)$/i.test(f.name));
-  if (implicit) {
-    return implicit.s3Key.includes('/models/') ? `models/${implicit.name}` : implicit.name;
-  }
-  const stl = files.find((f) => f.kind === 'stl' || /\.stl$/i.test(f.name));
-  if (stl) {
-    return stl.s3Key.includes('/models/') ? `models/${stl.name}` : stl.name;
-  }
-  return undefined;
+
+  const pickNewest = (predicate: (f: ProjectFile) => boolean) => {
+    const list = files.filter(predicate);
+    if (!list.length) return undefined;
+    list.sort((a, b) => {
+      const ta = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const tb = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return tb - ta;
+    });
+    return fileRefFor(list[0]);
+  };
+
+  return (
+    pickNewest((f) => f.kind === 'step' || /\.(step|stp)$/i.test(f.name))
+    || pickNewest((f) => f.kind === 'urdf' || /\.urdf$/i.test(f.name))
+    || pickNewest((f) => f.kind === 'implicit' || /\.implicit\.(js|mjs)$/i.test(f.name))
+    || pickNewest((f) => f.kind === 'stl' || /\.stl$/i.test(f.name))
+  );
 }
 
 export function ModelViewer({
   projectId,
   files,
+  highlightFile = '',
+  viewerReloadKey = 0,
 }: {
   projectId: string;
   files: ProjectFile[];
+  highlightFile?: string;
+  viewerReloadKey?: number;
 }) {
-  const viewerRef = useMemo(() => viewerPrimaryRef(files), [files]);
+  const viewerRef = useMemo(
+    () => viewerPrimaryRef(files, highlightFile),
+    [files, highlightFile],
+  );
 
   return (
     <div className="absolute inset-0 bg-white">
       {projectId && (
-        <CadViewerFrame key={viewerRef || 'default'} projectId={projectId} fileRef={viewerRef} />
+        <CadViewerFrame
+          projectId={projectId}
+          fileRef={viewerRef}
+          reloadToken={viewerReloadKey}
+        />
       )}
     </div>
   );

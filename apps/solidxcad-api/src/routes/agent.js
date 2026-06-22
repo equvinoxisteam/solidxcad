@@ -135,7 +135,7 @@ router.post('/chat', async (req, res) => {
   ]);
   if (fileFocus) systemPrompt += fileFocus;
   if (selectionContext) {
-    systemPrompt += `\n\n---\n## Viewer selection context\n${String(selectionContext).trim()}\nTreat this as the user's current focus in the 3D workbench. Prefer editing the referenced file in place.`;
+    systemPrompt += `\n\n---\n## Viewer selection context\n${String(selectionContext).trim()}\nTreat this as the user's current focus in the 3D workbench. Edit the active STEP design and apply changes to the selected face/part/edge. Use CAD refs when present.`;
   }
   if (viewerFile && !selectionContext) {
     systemPrompt += `\n\n---\nThe user is viewing **${viewerFile.name}** in the workbench — prefer modifying that design unless they ask for something new.`;
@@ -210,7 +210,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
           history: historyForAgent,
           conversationContext,
           hasImage,
-          focusedFileCount: focusedFiles.length,
+          focusedFileCount: focusedFiles.length + (selectionContext ? 1 : 0),
         })) {
           pipelineDeferred = true;
           res.write(`data: ${JSON.stringify({
@@ -235,6 +235,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
             assistantText: full,
             conversationContext,
             focusedFiles,
+            selectionContext,
             chatModel,
             systemPrompt,
             messages,
@@ -304,7 +305,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
         history: historyForAgent,
         conversationContext,
         hasImage,
-        focusedFileCount: focusedFiles.length,
+        focusedFileCount: focusedFiles.length + (selectionContext ? 1 : 0),
       })) {
         pipelineDeferred = true;
         cadResult = { ok: true, skill: 'agent', deferred: true, hint: 'clarify' };
@@ -317,6 +318,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
           project,
           conversationContext,
           focusedFiles,
+          selectionContext,
         });
         cadResult = normalizePipelineResult(pipeline.result);
         skill = pipeline.skill;

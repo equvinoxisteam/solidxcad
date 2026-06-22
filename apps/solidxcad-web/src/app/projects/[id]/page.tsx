@@ -46,6 +46,7 @@ export default function StudioPage() {
   const [viewerContext, setViewerContext] = useState<ViewerSelectionContext | null>(null);
   const [showChat, setShowChat] = useState(false);
   const [showWorkspace, setShowWorkspace] = useState(false);
+  const [viewerReloadKey, setViewerReloadKey] = useState(0);
   useClientUser(true);
 
   useEffect(() => {
@@ -148,6 +149,19 @@ export default function StudioPage() {
       .finally(() => setLoading(false));
   }, [id, router, refresh]);
 
+  async function refreshProjectFiles(expectedName = '') {
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      await api.syncViewerWorkspace(id).catch(() => null);
+      const { files: f } = await api.getFiles(id);
+      setFiles(f);
+      if (!expectedName || f.some((file) => file.name === expectedName) || attempt >= 5) {
+        return f;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    }
+    return [];
+  }
+
   async function onCadGenerated(result: CadResult) {
     const labels: Record<string, string> = {
       cad: 'Solid model',
@@ -171,11 +185,8 @@ export default function StudioPage() {
       setHighlightFile(cadName || '');
       if (!showWorkspace && cadName) openWorkspace();
       try {
-        const [{ files: f }] = await Promise.all([
-          api.getFiles(id),
-          api.syncViewerWorkspace(id).catch(() => null),
-        ]);
-        setFiles(f);
+        await refreshProjectFiles(cadName || '');
+        setViewerReloadKey((k) => k + 1);
       } catch {
         refresh().catch(() => {});
       }
@@ -200,7 +211,12 @@ export default function StudioPage() {
       />
 
       <div className="studio-embed-shell flex-1 min-h-0">
-        <ModelViewer projectId={id} files={files} />
+        <ModelViewer
+          projectId={id}
+          files={files}
+          highlightFile={highlightFile}
+          viewerReloadKey={viewerReloadKey}
+        />
 
         {showWorkspace && (
           <div className="studio-embed-panel studio-embed-panel-workspace">

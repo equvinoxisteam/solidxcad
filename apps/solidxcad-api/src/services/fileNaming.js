@@ -71,3 +71,51 @@ export function deriveFriendlyFileBase(userMessage = '', { skill = 'cad', isAsse
 
   return base;
 }
+
+function escapeRegExp(value = '') {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Strip _updated or _N version suffix to get the design root name. */
+export function stripVersionSuffix(base = '') {
+  return String(base || '')
+    .replace(/_updated$/i, '')
+    .replace(/_\d+$/i, '');
+}
+
+/**
+ * Next basename when modifying an existing design:
+ * gear_spur → gear_spur_updated → gear_spur_1 → gear_spur_2 …
+ */
+export function resolveNextVersionedBase(sourceBase = '', projectFiles = [], storageFolder = 'models') {
+  const root = stripVersionSuffix(sourceBase) || 'custom_part';
+  const inFolder = (file) => String(file?.s3Key || '').includes(`/${storageFolder}/`);
+  const versionPattern = new RegExp(
+    `^${escapeRegExp(root)}(?:_updated|_\\d+)?\\.(step|stp|stl|glb|urdf|srdf|sdf)$`,
+    'i',
+  );
+
+  const related = projectFiles.filter((f) => inFolder(f) && versionPattern.test(f.name));
+  const bases = new Set(related.map((f) => baseNameFromFileName(f.name)));
+
+  if (!bases.size || (bases.size === 1 && bases.has(root))) {
+    return `${root}_updated`;
+  }
+  if (!bases.has(`${root}_updated`) && ![...bases].some((b) => /^.+_\d+$/.test(b))) {
+    return `${root}_updated`;
+  }
+
+  let maxN = 0;
+  for (const base of bases) {
+    const match = base.match(new RegExp(`^${escapeRegExp(root)}_(\\d+)$`));
+    if (match) maxN = Math.max(maxN, Number.parseInt(match[1], 10) || 0);
+  }
+  if (maxN === 0 && bases.has(`${root}_updated`)) {
+    return `${root}_1`;
+  }
+  return `${root}_${maxN + 1}`;
+}
+
+function baseNameFromFileName(name = '') {
+  return String(name).replace(/\.[^.]+$/, '');
+}
