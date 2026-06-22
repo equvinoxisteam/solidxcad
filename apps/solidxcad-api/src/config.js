@@ -87,9 +87,9 @@ export const config = {
   openrouter: {
     apiKey: process.env.OPENROUTER_API_KEY || '',
     baseUrl: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
-    modelFast: process.env.OPENROUTER_MODEL_FAST || 'anthropic/claude-3.5-haiku',
-    modelCad: process.env.OPENROUTER_MODEL_CAD || 'anthropic/claude-3.5-haiku',
-    modelFallback: process.env.OPENROUTER_MODEL_FALLBACK || 'google/gemini-2.0-flash-001',
+    modelFast: process.env.OPENROUTER_MODEL_FAST || 'anthropic/claude-opus-4.7',
+    modelCad: process.env.OPENROUTER_MODEL_CAD || 'anthropic/claude-opus-4.7',
+    modelFallback: process.env.OPENROUTER_MODEL_FALLBACK || 'anthropic/claude-opus-4.7',
     maxTokens: Number(process.env.OPENROUTER_MAX_TOKENS || 1024),
     appName: process.env.OPENROUTER_APP_NAME || 'SolidX CAD',
     siteUrl: process.env.FRONTEND_URL || 'http://localhost:3000',

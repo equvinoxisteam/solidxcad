@@ -15,7 +15,7 @@ import {
 import { shouldDeferPipeline } from '../services/agentBehavior.js';
 import { searchStepParts } from '../services/cadWorker.js';
 import { resolveChatModel, getChatModels } from '../services/models.js';
-import { modelLabel, inferWebSearchNeeded } from '../services/modelPicker.js';
+import { modelLabel } from '../services/modelPicker.js';
 import { buildFocusedFileContext } from '../services/projectAgentContext.js';
 import { runSkillPipeline, resolveSkillFromChat, normalizePipelineResult } from '../services/skillOrchestrator.js';
 import { SKILLS, BROWSER_SKILLS } from '../services/skillRegistry.js';
@@ -87,20 +87,8 @@ router.post('/chat', async (req, res) => {
     ? projectFiles.filter((f) => contextFileIds.map(String).includes(String(f._id)))
     : [];
   const hasImage = Boolean(imageDataUrl && String(imageDataUrl).startsWith('data:image/'));
-  const useAutoModel = modelMode === 'auto' || requestedModel === 'auto';
-  const userWebSearch = Boolean(webSearch);
-  const autoWebSearch = useAutoModel && inferWebSearchNeeded(trimmedMessage);
-  const effectiveWebSearch = userWebSearch || autoWebSearch;
-  const pickerContext = {
-    message: trimmedMessage,
-    webSearch: effectiveWebSearch,
-    hasImage,
-    contextFiles: focusedFiles,
-    skill: skillIntent,
-  };
-  const chatModel = useAutoModel
-    ? resolveChatModel('auto', pickerContext)
-    : resolveChatModel(requestedModel, pickerContext);
+  const effectiveWebSearch = Boolean(webSearch);
+  const chatModel = resolveChatModel();
 
   try {
     await chargeCredits(req.user._id, CREDIT_COSTS.chat, 'chat', { projectId });
@@ -126,10 +114,7 @@ router.post('/chat', async (req, res) => {
   const fileFocus = await buildFocusedFileContext(projectFiles, contextFileIds);
   if (fileFocus) systemPrompt += fileFocus;
   if (effectiveWebSearch) {
-    const webNote = userWebSearch
-      ? 'Web search is enabled for this turn.'
-      : 'Web search was auto-enabled for standards, catalog, or product data in this request.';
-    systemPrompt += `\n\n---\n${webNote} Use current web results for standards, dimensions, and product data when the user needs factual grounding.`;
+    systemPrompt += '\n\n---\nWeb search is enabled for this turn. Use current web results for standards, dimensions, and product data when the user needs factual grounding.';
   }
   if (hasImage) {
     systemPrompt += '\n\n---\nThe user attached a reference image. Infer dimensions, shape language, and features from the image; generate runnable CAD with reasonable estimates. Use [AGENT_PHASE: execute] when ready — avoid long clarification loops.';
@@ -147,9 +132,7 @@ router.post('/chat', async (req, res) => {
         res.write(`data: ${JSON.stringify({
           type: 'agent_phase',
           phase: 'searching',
-          message: autoWebSearch && !userWebSearch
-            ? 'Auto web search for standards and reference data…'
-            : 'Searching the web for reference data…',
+          message: 'Searching the web for reference data…',
         })}\n\n`);
       }
       if (focusedFiles.length) {
@@ -158,7 +141,7 @@ router.post('/chat', async (req, res) => {
       res.write(`data: ${JSON.stringify({
         type: 'agent_phase',
         phase: 'reading',
-        message: useAutoModel ? `Reading workspace · ${modelLabel(chatModel)}` : 'Reading your workspace…',
+        message: `Reading workspace · ${modelLabel(chatModel)}`,
       })}\n\n`);
       res.write(`data: ${JSON.stringify({ type: 'agent_phase', phase: 'thinking', message: 'Designing your solution…' })}\n\n`);
 

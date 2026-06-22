@@ -33,6 +33,14 @@ import {
   buildGearFallbackGenStep,
   detectComplexCadRequest,
 } from './cadPythonPresets.js';
+import { injectViewerParametersIntoGenStep } from './stepModuleFromPython.js';
+
+function artifactKey(userId, projectId, storageFolder, fileName) {
+  const folder = ['models', 'assemblies', 'parts', 'slices'].includes(storageFolder)
+    ? storageFolder
+    : 'models';
+  return buildS3Key(userId, projectId, `${folder}/${fileName}`);
+}
 
 function formatPythonError(raw) {
   if (!raw) return 'Python script failed';
@@ -233,7 +241,9 @@ function prepareGenStepCode(pythonCode, { isPreset = false, preserveCompound = f
     code = injectCadHelpers(code);
   }
 
-  if (/def\s+gen_step\s*\(/i.test(code)) return code;
+  if (/def\s+gen_step\s*\(/i.test(code)) {
+    return injectViewerParametersIntoGenStep(code);
+  }
 
   const lines = code.split('\n');
   const header = [];
@@ -259,7 +269,7 @@ function prepareGenStepCode(pythonCode, { isPreset = false, preserveCompound = f
     }
   }
 
-  return `${header.join('\n')}\n\ndef gen_step():\n${indented}${footer}\n`;
+  return injectViewerParametersIntoGenStep(`${header.join('\n')}\n\ndef gen_step():\n${indented}${footer}\n`);
 }
 
 async function findStepFile(workDir, stepPath) {
@@ -308,6 +318,7 @@ export async function regeneratePartFromPython({
   projectId,
   partName,
   pythonCode,
+  storageFolder = 'models',
   onProgress = () => {},
 }) {
   const workDir = await fs.mkdtemp(path.join(os.tmpdir(), 'solidxcad-repair-'));
@@ -342,7 +353,7 @@ export async function regeneratePartFromPython({
 
     const stepStat = await fs.stat(stepFile);
     const stepUpload = await uploadFile(
-      buildS3Key(userId, projectId, `models/${stepName}`),
+      artifactKey(userId, projectId, storageFolder, stepName),
       stepFile,
       'application/step',
     );
@@ -358,7 +369,7 @@ export async function regeneratePartFromPython({
 
     const scriptStat = await fs.stat(scriptPath);
     const scriptUpload = await uploadFile(
-      buildS3Key(userId, projectId, `models/${scriptName}`),
+      artifactKey(userId, projectId, storageFolder, scriptName),
       scriptPath,
       'text/x-python',
     );
@@ -377,6 +388,7 @@ export async function regeneratePartFromPython({
       projectId,
       workDir,
       fileName: `${partName}.stl`,
+      storageFolder,
       onProgress,
     });
     await uploadSidecarIfExists({
@@ -384,6 +396,7 @@ export async function regeneratePartFromPython({
       projectId,
       workDir,
       fileName: `${partName}.glb`,
+      storageFolder,
       onProgress,
     });
 
@@ -421,6 +434,7 @@ export async function regeneratePartWithParameters({
   partName,
   pythonCode,
   parameterValues = {},
+  storageFolder = 'models',
   onProgress = () => {},
 }) {
   const { patchPythonParameterValues } = await import('./stepModuleFromPython.js');
@@ -430,6 +444,7 @@ export async function regeneratePartWithParameters({
     projectId,
     partName,
     pythonCode: patched,
+    storageFolder,
     onProgress,
   });
 }
@@ -441,6 +456,7 @@ export async function executeCadGeneration({
   assistantText,
   conversationContext = '',
   partName = 'model',
+  storageFolder = 'models',
   exportOptions = {},
   onProgress = () => {},
 }) {
@@ -527,7 +543,7 @@ export async function executeCadGeneration({
 
       onProgress('STEP geometry created — saving files…');
 
-      const stepKey = buildS3Key(userId, projectId, `models/${stepName}`);
+      const stepKey = artifactKey(userId, projectId, storageFolder, stepName);
       const stepUpload = await uploadFile(stepKey, stepFile, 'application/step');
       onProgress(`Saved ${stepName}`);
 
@@ -543,7 +559,7 @@ export async function executeCadGeneration({
       });
 
       const scriptStat = await fs.stat(scriptPath);
-      const scriptKey = buildS3Key(userId, projectId, `models/${scriptName}`);
+      const scriptKey = artifactKey(userId, projectId, storageFolder, scriptName);
       const scriptUpload = await uploadFile(scriptKey, scriptPath, 'text/x-python');
       await upsertProjectFile({
         projectId,
@@ -561,6 +577,7 @@ export async function executeCadGeneration({
         projectId,
         workDir,
         fileName: `${partName}.stl`,
+        storageFolder,
         onProgress,
       });
 
@@ -570,6 +587,7 @@ export async function executeCadGeneration({
           projectId,
           workDir,
           fileName: `${partName}.3mf`,
+          storageFolder,
           onProgress,
         })
         : null;
@@ -579,6 +597,7 @@ export async function executeCadGeneration({
         projectId,
         workDir,
         fileName: `${partName}.glb`,
+        storageFolder,
         onProgress,
       });
 
@@ -621,6 +640,7 @@ export async function executeCadGeneration({
             projectId,
             workDir,
             fileName: path.basename(dxfPath),
+            storageFolder,
             onProgress,
           });
         } catch (dxfErr) {
@@ -753,7 +773,7 @@ export async function executeCadGeneration({
     const stepFile = await findStepFile(workDir, stepPath);
     if (stepFile) {
       onProgress('Fallback solid created — saving files…');
-      const stepKey = buildS3Key(userId, projectId, `models/${stepName}`);
+      const stepKey = artifactKey(userId, projectId, storageFolder, stepName);
       const stepUpload = await uploadFile(stepKey, stepFile, 'application/step');
       const fileDoc = await ProjectFile.create({
         projectId,
@@ -763,7 +783,7 @@ export async function executeCadGeneration({
         mimeType: 'application/step',
         kind: 'step',
       });
-      const scriptKey = buildS3Key(userId, projectId, `models/${scriptName}`);
+      const scriptKey = artifactKey(userId, projectId, storageFolder, scriptName);
       const scriptUpload = await uploadFile(scriptKey, scriptPath, 'text/x-python');
       await ProjectFile.create({
         projectId,

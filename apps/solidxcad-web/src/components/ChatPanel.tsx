@@ -8,26 +8,19 @@ import {
   AtSign,
   Bot,
   CheckCircle2,
-  ChevronDown,
   Circle,
   Globe,
   ImagePlus,
   Loader2,
-  Sparkles,
   User,
   X,
 } from 'lucide-react';
 import {
-  api,
-  getStoredChatModel,
-  getStoredModelAuto,
   getStoredWebSearch,
-  setStoredChatModel,
-  setStoredModelAuto,
   setStoredWebSearch,
   streamChat,
 } from '@/lib/api';
-import type { CadResult, ChatMessage, ChatModel, ProjectFile } from '@/lib/api';
+import type { CadResult, ChatMessage, ProjectFile } from '@/lib/api';
 import {
   isUserVisibleFile,
   resolveMentionedFileIds,
@@ -84,11 +77,7 @@ const SKILL_LABELS: Record<string, string> = {
   agent: 'Assistant',
 };
 
-const FALLBACK_MODELS: ChatModel[] = [
-  { id: 'anthropic/claude-3.5-haiku', label: 'Claude 3.5 Haiku', tier: 'fast', description: 'Fast' },
-  { id: 'anthropic/claude-opus-4.7', label: 'Claude Opus 4.7', tier: 'quality', description: 'Highest quality' },
-  { id: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4', tier: 'quality', description: 'Strong quality' },
-];
+const CHAT_MODEL = 'anthropic/claude-opus-4.7';
 
 function activityLabel(msg: string) {
   const cleaned = stripFileReferencesFromDisplay(msg).trim();
@@ -206,16 +195,12 @@ export function ChatPanel({
   const [liveReply, setLiveReply] = useState('');
   const [agentSteps, setAgentSteps] = useState<AgentStep[]>([]);
   const [agentPhase, setAgentPhase] = useState<AgentPhase>('idle');
-  const [models, setModels] = useState<ChatModel[]>([]);
-  const [selectedModel, setSelectedModel] = useState('');
-  const [modelAuto, setModelAuto] = useState(true);
   const [webSearch, setWebSearch] = useState(false);
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
   const [assemblyHint, setAssemblyHint] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
-  const [modelUsedLabel, setModelUsedLabel] = useState('');
   const threadRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -237,23 +222,6 @@ export function ChatPanel({
 
   useEffect(() => {
     setWebSearch(getStoredWebSearch());
-    setModelAuto(getStoredModelAuto());
-    api.getChatModels()
-      .then(({ models: list, defaultModel }) => {
-        setModels(list);
-        const stored = getStoredChatModel();
-        const valid = list.some((m) => m.id === stored);
-        setSelectedModel(valid && stored ? stored : defaultModel);
-      })
-      .catch(() => {
-        setModels(FALLBACK_MODELS);
-        const stored = getStoredChatModel();
-        setSelectedModel(
-          stored && FALLBACK_MODELS.some((m) => m.id === stored)
-            ? stored
-            : FALLBACK_MODELS[0].id,
-        );
-      });
   }, []);
 
   useEffect(() => {
@@ -261,19 +229,6 @@ export function ChatPanel({
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [messages, displayLiveReply, agentSteps, agentPhase, generatedItems, streaming, assemblyHint]);
-
-  function onModelChange(modelId: string) {
-    setSelectedModel(modelId);
-    setStoredChatModel(modelId);
-  }
-
-  function toggleModelAuto() {
-    setModelAuto((v) => {
-      const next = !v;
-      setStoredModelAuto(next);
-      return next;
-    });
-  }
 
   function toggleWebSearch() {
     setWebSearch((v) => {
@@ -319,7 +274,7 @@ export function ChatPanel({
   async function send(message?: string) {
     const rawText = (message || input).trim();
     const imageDataUrl = imagePreview || '';
-    if ((!rawText && !imageDataUrl) || streaming || (!modelAuto && !selectedModel)) return;
+    if ((!rawText && !imageDataUrl) || streaming) return;
 
     const text = rawText
       || 'Build a CAD model matching the attached reference image. Estimate dimensions from the image and generate STEP and STL.';
@@ -333,12 +288,11 @@ export function ChatPanel({
     setAgentSteps([]);
     setAgentPhase(webSearch ? 'searching' : 'reading');
     setAssemblyHint(null);
-    setModelUsedLabel('');
 
     await streamChat(
       projectId,
       text,
-      modelAuto ? 'auto' : selectedModel,
+      CHAT_MODEL,
       webSearch,
       (delta) => {
         setAgentPhase((p) => (p === 'searching' || p === 'reading' ? 'thinking' : p));
@@ -349,10 +303,6 @@ export function ChatPanel({
         setLiveReply('');
         setAgentSteps([]);
         setAgentPhase(pipelineDeferred ? 'waiting' : 'idle');
-        if (modelUsed) {
-          const label = models.find((m) => m.id === modelUsed)?.label || modelUsed;
-          setModelUsedLabel(label);
-        }
         onMessagesChange();
         if (cadResult?.hint === 'assembly_needs_parts') {
           setAssemblyHint(cadResult.hintMessage || null);
@@ -396,7 +346,7 @@ export function ChatPanel({
       {
         contextFileIds,
         imageDataUrl,
-        modelMode: modelAuto ? 'auto' : 'manual',
+        modelMode: 'manual',
       },
     );
   }
@@ -606,41 +556,11 @@ export function ChatPanel({
                 <Globe className="w-3.5 h-3.5" />
                 Web
               </button>
-              <button
-                type="button"
-                onClick={toggleModelAuto}
-                title="Auto picks the best model for your request"
-                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] border transition-colors ${
-                  modelAuto
-                    ? 'bg-brand/25 border-brand text-brand-muted'
-                    : 'border-border text-muted hover:text-gray-900 hover:border-brand/40'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Auto
-              </button>
-              {!modelAuto && (
-                <div className="relative">
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => onModelChange(e.target.value)}
-                    disabled={streaming || !models.length}
-                    className="appearance-none text-[11px] border border-border rounded-md pl-2 pr-6 py-1 bg-white text-gray-800 cursor-pointer disabled:opacity-50 max-w-[130px]"
-                  >
-                    {models.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
-                </div>
-              )}
             </div>
             <button
               type="button"
               onClick={() => send()}
-              disabled={streaming || (!input.trim() && !imagePreview) || (!modelAuto && !selectedModel)}
+              disabled={streaming || (!input.trim() && !imagePreview)}
               className="w-9 h-9 rounded-full bg-brand hover:bg-brand-hover text-white flex items-center justify-center disabled:opacity-40 shadow-md transition-colors"
               title="Send to agent"
             >
@@ -649,10 +569,8 @@ export function ChatPanel({
           </div>
         </div>
         <p className="text-[10px] text-muted mt-2 px-1 leading-relaxed">
-          Code runs in the background — chat shows activity and generated files only.
+          Claude Opus 4.7 · code runs in the background — chat shows activity and generated files only.
           {webSearch && ' Web search is on.'}
-          {modelAuto && ' Auto model is on.'}
-          {modelUsedLabel && ` Last reply: ${modelUsedLabel}.`}
         </p>
       </div>
     </aside>

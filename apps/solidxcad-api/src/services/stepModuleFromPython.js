@@ -138,10 +138,28 @@ export function buildStepModuleScript({ cadPath = '', parameters = {} } = {}) {
 }
 
 export function patchPythonParameterValues(source, parameterValues = {}) {
-  const text = String(source || '');
+  let text = String(source || '');
   if (!text || !Object.keys(parameterValues).length) {
     return text;
   }
+
+  const replacements = new Map(
+    Object.entries(parameterValues).map(([key, value]) => [
+      normalizeParamId(key),
+      Number(value),
+    ]),
+  );
+
+  const getValue = (id) => {
+    const normalized = normalizeParamId(id);
+    if (replacements.has(normalized)) return replacements.get(normalized);
+    if (replacements.has(id)) return replacements.get(id);
+    return undefined;
+  };
+
+  const formatNum = (value) => (
+    Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '')
+  );
 
   const lines = text.split('\n');
   const genStepIdx = lines.findIndex((line) => /def\s+gen_step\s*\(/.test(line));
@@ -157,26 +175,95 @@ export function patchPythonParameterValues(source, parameterValues = {}) {
     }
   }
 
-  const replacements = new Map(
-    Object.entries(parameterValues).map(([key, value]) => [
-      normalizeParamId(key),
-      Number(value),
-    ]),
-  );
-
   for (let i = genStepIdx + 1; i < bodyEnd; i += 1) {
-    const line = lines[i];
-    const match = /^(\s*)([a-z_][a-z0-9_]*)\s*=\s*(\d+(?:\.\d+)?)(\s*(?:#.*)?)$/i.exec(line);
-    if (!match) continue;
-    const [, indent, name, , suffix] = match;
-    const normalized = normalizeParamId(name);
-    if (!replacements.has(normalized) && !replacements.has(name)) continue;
-    const nextValue = replacements.get(normalized) ?? replacements.get(name);
-    if (!Number.isFinite(nextValue)) continue;
-    const formatted = Number.isInteger(nextValue) ? String(nextValue) : nextValue.toFixed(2).replace(/\.?0+$/, '');
-    lines[i] = `${indent}${name} = ${formatted}${suffix || ''}`;
+    let line = lines[i];
+
+    const assignment = /^(\s*)([a-z_][a-z0-9_]*)\s*=\s*(\d+(?:\.\d+)?)(\s*(?:#.*)?)$/i.exec(line);
+    if (assignment) {
+      const [, indent, name, , suffix] = assignment;
+      const nextValue = getValue(name);
+      if (Number.isFinite(nextValue)) {
+        lines[i] = `${indent}${name} = ${formatNum(nextValue)}${suffix || ''}`;
+        continue;
+      }
+    }
+
+    const length = getValue('length');
+    const width = getValue('width');
+    const height = getValue('height');
+    if (length != null && width != null && height != null) {
+      const boxMatch = /^(\s*)Box\s*\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)/.exec(line);
+      if (boxMatch) {
+        lines[i] = `${boxMatch[1]}Box(${formatNum(length)}, ${formatNum(width)}, ${formatNum(height)})`;
+        continue;
+      }
+    }
+
+    const holeRadius = getValue('hole_radius') ?? (
+      getValue('hole_diameter') != null ? getValue('hole_diameter') / 2 : undefined
+    );
+    if (holeRadius != null) {
+      const holeMatch = /^(\s*)Hole\s*\(\s*radius\s*=\s*(\d+(?:\.\d+)?)/i.exec(line);
+      if (holeMatch) {
+        lines[i] = line.replace(
+          /radius\s*=\s*\d+(?:\.\d+)?/i,
+          `radius=${formatNum(holeRadius)}`,
+        );
+        continue;
+      }
+    }
+
+    const radius = getValue('radius');
+    const cylHeight = getValue('height');
+    if (radius != null && cylHeight != null) {
+      const cylMatch = /^(\s*)Cylinder\s*\(\s*radius\s*=\s*(\d+(?:\.\d+)?)\s*,\s*height\s*=\s*(\d+(?:\.\d+)?)/i.exec(line);
+      if (cylMatch) {
+        lines[i] = `${cylMatch[1]}Cylinder(radius=${formatNum(radius)}, height=${formatNum(cylHeight)})`;
+      }
+    }
   }
 
+  text = lines.join('\n');
+
+  const viewerBlockRe = /#\s*---\s*viewer parameters\s*---[\s\S]*?#\s*---/i;
+  if (replacements.size && viewerBlockRe.test(text)) {
+    const oldBlock = viewerBlockRe.exec(text)?.[0] || '';
+    const nameByNormalized = new Map();
+    for (const line of oldBlock.split('\n')) {
+      const match = /^\s*([a-z_][a-z0-9_]*)\s*=\s*(\d+(?:\.\d+)?)/i.exec(line);
+      if (match) {
+        nameByNormalized.set(normalizeParamId(match[1]), match[1]);
+      }
+    }
+    const blockValues = {};
+    for (const [key, value] of replacements.entries()) {
+      if (!Number.isFinite(value)) continue;
+      const writeName = nameByNormalized.get(key) || key;
+      blockValues[writeName] = value;
+    }
+    text = text.replace(viewerBlockRe, viewerParametersBlock(blockValues).trim());
+  }
+
+  return text;
+}
+
+export function injectViewerParametersIntoGenStep(source) {
+  const text = String(source || '');
+  if (!/def\s+gen_step\s*\(/i.test(text)) return text;
+  if (/#\s*---\s*viewer parameters\s*---/i.test(text)) return text;
+
+  const params = extractPythonNumericParams(text);
+  const values = Object.fromEntries(
+    Object.entries(params).map(([key, meta]) => [key, meta.defaultValue]),
+  );
+  if (!Object.keys(values).length) return text;
+
+  const lines = text.split('\n');
+  const genStepIdx = lines.findIndex((line) => /def\s+gen_step\s*\(/.test(line));
+  if (genStepIdx < 0) return text;
+
+  const blockLines = viewerParametersBlock(values).trimEnd().split('\n');
+  lines.splice(genStepIdx + 1, 0, ...blockLines);
   return lines.join('\n');
 }
 

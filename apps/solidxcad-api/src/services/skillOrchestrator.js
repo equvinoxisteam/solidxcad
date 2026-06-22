@@ -144,7 +144,7 @@ export async function runSkillPipeline({
 
   const projectFiles = await ProjectFile.find({ projectId, userId }).sort({ createdAt: 1 });
   const grouped = groupProjectFiles(projectFiles);
-  const fileSummary = ['models', 'parts', 'slices']
+  const fileSummary = ['models', 'assemblies', 'parts', 'slices']
     .filter((k) => grouped[k]?.length)
     .map((k) => `${k}/ (${grouped[k].length})`)
     .join(', ');
@@ -157,13 +157,15 @@ export async function runSkillPipeline({
   let result = null;
   let partsResult = null;
   let cadResult = null;
-  const ts = Date.now();
+  const isAssemblyBuild = wantsAssembly(userMessage);
   const outputBase = resolvePipelineOutputBase({
+    userMessage,
     focusedFiles,
     skill,
-    fallbackTs: ts,
+    isAssembly: isAssemblyBuild,
     modifyIntent,
   });
+  const cadStorageFolder = isAssemblyBuild ? 'assemblies' : 'models';
   const urdfContext = await loadLatestProjectUrdf(projectFiles);
 
   // Pre-step: import catalog parts when requested
@@ -330,6 +332,7 @@ export async function runSkillPipeline({
           assistantText,
           conversationContext: cadContext,
           partName: outputBase,
+          storageFolder: cadStorageFolder,
           exportOptions: {
             dxf: wantsDxfExport(userMessage),
             threeMf: wants3mfExport(userMessage),
@@ -404,7 +407,7 @@ export async function runSkillPipeline({
     }
   }
 
-  stepEmit('Sync CAD Viewer workspace (models/, parts/, slices/)', 'cad-viewer', 'running');
+  stepEmit('Sync CAD Viewer workspace (models/, assemblies/, parts/, slices/)', 'cad-viewer', 'running');
   try {
     const { syncProjectWorkspace } = await import('./projectWorkspace.js');
     await syncProjectWorkspace({ userId: userId.toString(), projectId: projectId.toString() });
@@ -416,7 +419,12 @@ export async function runSkillPipeline({
   const primarySkill = cadResult?.ok ? 'cad' : partsResult?.ok ? 'step-parts' : skill;
   const summary = [];
   if (partsResult?.ok) summary.push(`parts/${partsResult.file?.name || 'part'}`);
-  if (cadResult?.ok) summary.push(`models/${cadResult.file?.name || 'part.step'}`);
+  if (cadResult?.ok) {
+    const folder = String(cadResult.file?.s3Key || '').includes('/assemblies/')
+      ? 'assemblies'
+      : 'models';
+    summary.push(`${folder}/${cadResult.file?.name || 'part.step'}`);
+  }
   if (cadResult?.sliceResult?.ok) summary.push(`slices/${cadResult.sliceResult.file?.name || 'part.gcode'}`);
 
   if (result?.ok || cadResult?.ok || partsResult?.ok) {

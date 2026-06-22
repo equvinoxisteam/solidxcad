@@ -9,7 +9,7 @@ import { Project } from '../models/Project.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 import { config } from '../config.js';
 import { getActiveViewerUrl } from '../services/viewerLauncher.js';
-import { syncProjectWorkspace, projectWorkspaceDir, fileRefForDoc } from '../services/projectWorkspace.js';
+import { syncProjectWorkspace, projectWorkspaceDir, fileRefForDoc, storageFolderForFile } from '../services/projectWorkspace.js';
 import { buildProjectCatalog } from '../services/viewerCatalog.js';
 import { getObjectStream } from '../services/s3.js';
 import { signViewerCatalogToken, verifyViewerCatalogToken } from '../services/viewerSession.js';
@@ -266,6 +266,7 @@ async function runStepParameterRegenerate({
     partName: resolved.partName,
     pythonCode: resolved.source,
     parameterValues,
+    storageFolder: storageFolderForFile(stepMatch),
   });
 
   if (!result.ok) {

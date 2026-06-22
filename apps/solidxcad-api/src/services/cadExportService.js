@@ -131,6 +131,7 @@ export async function registerExportedFile({
   localPath,
   mimeType,
   kind,
+  storageFolder = 'models',
 }) {
   const stat = await fs.stat(localPath);
   const existing = await ProjectFile.findOne({ projectId, userId, name, kind });
@@ -138,7 +139,10 @@ export async function registerExportedFile({
     return existing;
   }
 
-  const key = buildS3Key(userId, projectId, `models/${name}`);
+  const folder = ['models', 'assemblies', 'parts', 'slices'].includes(storageFolder)
+    ? storageFolder
+    : 'models';
+  const key = buildS3Key(userId, projectId, `${folder}/${name}`);
   const upload = await uploadFile(key, localPath, mimeType);
   if (existing) {
     existing.s3Key = upload.key;
@@ -178,6 +182,7 @@ export async function uploadSidecarIfExists({
   projectId,
   workDir,
   fileName,
+  storageFolder = 'models',
   onProgress = () => {},
 }) {
   const localPath = path.join(workDir, fileName);
@@ -198,6 +203,7 @@ export async function uploadSidecarIfExists({
     localPath,
     mimeType,
     kind,
+    storageFolder,
   });
   onProgress(`Saved ${fileName}`);
   return doc;

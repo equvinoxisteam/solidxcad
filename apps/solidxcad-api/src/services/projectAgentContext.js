@@ -3,14 +3,17 @@ import { fileRefForDoc } from './projectWorkspace.js';
 
 const MAX_TEXT_CHARS = 12000;
 
+import { deriveFriendlyFileBase } from './fileNaming.js';
+
 export function baseNameFromFileName(name = '') {
   return String(name).replace(/\.[^.]+$/, '');
 }
 
 export function resolvePipelineOutputBase({
+  userMessage = '',
   focusedFiles = [],
   skill = 'cad',
-  fallbackTs = Date.now(),
+  isAssembly = false,
   modifyIntent = false,
 } = {}) {
   for (const file of focusedFiles) {
@@ -19,16 +22,15 @@ export function resolvePipelineOutputBase({
       return base;
     }
   }
-  if (skill === 'urdf' || skill === 'srdf') return `robot_${fallbackTs}`;
-  if (skill === 'sdf') return `model_${fallbackTs}`;
-  if (skill === 'implicit-cad') return `implicit_${fallbackTs}`;
-  return `part_${fallbackTs}`;
+  return deriveFriendlyFileBase(userMessage, { skill, isAssembly });
 }
 
 export function findCompanionScript(files = [], artifactFile) {
   if (!artifactFile) return null;
   const base = baseNameFromFileName(artifactFile.name);
-  return files.find((f) => f.name === `${base}.py` && f.s3Key?.includes('/models/')) || null;
+  return files.find(
+    (f) => f.name === `${base}.py` && /\/(models|assemblies)\//.test(f.s3Key || ''),
+  ) || null;
 }
 
 async function loadFileText(file, maxChars = MAX_TEXT_CHARS) {
@@ -64,11 +66,12 @@ export async function loadProjectScriptContents(files = []) {
 }
 
 export function groupProjectFiles(files = []) {
-  const groups = { models: [], parts: [], slices: [], other: [] };
+  const groups = { models: [], assemblies: [], parts: [], slices: [], other: [] };
   for (const f of files) {
     const key = f.s3Key || '';
     if (key.includes('/slices/')) groups.slices.push(f);
     else if (key.includes('/parts/')) groups.parts.push(f);
+    else if (key.includes('/assemblies/')) groups.assemblies.push(f);
     else if (key.includes('/models/')) groups.models.push(f);
     else groups.other.push(f);
   }
@@ -141,7 +144,8 @@ export async function buildRichProjectContext(files = []) {
   }
 
   lines.push(`
-Workspace folders: models/ (STEP, STL, GLB, URDF, SRDF, SDF, .py, .implicit.js), parts/ (catalog STEP imports), slices/ (G-code).
+Workspace folders: models/ (single parts), assemblies/ (multi-part compounds), parts/ (catalog STEP imports), slices/ (G-code).
+Use descriptive basenames from the design (e.g. 30mm_cube_m3_holes, mount_plate_assembly) — never random timestamps.
 When user modifies an existing design: update the matching .py / generator script; pipeline overwrites the same basename.
 For new designs: output complete runnable code in the same turn with [AGENT_PHASE: execute].
 Physics: use realistic proportions, joint limits, masses/inertias for robots, structural sizing for frames, and standard units (mm for CAD, meters for URDF/SDF unless stated).

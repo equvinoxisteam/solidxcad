@@ -17,6 +17,9 @@ export function projectWorkspaceDir(userId, projectId) {
 function relativeFilePath(fileDoc) {
   const s3Key = String(fileDoc?.s3Key || '');
   const name = fileDoc.name || path.basename(s3Key) || 'file';
+  if (s3Key.includes('/assemblies/')) {
+    return path.posix.join('assemblies', name);
+  }
   if (s3Key.includes('/models/')) {
     return path.posix.join('models', name);
   }
@@ -32,6 +35,7 @@ function relativeFilePath(fileDoc) {
 export async function syncProjectWorkspace({ userId, projectId }) {
   const root = projectWorkspaceDir(userId, projectId);
   await fs.mkdir(path.join(root, 'models'), { recursive: true });
+  await fs.mkdir(path.join(root, 'assemblies'), { recursive: true });
   await fs.mkdir(path.join(root, 'slices'), { recursive: true });
   await fs.mkdir(path.join(root, 'parts'), { recursive: true });
 
@@ -97,6 +101,7 @@ export function storageFolderForFile(fileDoc) {
   const s3Key = String(fileDoc?.s3Key || '');
   if (s3Key.includes('/parts/')) return 'parts';
   if (s3Key.includes('/slices/')) return 'slices';
+  if (s3Key.includes('/assemblies/')) return 'assemblies';
   return 'models';
 }
 
