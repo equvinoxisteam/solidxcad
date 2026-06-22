@@ -10,8 +10,8 @@ import {
   streamChatCompletion,
   getSystemPromptForSkill,
   maxTokensForSkill,
-  normalizeAssistantReply,
 } from '../services/openrouter.js';
+import { buildGenerationSummary } from '../services/agentReply.js';
 import { shouldDeferPipeline } from '../services/agentBehavior.js';
 import { searchStepParts } from '../services/cadWorker.js';
 import { resolveChatModel, getChatModels } from '../services/models.js';
@@ -105,7 +105,12 @@ router.post('/chat', async (req, res) => {
     await chargeCredits(req.user._id, CREDIT_COSTS.chat, 'chat', { projectId });
   } catch (err) {
     if (err.code === 'INSUFFICIENT_CREDITS') {
-      return res.status(402).json({ error: 'Insufficient credits', balance: err.balance });
+      return res.status(402).json({
+        error: 'Insufficient credits',
+        code: 'INSUFFICIENT_CREDITS',
+        balance: err.balance,
+        message: 'You are out of design credits. Add credits in Settings or upgrade to Pro to continue.',
+      });
     }
     throw err;
   }
@@ -241,10 +246,12 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
           pipelineDeferred = pipelineOutcome.pipelineDeferred;
           if (pipelineOutcome.assistantText && pipelineOutcome.assistantText !== full) {
             full = pipelineOutcome.assistantText;
-            await ChatMessage.findByIdAndUpdate(assistantMsg._id, { content: full });
           }
         }
       }
+
+      const userFacingReply = buildGenerationSummary(cadResult, { reply: full });
+      await ChatMessage.findByIdAndUpdate(assistantMsg._id, { content: userFacingReply });
 
       res.write(`data: ${JSON.stringify({
         type: 'done',
@@ -252,7 +259,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
         cadResult,
         skill: resolvedSkill,
         pipelineDeferred,
-        reply: normalizeAssistantReply(full),
+        reply: userFacingReply,
         modelUsed: chatModel,
         webSearchUsed: effectiveWebSearch,
       })}\n\n`);
@@ -317,8 +324,11 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
       }
     }
 
+    const userFacingReply = buildGenerationSummary(cadResult, { reply });
+    await ChatMessage.findByIdAndUpdate(assistantMsg._id, { content: userFacingReply });
+
     res.json({
-      reply: normalizeAssistantReply(reply),
+      reply: userFacingReply,
       messageId: assistantMsg._id,
       cadResult,
       skill,
@@ -342,7 +352,12 @@ router.post('/parts/search', async (req, res) => {
     res.json(results);
   } catch (err) {
     if (err.code === 'INSUFFICIENT_CREDITS') {
-      return res.status(402).json({ error: 'Insufficient credits', balance: err.balance });
+      return res.status(402).json({
+        error: 'Insufficient credits',
+        code: 'INSUFFICIENT_CREDITS',
+        balance: err.balance,
+        message: 'You are out of design credits. Add credits in Settings or upgrade to Pro to continue.',
+      });
     }
     res.status(500).json({ error: err.message });
   }

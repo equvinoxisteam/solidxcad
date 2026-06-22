@@ -389,8 +389,16 @@ export async function streamChat(
   });
 
   if (!res.ok || !res.body) {
-    const data = await res.json().catch(() => ({}));
-    onError(data.error || 'Request could not complete — try again');
+    const data = await res.json().catch(() => ({})) as { error?: string; code?: string; message?: string; balance?: number };
+    if (res.status === 402 || data.code === 'INSUFFICIENT_CREDITS') {
+      onError(JSON.stringify({
+        code: 'INSUFFICIENT_CREDITS',
+        message: data.message || 'You are out of design credits. Add credits in Settings or upgrade to Pro to continue.',
+        balance: data.balance,
+      }));
+      return;
+    }
+    onError(data.error || data.message || 'Request could not complete — try again');
     return;
   }
 

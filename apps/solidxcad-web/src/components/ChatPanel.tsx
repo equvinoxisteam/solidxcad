@@ -1,6 +1,7 @@
 'use client';
 
 import { BRAND_NAME } from '@/lib/brand';
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
@@ -19,10 +20,14 @@ import {
 } from '@/lib/api';
 import type { CadResult, ChatMessage, ProjectFile } from '@/lib/api';
 import {
+  buildGeneratedItemLabels,
   isUserVisibleFile,
+  looksLikeGeneratorCode,
+  parseChatError,
   resolveMentionedFileIds,
   sanitizeAssistantForDisplay,
   stripFileReferencesFromDisplay,
+  INSUFFICIENT_CREDITS_ERROR,
 } from '@/lib/agentDisplay';
 import {
   buildSelectionContextText,
@@ -223,6 +228,7 @@ export function ChatPanel({
   const [agentPhase, setAgentPhase] = useState<AgentPhase>('idle');
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
   const [assemblyHint, setAssemblyHint] = useState<string | null>(null);
+  const [creditsBlocked, setCreditsBlocked] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
@@ -243,7 +249,10 @@ export function ChatPanel({
 
   const phaseLabel = PHASE_LABELS[agentPhase] || '';
   const displayLiveReply = sanitizeAssistantForDisplay(liveReply);
-  const showLiveBubble = streaming && Boolean(displayLiveReply);
+  const hideCodeStream = looksLikeGeneratorCode(liveReply)
+    || agentPhase === 'executing'
+    || agentPhase === 'planning';
+  const showLiveBubble = streaming && Boolean(displayLiveReply) && !hideCodeStream;
   const planSteps = useMemo(() => extractPlanSteps(liveReply), [liveReply]);
   const selectionSummary = useMemo(
     () => buildSelectionContextText(viewerContext),
@@ -310,6 +319,7 @@ export function ChatPanel({
     setAgentSteps([]);
     setAgentPhase('reading');
     setAssemblyHint(null);
+    setCreditsBlocked(false);
 
     await streamChat(
       projectId,
@@ -337,25 +347,40 @@ export function ChatPanel({
             { message: 'Reply in chat to continue the build', skill: 'agent', status: 'asking' },
           ]);
         } else if (cadResult && !cadResult.deferred && cadResult.ok) {
-          const skill = cadResult.skill || 'cad';
-          const label = SKILL_LABELS[skill] || 'Design';
-          const items: GeneratedItem[] = [
-            { id: `${Date.now()}-${skill}`, skill, label: `${label} saved to workspace` },
-          ];
-          if (cadResult.sliceFile?.name) {
-            items.unshift({
-              id: `${Date.now()}-slice`,
-              skill: 'gcode',
-              label: `G-code saved: ${cadResult.sliceFile.name}`,
+          const labels = buildGeneratedItemLabels(cadResult);
+          const items: GeneratedItem[] = labels.map((row, i) => ({
+            id: `${Date.now()}-${i}-${row.skill}`,
+            skill: row.skill,
+            label: row.label,
+          }));
+          if (!items.length) {
+            const skill = cadResult.skill || 'cad';
+            items.push({
+              id: `${Date.now()}-${skill}`,
+              skill,
+              label: `${SKILL_LABELS[skill] || 'Design'} saved to workspace`,
             });
           }
-          setGeneratedItems((prev) => [...items, ...prev].slice(0, 10));
+          setGeneratedItems((prev) => [...items, ...prev].slice(0, 12));
           onCadGenerated(cadResult);
         }
       },
-      () => {
+      (err) => {
+        const parsed = parseChatError(err);
         setStreaming(false);
         setLiveReply('');
+        if (parsed.code === INSUFFICIENT_CREDITS_ERROR) {
+          setCreditsBlocked(true);
+          setAgentPhase('idle');
+          setAgentSteps([
+            {
+              message: parsed.message,
+              skill: 'agent',
+              status: 'error',
+            },
+          ]);
+          return;
+        }
         setAgentPhase('idle');
         setAgentSteps((steps) => [...steps, { message: friendlyError(), skill: 'agent', status: 'error' }]);
         onMessagesChange();
@@ -412,6 +437,21 @@ export function ChatPanel({
               {selectionSummary || activeFileName}
             </p>
             <p className="chat-viewer-context-hint">Use @ to attach another file · changes apply to the focused design</p>
+          </div>
+        )}
+
+        {creditsBlocked && (
+          <div className="chat-credits-banner">
+            <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+            <div className="min-w-0 flex-1">
+              <p className="m-0 font-medium text-sm text-gray-900">Out of design credits</p>
+              <p className="m-0 text-xs text-muted mt-0.5">
+                Add credits or upgrade to Pro to keep building models, robots, and toolpaths.
+              </p>
+            </div>
+            <Link href="/pricing" className="chat-credits-cta">
+              Add credits
+            </Link>
           </div>
         )}
 
@@ -605,7 +645,7 @@ export function ChatPanel({
             <button
               type="button"
               onClick={() => send()}
-              disabled={streaming || (!input.trim() && !imagePreview)}
+              disabled={streaming || creditsBlocked || (!input.trim() && !imagePreview)}
               className="w-9 h-9 rounded-full bg-brand hover:bg-brand-hover text-white flex items-center justify-center disabled:opacity-40 shadow-md transition-colors"
               title="Send to agent"
             >
