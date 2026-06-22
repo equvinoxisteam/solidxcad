@@ -17,7 +17,8 @@ import { searchStepParts } from '../services/cadWorker.js';
 import { resolveChatModel, getChatModels } from '../services/models.js';
 import { modelLabel } from '../services/modelPicker.js';
 import { buildFocusedFileContext } from '../services/projectAgentContext.js';
-import { runSkillPipeline, resolveSkillFromChat, normalizePipelineResult } from '../services/skillOrchestrator.js';
+import { runPipelineWithRecovery } from '../services/agentPipelineRecovery.js';
+import { resolveSkillFromChat, runSkillPipeline, normalizePipelineResult } from '../services/skillOrchestrator.js';
 import { SKILLS, BROWSER_SKILLS } from '../services/skillRegistry.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 
@@ -72,6 +73,8 @@ router.post('/chat', async (req, res) => {
     webSearch = false,
     contextFileIds = [],
     imageDataUrl = '',
+    selectionContext = '',
+    viewerFileId = '',
   } = req.body;
   const trimmedMessage = message?.trim();
   if (!projectId || !trimmedMessage) {
@@ -86,6 +89,13 @@ router.post('/chat', async (req, res) => {
   const focusedFiles = contextFileIds?.length
     ? projectFiles.filter((f) => contextFileIds.map(String).includes(String(f._id)))
     : [];
+  const viewerFile = viewerFileId
+    ? projectFiles.find((f) => String(f._id) === String(viewerFileId))
+    : null;
+  const contextIds = new Set(focusedFiles.map((f) => String(f._id)));
+  if (viewerFile && !contextIds.has(String(viewerFile._id))) {
+    focusedFiles.push(viewerFile);
+  }
   const hasImage = Boolean(imageDataUrl && String(imageDataUrl).startsWith('data:image/'));
   const effectiveWebSearch = Boolean(webSearch);
   const chatModel = resolveChatModel();
@@ -111,8 +121,16 @@ router.post('/chat', async (req, res) => {
   const messages = history.map((m) => ({ role: m.role, content: m.content }));
   let systemPrompt = await getSystemPromptForSkill(skillIntent, { projectFiles });
   systemPrompt += buildUserContextPrompt(req.user);
-  const fileFocus = await buildFocusedFileContext(projectFiles, contextFileIds);
+  const fileFocus = await buildFocusedFileContext(projectFiles, [
+    ...new Set([...contextFileIds.map(String), viewerFile?._id].filter(Boolean)),
+  ]);
   if (fileFocus) systemPrompt += fileFocus;
+  if (selectionContext) {
+    systemPrompt += `\n\n---\n## Viewer selection context\n${String(selectionContext).trim()}\nTreat this as the user's current focus in the 3D workbench. Prefer editing the referenced file in place.`;
+  }
+  if (viewerFile && !selectionContext) {
+    systemPrompt += `\n\n---\nThe user is viewing **${viewerFile.name}** in the workbench — prefer modifying that design unless they ask for something new.`;
+  }
   if (effectiveWebSearch) {
     systemPrompt += '\n\n---\nWeb search is enabled for this turn. Use current web results for standards, dimensions, and product data when the user needs factual grounding.';
   }
@@ -192,25 +210,28 @@ router.post('/chat', async (req, res) => {
           })}\n\n`);
           cadResult = { ok: true, skill: 'agent', deferred: true, hint: 'clarify' };
         } else {
-          res.write(`data: ${JSON.stringify({
-            type: 'agent_phase',
-            phase: 'executing',
-            message: 'Executing design pipeline…',
-          })}\n\n`);
-          const pipeline = await runSkillPipeline({
+          const pipelineOutcome = await runPipelineWithRecovery({
             res,
             userId: req.user._id,
             projectId: project._id,
+            project,
             userMessage: trimmedMessage,
             assistantText: full,
-            project,
             conversationContext,
             focusedFiles,
+            chatModel,
+            systemPrompt,
+            messages,
+            maxTokens,
+            webSearch: effectiveWebSearch,
+            imageDataUrl: hasImage ? imageDataUrl : undefined,
+            hasImage,
           });
-          cadResult = normalizePipelineResult(pipeline.result);
-          if (cadResult && pipeline.skill) cadResult.skill = cadResult.skill || pipeline.skill;
-          if (cadResult?.deferred && cadResult?.hint === 'assembly_needs_parts') {
-            pipelineDeferred = true;
+          cadResult = pipelineOutcome.cadResult;
+          pipelineDeferred = pipelineOutcome.pipelineDeferred;
+          if (pipelineOutcome.assistantText && pipelineOutcome.assistantText !== full) {
+            full = pipelineOutcome.assistantText;
+            await ChatMessage.findByIdAndUpdate(assistantMsg._id, { content: full });
           }
         }
       }

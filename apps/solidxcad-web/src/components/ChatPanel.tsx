@@ -27,6 +27,11 @@ import {
   sanitizeAssistantForDisplay,
   stripFileReferencesFromDisplay,
 } from '@/lib/agentDisplay';
+import {
+  buildSelectionContextText,
+  resolveViewerFileId,
+  type ViewerSelectionContext,
+} from '@/lib/viewerContext';
 
 type AgentStep = { message: string; skill?: string; status?: string };
 type AgentPhase =
@@ -78,6 +83,26 @@ const SKILL_LABELS: Record<string, string> = {
 };
 
 const CHAT_MODEL = 'anthropic/claude-opus-4.7';
+
+const SKILL_CATALOG = [
+  { id: 'cad', label: 'CAD', hint: 'STEP · STL · GLB' },
+  { id: 'urdf', label: 'URDF', hint: 'Robots' },
+  { id: 'srdf', label: 'SRDF', hint: 'MoveIt' },
+  { id: 'sdf', label: 'SDF', hint: 'Gazebo' },
+  { id: 'implicit-cad', label: 'Implicit', hint: 'Raymarch' },
+  { id: 'gcode', label: 'G-code', hint: 'Slice & print' },
+  { id: 'step-parts', label: 'Parts', hint: 'Catalog import' },
+  { id: 'sendcutsend', label: 'Sheet', hint: 'Laser preflight' },
+] as const;
+
+function extractPlanSteps(text: string): string[] {
+  const match = text.match(/\[AGENT_PLAN\]([\s\S]*?)\[\/AGENT_PLAN\]/i);
+  if (!match) return [];
+  return match[1]
+    .split('\n')
+    .map((line) => line.replace(/^\s*\d+[\).\]]\s*/, '').trim())
+    .filter((line) => line && !line.startsWith('['));
+}
 
 function activityLabel(msg: string) {
   const cleaned = stripFileReferencesFromDisplay(msg).trim();
@@ -182,6 +207,8 @@ export function ChatPanel({
   onMessagesChange,
   onCadGenerated,
   embedded = false,
+  viewerContext = null,
+  activeFileName = '',
 }: {
   projectId: string;
   messages: ChatMessage[];
@@ -189,6 +216,8 @@ export function ChatPanel({
   onMessagesChange: () => void;
   onCadGenerated: (result: CadResult) => void;
   embedded?: boolean;
+  viewerContext?: ViewerSelectionContext | null;
+  activeFileName?: string;
 }) {
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -219,6 +248,15 @@ export function ChatPanel({
   const phaseLabel = PHASE_LABELS[agentPhase] || '';
   const displayLiveReply = sanitizeAssistantForDisplay(liveReply);
   const showLiveBubble = streaming && Boolean(displayLiveReply);
+  const planSteps = useMemo(() => extractPlanSteps(liveReply), [liveReply]);
+  const selectionSummary = useMemo(
+    () => buildSelectionContextText(viewerContext),
+    [viewerContext],
+  );
+  const viewerFileId = useMemo(
+    () => resolveViewerFileId(projectFiles, viewerContext),
+    [projectFiles, viewerContext],
+  );
 
   useEffect(() => {
     setWebSearch(getStoredWebSearch());
@@ -318,10 +356,17 @@ export function ChatPanel({
         } else if (cadResult && !cadResult.deferred && cadResult.ok) {
           const skill = cadResult.skill || 'cad';
           const label = SKILL_LABELS[skill] || 'Design';
-          setGeneratedItems((prev) => [
+          const items: GeneratedItem[] = [
             { id: `${Date.now()}-${skill}`, skill, label: `${label} saved to workspace` },
-            ...prev,
-          ].slice(0, 8));
+          ];
+          if (cadResult.sliceFile?.name) {
+            items.unshift({
+              id: `${Date.now()}-slice`,
+              skill: 'gcode',
+              label: `G-code saved: ${cadResult.sliceFile.name}`,
+            });
+          }
+          setGeneratedItems((prev) => [...items, ...prev].slice(0, 10));
           onCadGenerated(cadResult);
         }
       },
@@ -347,6 +392,8 @@ export function ChatPanel({
         contextFileIds,
         imageDataUrl,
         modelMode: 'manual',
+        selectionContext: selectionSummary,
+        viewerFileId,
       },
     );
   }
@@ -375,6 +422,16 @@ export function ChatPanel({
       )}
 
       <div ref={threadRef} className="chat-thread">
+        {(selectionSummary || activeFileName) && (
+          <div className="chat-viewer-context">
+            <p className="chat-viewer-context-label">Workbench focus</p>
+            <p className="chat-viewer-context-text">
+              {selectionSummary || activeFileName}
+            </p>
+            <p className="chat-viewer-context-hint">Use @ to attach another file · changes apply to the focused design</p>
+          </div>
+        )}
+
         {messages.map((m) =>
           m.role === 'user' ? (
             <div key={m._id} className="chat-row chat-row-user">
@@ -403,6 +460,13 @@ export function ChatPanel({
 
         {!messages.length && !streaming && (
           <div className="chat-empty-state">
+            <div className="chat-skills-strip">
+              {SKILL_CATALOG.map((skill) => (
+                <span key={skill.id} className="chat-skill-pill" title={skill.hint}>
+                  {skill.label}
+                </span>
+              ))}
+            </div>
             <p className="text-xs text-gray-600 leading-relaxed m-0 mb-3">
               Describe parts, assemblies, robots (URDF/SRDF/SDF), or attach an image. Use{' '}
               <span className="text-brand-muted">@filename</span> to target a workspace file.
@@ -420,6 +484,17 @@ export function ChatPanel({
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {planSteps.length > 0 && streaming && (
+          <div className="chat-plan-card">
+            <p className="chat-plan-title">Plan</p>
+            <ol className="chat-plan-list">
+              {planSteps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
           </div>
         )}
 

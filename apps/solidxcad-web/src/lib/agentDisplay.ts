@@ -41,10 +41,10 @@ export function sanitizeAssistantForDisplay(text: string) {
 }
 
 export function isUserVisibleFile(name: string, kind?: string) {
-  if (/\.implicit\.js$/i.test(name)) return true;
-  if (/\.py$/i.test(name)) return true;
+  if (/\.py$/i.test(name)) return false;
   const k = (kind || '').toLowerCase();
-  if (k === 'python' || k === 'script' || k === 'py') return true;
+  if (k === 'python' || k === 'script' || k === 'py') return false;
+  if (/\.implicit\.js$/i.test(name)) return true;
   return true;
 }
 

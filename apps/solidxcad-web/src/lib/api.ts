@@ -355,6 +355,8 @@ export type StreamChatOptions = {
   contextFileIds?: string[];
   imageDataUrl?: string;
   modelMode?: 'auto' | 'manual';
+  selectionContext?: string;
+  viewerFileId?: string;
 };
 
 export async function streamChat(
@@ -393,6 +395,8 @@ export async function streamChat(
       webSearch: Boolean(webSearch),
       contextFileIds: options.contextFileIds || [],
       imageDataUrl: options.imageDataUrl || '',
+      selectionContext: options.selectionContext || '',
+      viewerFileId: options.viewerFileId || '',
     }),
   });
 

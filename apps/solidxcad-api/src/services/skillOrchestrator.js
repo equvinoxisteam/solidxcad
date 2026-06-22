@@ -98,6 +98,9 @@ async function runSlice({ res, userId, projectId, fileId, label = 'mesh' }) {
     });
     if (sliceResult.ok) {
       emit(res, `✓ G-code saved: slices/${sliceResult.file.name}`, 'gcode', 'done');
+      for (const bundle of sliceResult.bundleFiles || []) {
+        emit(res, `✓ Print mesh bundled: slices/${bundle.name}`, 'gcode', 'done');
+      }
       return sliceResult;
     }
     emit(res, `✗ Slice failed: ${sliceResult.error}`, 'gcode', 'error');
@@ -335,7 +338,7 @@ export async function runSkillPipeline({
           storageFolder: cadStorageFolder,
           exportOptions: {
             dxf: wantsDxfExport(userMessage),
-            threeMf: wants3mfExport(userMessage),
+            threeMf: wants3mfExport(userMessage) || wantsSliceAfterCad(userMessage),
           },
           onProgress: (msg) => emit(res, msg, 'cad', 'info'),
         });

@@ -334,6 +334,18 @@ export async function executeSliceJob({ userId, projectId, fileId, profilePath, 
 
     console.log(`[slice] ✓ saved slices/${gcodeName}${usedBboxFallback ? ' (bounding-box fallback)' : ''}`);
 
+    let bundleFiles = [];
+    try {
+      const { publishSliceCompanionMeshes } = await import('./sliceBundle.js');
+      bundleFiles = await publishSliceCompanionMeshes({
+        userId,
+        projectId,
+        meshFileName: meshFile.name,
+      });
+    } catch (bundleErr) {
+      console.warn('[slice] print mesh bundle:', bundleErr.message);
+    }
+
     try {
       const { syncProjectWorkspace } = await import('./projectWorkspace.js');
       await syncProjectWorkspace({ userId, projectId });
@@ -341,7 +353,7 @@ export async function executeSliceJob({ userId, projectId, fileId, profilePath, 
       console.warn('[slice] workspace sync:', syncErr.message);
     }
 
-    return { ok: true, job, file: fileDoc, bboxFallback: usedBboxFallback };
+    return { ok: true, job, file: fileDoc, bundleFiles, bboxFallback: usedBboxFallback };
   } catch (err) {
     console.error('[slice] failed:', err.message);
     job.status = 'failed';

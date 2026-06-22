@@ -4,21 +4,23 @@ import { Download, FileBox, FolderOpen, Layers } from 'lucide-react';
 import type { ProjectFile } from '@/lib/api';
 import { isUserVisibleFile } from '@/lib/agentDisplay';
 
-function folderFor(file: ProjectFile): 'models' | 'parts' | 'slices' | 'other' {
+function folderFor(file: ProjectFile): 'models' | 'assemblies' | 'parts' | 'slices' | 'other' {
   if (file.s3Key?.includes('/slices/') || file.kind === 'gcode' || /\.gcode$/i.test(file.name)) {
     return 'slices';
   }
+  if (file.s3Key?.includes('/assemblies/')) return 'assemblies';
   if (file.s3Key?.includes('/parts/')) return 'parts';
   if (file.s3Key?.includes('/models/')) return 'models';
   return 'other';
 }
 
-type FolderKey = 'models' | 'parts' | 'slices' | 'other';
+type FolderKey = 'models' | 'assemblies' | 'parts' | 'slices' | 'other';
 
 const FOLDER_LABELS: Record<FolderKey, string> = {
   models: 'Models',
+  assemblies: 'Assemblies',
   parts: 'Catalog parts',
-  slices: 'Toolpaths',
+  slices: 'Toolpaths (G-code & 3MF)',
   other: 'Other',
 };
 
@@ -31,6 +33,7 @@ export function ProjectFilesList({
 }) {
   const grouped: Record<FolderKey, ProjectFile[]> = {
     models: [],
+    assemblies: [],
     parts: [],
     slices: [],
     other: [],
@@ -42,7 +45,7 @@ export function ProjectFilesList({
     grouped[folderFor(file)].push(file);
   }
 
-  const order: FolderKey[] = ['models', 'parts', 'slices', 'other'];
+  const order: FolderKey[] = ['models', 'assemblies', 'parts', 'slices', 'other'];
   const hasAny = order.some((k) => grouped[k].length > 0);
 
   if (!hasAny) {
@@ -76,13 +79,15 @@ export function ProjectFilesList({
                         : 'border-border bg-panel'
                     }`}
                   >
-                    {file.kind === 'gcode' ? (
-                      <Layers className="w-3 h-3 shrink-0 text-orange-400 mt-0.5" />
+                    {file.kind === 'gcode' || /\.gcode$/i.test(file.name) ? (
+                      <Layers className="w-3 h-3 shrink-0 text-orange-500 mt-0.5" />
+                    ) : file.kind === '3mf' || /\.3mf$/i.test(file.name) ? (
+                      <Layers className="w-3 h-3 shrink-0 text-violet-500 mt-0.5" />
                     ) : (
                       <FileBox className="w-3 h-3 shrink-0 text-muted mt-0.5" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-white font-mono">{file.name}</p>
+                      <p className="truncate text-gray-800 font-mono">{file.name}</p>
                       <p className="text-[10px] text-muted">{file.kind || 'file'}</p>
                     </div>
                     {file.downloadUrl && (
@@ -90,7 +95,7 @@ export function ProjectFilesList({
                         href={file.downloadUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="shrink-0 text-muted hover:text-white"
+                        className="shrink-0 text-muted hover:text-gray-900"
                         title="Download"
                       >
                         <Download className="w-3.5 h-3.5" />

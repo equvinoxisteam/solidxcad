@@ -1628,6 +1628,20 @@ export default function CadWorkspace({
     }, "*");
   }, [selectedEntry]);
 
+  useEffect(() => {
+    if (!isViewerEmbedMode() || !selectedEntry?.file) {
+      return;
+    }
+    const fileName = String(selectedEntry.file || "").split("/").pop() || selectedEntry.file;
+    window.parent.postMessage({
+      type: "solidxcad-viewer-context",
+      stepFile: selectedEntry.file,
+      fileName,
+      kind: selectedEntry.kind || "",
+      selectedParts: selectedPartIds.slice(0, 12)
+    }, "*");
+  }, [selectedEntry, selectedPartIds]);
+
   const handleCopyStepModuleParams = useCallback(async () => {
     setScreenshotStatus("");
     if (!selectedStepModuleDefinition?.parameters?.length) {

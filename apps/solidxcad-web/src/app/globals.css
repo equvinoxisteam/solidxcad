@@ -2839,3 +2839,76 @@ body {
     opacity: 0.4;
   }
 }
+
+.chat-viewer-context {
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  border-radius: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  margin-bottom: 0.25rem;
+}
+
+.chat-viewer-context-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #2563eb;
+  margin: 0 0 0.25rem;
+}
+
+.chat-viewer-context-text {
+  font-size: 0.75rem;
+  color: #1e3a8a;
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, monospace;
+}
+
+.chat-viewer-context-hint {
+  font-size: 0.625rem;
+  color: #64748b;
+  margin: 0.25rem 0 0;
+}
+
+.chat-skills-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+}
+
+.chat-skill-pill {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.chat-plan-card {
+  border: 1px solid #c4b5fd;
+  background: #f5f3ff;
+  border-radius: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  margin-right: 0.5rem;
+}
+
+.chat-plan-title {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6d28d9;
+  margin: 0 0 0.375rem;
+}
+
+.chat-plan-list {
+  margin: 0;
+  padding-left: 1.125rem;
+  font-size: 0.75rem;
+  color: #4c1d95;
+  line-height: 1.5;
+}

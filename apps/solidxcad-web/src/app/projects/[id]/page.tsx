@@ -16,6 +16,7 @@ import {
   type Project,
   type ProjectFile,
 } from '@/lib/api';
+import type { ViewerSelectionContext } from '@/lib/viewerContext';
 import { Loader2 } from 'lucide-react';
 import { useClientUser } from '@/hooks/useClientUser';
 import { USER_ERROR_LOAD_PROJECT } from '@/lib/userMessages';
@@ -23,6 +24,7 @@ import { USER_ERROR_LOAD_PROJECT } from '@/lib/userMessages';
 const PANEL_CHAT_KEY = 'solidxcad_studio_chat_open';
 const PANEL_WORKSPACE_KEY = 'solidxcad_studio_workspace_open';
 const STUDIO_PANEL_MESSAGE_TYPE = 'solidxcad-studio-panel';
+const VIEWER_CONTEXT_MESSAGE_TYPE = 'solidxcad-viewer-context';
 
 function readPanelPref(key: string, fallback: boolean) {
   if (typeof window === 'undefined') return fallback;
@@ -41,6 +43,7 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
   const [highlightFile, setHighlightFile] = useState('');
+  const [viewerContext, setViewerContext] = useState<ViewerSelectionContext | null>(null);
   const [showChat, setShowChat] = useState(false);
   const [showWorkspace, setShowWorkspace] = useState(false);
   useClientUser(true);
@@ -74,7 +77,18 @@ export default function StudioPage() {
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       const data = event.data;
-      if (!data || data.type !== STUDIO_PANEL_MESSAGE_TYPE) return;
+      if (!data) return;
+      if (data.type === VIEWER_CONTEXT_MESSAGE_TYPE) {
+        setViewerContext({
+          stepFile: data.stepFile,
+          fileName: data.fileName,
+          kind: data.kind,
+          selectedParts: Array.isArray(data.selectedParts) ? data.selectedParts : [],
+        });
+        if (data.fileName) setHighlightFile(String(data.fileName));
+        return;
+      }
+      if (data.type !== STUDIO_PANEL_MESSAGE_TYPE) return;
       if (data.panel === 'agent') {
         setShowChat((open) => {
           const next = !open;
@@ -234,6 +248,8 @@ export default function StudioPage() {
                 onMessagesChange={refresh}
                 onCadGenerated={onCadGenerated}
                 embedded
+                viewerContext={viewerContext}
+                activeFileName={highlightFile}
               />
             </div>
           </div>
