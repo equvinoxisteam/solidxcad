@@ -109,8 +109,11 @@ export const config = {
   pinecone: {
     apiKey: process.env.PINECONE_API_KEY || '',
     indexHost: process.env.PINECONE_INDEX_HOST || '',
-    namespace: process.env.PINECONE_NAMESPACE || 'engineering',
+    namespace: process.env.PINECONE_NAMESPACE || '__default__',
     topK: Number(process.env.PINECONE_TOP_K || 5),
+    /** Integrated indexes (e.g. llama-text-embed-v2, 1024 dim) use text search — not OpenRouter embeddings */
+    integratedEmbed: process.env.PINECONE_INTEGRATED_EMBED !== 'false',
+    textField: process.env.PINECONE_TEXT_FIELD || 'text',
     embedModel: process.env.PINECONE_EMBED_MODEL || 'openai/text-embedding-3-small',
   },
 
