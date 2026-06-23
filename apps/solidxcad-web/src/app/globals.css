@@ -2803,6 +2803,109 @@ body {
   color: #ffffff;
 }
 
+.studio-publish-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.studio-publish-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  height: 2rem;
+  padding: 0 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.studio-publish-btn-primary {
+  background: #103A8E;
+  border-color: #103A8E;
+  color: #ffffff;
+}
+
+.studio-publish-btn-primary:hover:not(:disabled) {
+  background: #0d3278;
+}
+
+.studio-publish-btn-muted {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+.studio-publish-btn-muted:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.studio-publish-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.studio-publish-link {
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #103A8E;
+  text-decoration: none;
+}
+
+.studio-publish-link:hover {
+  color: #0d3278;
+}
+
+.agent-background-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 1rem;
+  background: #eff6ff;
+  border-bottom: 1px solid #bfdbfe;
+  box-shadow: 0 2px 8px rgba(16, 58, 142, 0.08);
+}
+
+.agent-background-banner-text {
+  margin: 0;
+  flex: 1;
+  font-size: 0.8125rem;
+  color: #1e3a5f;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-background-banner-link {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #103A8E;
+  text-decoration: none;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(16, 58, 142, 0.25);
+  background: #ffffff;
+}
+
+.agent-background-banner-link:hover {
+  background: rgba(16, 58, 142, 0.06);
+}
+
 .studio-layout {
   flex: 1 1 auto;
   min-height: 0;

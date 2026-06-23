@@ -14,34 +14,24 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { streamChat } from '@/lib/api';
+import {
+  startAgentRun,
+  subscribeAgentRun,
+  type AgentPhase,
+} from '@/lib/agentRunner';
 import type { CadResult, ChatMessage, ProjectFile } from '@/lib/api';
 import {
-  formatWorkingStatus,
   isUserVisibleFile,
   looksLikeGeneratorCode,
-  parseChatError,
   resolveMentionedFileIds,
   sanitizeAssistantForDisplay,
-  INSUFFICIENT_CREDITS_ERROR,
 } from '@/lib/agentDisplay';
-import { USER_ERRORS } from '@/lib/userFacingErrors';
 import {
   buildSelectionContextText,
   resolveViewerFileId,
   type ViewerSelectionContext,
 } from '@/lib/viewerContext';
 
-type AgentPhase =
-  | 'idle'
-  | 'reading'
-  | 'thinking'
-  | 'planning'
-  | 'exploring'
-  | 'asking'
-  | 'executing'
-  | 'waiting'
-  | 'searching';
 
 const PROMPTS = [
   '30mm cube with 4× M3 holes',
@@ -60,8 +50,6 @@ const PHASE_LABELS: Record<string, string> = {
   running: 'Generating files',
   searching: 'Searching references',
 };
-
-const CHAT_MODEL = 'anthropic/claude-opus-4.7';
 
 const ASSEMBLY_STEP1 = 'Import M3 socket head cap screw from step.parts';
 const ASSEMBLY_STEP2 =
@@ -241,6 +229,20 @@ export function ChatPanel({
   );
 
   useEffect(() => {
+    return subscribeAgentRun((snap) => {
+      if (!snap || snap.projectId !== projectId) return;
+      setStreaming(snap.streaming);
+      setPendingUser(snap.pendingUser);
+      setWorkingStatus(snap.workingStatus);
+      setLiveReply(snap.liveReply);
+      setAgentPhase(snap.agentPhase);
+      setStreamError(snap.streamError);
+      setFollowUpSuggestions(snap.followUpSuggestions);
+      setCreditsBlocked(snap.creditsBlocked);
+    });
+  }, [projectId]);
+
+  useEffect(() => {
     const el = threadRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
@@ -279,11 +281,6 @@ export function ChatPanel({
     e.target.value = '';
   }
 
-  function updateWorking(message: string, status?: string) {
-    const formatted = formatWorkingStatus(message, status);
-    if (formatted) setWorkingStatus(formatted);
-  }
-
   async function send(message?: string) {
     const rawText = (message || input).trim();
     const imageDataUrl = imagePreview || '';
@@ -296,92 +293,27 @@ export function ChatPanel({
 
     setInput('');
     setImagePreview(null);
-    setPendingUser(text);
-    setStreaming(true);
-    setLiveReply('');
-    setWorkingStatus('Reading workspace…');
-    setAgentPhase('reading');
     setAssemblyHint(null);
-    setCreditsBlocked(false);
-    setStreamError('');
-    setFollowUpSuggestions([]);
 
-    await streamChat(
-      projectId,
-      text,
-      CHAT_MODEL,
-      (delta) => {
-        setAgentPhase((p) => (p === 'searching' || p === 'reading' ? 'thinking' : p));
-        setLiveReply((s) => s + delta);
-      },
-      ({ cadResult, pipelineDeferred, suggestions, reply }) => {
-        setStreaming(false);
-        setLiveReply('');
-        setPendingUser('');
-        setWorkingStatus('');
-        setAgentPhase(pipelineDeferred ? 'waiting' : 'idle');
-        if (suggestions?.length) setFollowUpSuggestions(suggestions);
-        onMessagesChange();
-        if (cadResult?.hint === 'assembly_needs_parts') {
-          setAssemblyHint(cadResult.hintMessage || null);
-        } else if (pipelineDeferred) {
-          setFollowUpSuggestions((prev) => prev.length ? prev : [
-            'Use standard engineering defaults and build it',
-            'Proceed — no more questions',
-          ]);
-        } else if (cadResult && !cadResult.deferred && cadResult.ok) {
-          onCadGenerated(cadResult);
-        } else if (cadResult && !cadResult.ok) {
-          setFollowUpSuggestions((prev) => prev.length ? prev : [
-            'Retry with simpler geometry',
-            'Use defaults and build again',
-          ]);
-        }
-        if (reply && pipelineDeferred) {
-          // suggestions already set from server
-        }
-      },
-      (err) => {
-        const parsed = parseChatError(err);
-        setStreaming(false);
-        setLiveReply('');
-        setPendingUser('');
-        setWorkingStatus('');
-        if (parsed.code === INSUFFICIENT_CREDITS_ERROR) {
-          setCreditsBlocked(true);
-          setAgentPhase('idle');
-          setStreamError(parsed.message);
-          return;
-        }
-        setAgentPhase('idle');
-        setStreamError(parsed.message || USER_ERRORS.chat);
-        setFollowUpSuggestions([
-          'Try again',
-          'Use standard defaults and build it',
-          'Simplify the design',
-        ]);
-        onMessagesChange();
-      },
-      (msg, skill, status) => {
-        if (status === 'planning') setAgentPhase('planning');
-        else if (status === 'exploring') setAgentPhase('exploring');
-        else if (status === 'asking') setAgentPhase('asking');
-        else if (status === 'running' || status === 'done') setAgentPhase('executing');
-        else if (status === 'error') setAgentPhase('executing');
-        updateWorking(msg, status);
-      },
-      (phase, msg) => {
-        setAgentPhase(phase as AgentPhase);
-        updateWorking(msg, phase);
-      },
-      {
-        contextFileIds,
-        imageDataUrl,
-        modelMode: 'manual',
-        selectionContext: selectionSummary,
-        viewerFileId,
-      },
-    );
+    const payload = await startAgentRun(projectId, text, {
+      contextFileIds,
+      imageDataUrl,
+      modelMode: 'manual',
+      selectionContext: selectionSummary,
+      viewerFileId,
+    });
+
+    onMessagesChange();
+    if (!payload) return;
+
+    const { cadResult, pipelineDeferred } = payload;
+    if (cadResult?.hint === 'assembly_needs_parts') {
+      setAssemblyHint(cadResult.hintMessage || null);
+    } else if (cadResult && !cadResult.deferred && cadResult.ok) {
+      onCadGenerated(cadResult);
+    } else if (!pipelineDeferred && cadResult && !cadResult.ok) {
+      onMessagesChange();
+    }
   }
 
   const showWorkingStrip = streaming && !showLiveBubble;

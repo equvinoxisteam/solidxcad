@@ -20,6 +20,7 @@ import { ProjectModelPreview } from '@/components/ProjectModelPreview';
 import { RenameProjectModal } from '@/components/RenameProjectModal';
 import { ProjectSortMenu, type ProjectSortKey } from '@/components/ProjectSortMenu';
 import { api, getToken, projectId, type Project } from '@/lib/api';
+import { subscribeAgentComplete } from '@/lib/agentRunner';
 import { sanitizeUserError } from '@/lib/userFacingErrors';
 
 type SortKey = ProjectSortKey;
@@ -94,6 +95,12 @@ export default function DashboardPage() {
       })
       .catch(() => router.push('/login'));
   }, [router]);
+
+  useEffect(() => {
+    return subscribeAgentComplete(() => {
+      load().catch(() => {});
+    });
+  }, []);
 
   async function load() {
     try {

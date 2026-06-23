@@ -3,23 +3,33 @@
 import Link from 'next/link';
 import { ArrowLeft, Bot, FolderTree, Settings } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
+import { StudioPublishControls } from '@/components/StudioPublishControls';
+import type { Project } from '@/lib/api';
 
 type StudioTopBarProps = {
+  projectId: string;
+  project: Project | null;
   projectName: string;
   status?: string;
   showChat: boolean;
   showWorkspace: boolean;
   onToggleChat: () => void;
   onToggleWorkspace: () => void;
+  onProjectChange: (project: Project) => void;
+  onStatus: (msg: string) => void;
 };
 
 export function StudioTopBar({
+  projectId,
+  project,
   projectName,
   status,
   showChat,
   showWorkspace,
   onToggleChat,
   onToggleWorkspace,
+  onProjectChange,
+  onStatus,
 }: StudioTopBarProps) {
   return (
     <header className="studio-topbar">
@@ -41,6 +51,13 @@ export function StudioTopBar({
       )}
 
       <div className="flex-1" />
+
+      <StudioPublishControls
+        projectId={projectId}
+        project={project}
+        onProjectChange={onProjectChange}
+        onStatus={onStatus}
+      />
 
       <div className="studio-topbar-actions">
         <button

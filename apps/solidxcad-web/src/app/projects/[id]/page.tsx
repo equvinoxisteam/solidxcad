@@ -19,6 +19,7 @@ import {
 import type { ViewerSelectionContext } from '@/lib/viewerContext';
 import { Loader2 } from 'lucide-react';
 import { useClientUser } from '@/hooks/useClientUser';
+import { subscribeAgentComplete } from '@/lib/agentRunner';
 import { sanitizeUserError } from '@/lib/userFacingErrors';
 
 const PANEL_CHAT_KEY = 'solidxcad_studio_chat_open';
@@ -200,6 +201,19 @@ export default function StudioPage() {
     }
   }
 
+  useEffect(() => {
+    return subscribeAgentComplete((projectId, payload) => {
+      if (projectId !== id || !payload?.cadResult) return;
+      refresh().catch(() => {});
+      if (!payload.cadResult.deferred && payload.cadResult.ok) {
+        const cadName = payload.cadResult.file?.name;
+        setHighlightFile(cadName || '');
+        setViewerReloadKey((k) => k + 1);
+        if (cadName) openWorkspace();
+      }
+    });
+  }, [id, refresh, openWorkspace]);
+
   if (loading) {
     return (
       <div className="min-h-screen studio-scene flex items-center justify-center">
@@ -217,12 +231,16 @@ export default function StudioPage() {
   return (
     <div className="h-screen studio-scene flex flex-col overflow-hidden">
       <StudioTopBar
+        projectId={id}
+        project={project}
         projectName={project?.name || 'Untitled'}
         status={status}
         showChat={showChat}
         showWorkspace={showWorkspace}
         onToggleChat={toggleChat}
         onToggleWorkspace={toggleWorkspace}
+        onProjectChange={setProject}
+        onStatus={setStatus}
       />
 
       <div className={layoutClass}>

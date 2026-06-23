@@ -160,32 +160,63 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
+    let clientOpen = true;
+    req.on('close', () => { clientOpen = false; });
+
+    const sseWrite = (payload) => {
+      if (!clientOpen) return;
+      try {
+        res.write(`data: ${JSON.stringify(payload)}\n\n`);
+      } catch {
+        clientOpen = false;
+      }
+    };
+
+    const pipelineRes = {
+      write: (chunk) => {
+        if (!clientOpen) return;
+        if (typeof chunk === 'string') {
+          try {
+            res.write(chunk);
+          } catch {
+            clientOpen = false;
+          }
+        }
+      },
+    };
+
     let full = '';
     let heartbeat = null;
+    let agentJob = null;
     try {
+      agentJob = await Job.create({
+        userId: req.user._id,
+        projectId,
+        type: 'chat',
+        status: 'running',
+        startedAt: new Date(),
+        input: { message: trimmedMessage.slice(0, 240) },
+      });
+
       if (effectiveWebSearch) {
-        res.write(`data: ${JSON.stringify({
+        sseWrite({
           type: 'agent_phase',
           phase: 'searching',
           message: 'Searching references and standards…',
-        })}\n\n`);
+        });
       }
       if (focusedFiles.length) {
-        res.write(`data: ${JSON.stringify({ type: 'agent_phase', phase: 'exploring', message: `Reviewing ${focusedFiles.map((f) => f.name).join(', ')}…` })}\n\n`);
+        sseWrite({ type: 'agent_phase', phase: 'exploring', message: `Reviewing ${focusedFiles.map((f) => f.name).join(', ')}…` });
       }
-      res.write(`data: ${JSON.stringify({
+      sseWrite({
         type: 'agent_phase',
         phase: 'reading',
         message: `Reading workspace · ${modelLabel(chatModel)}`,
-      })}\n\n`);
-      res.write(`data: ${JSON.stringify({ type: 'agent_phase', phase: 'thinking', message: 'Designing your solution…' })}\n\n`);
+      });
+      sseWrite({ type: 'agent_phase', phase: 'thinking', message: 'Designing your solution…' });
 
       heartbeat = setInterval(() => {
-        try {
-          res.write(`data: ${JSON.stringify({ type: 'ping' })}\n\n`);
-        } catch {
-          // connection closed
-        }
+        sseWrite({ type: 'ping' });
       }, 12000);
 
       for await (const chunk of streamChatCompletion(messages, {
@@ -196,7 +227,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
         imageDataUrl: hasImage ? imageDataUrl : undefined,
       })) {
         full += chunk;
-        res.write(`data: ${JSON.stringify({ type: 'delta', content: chunk })}\n\n`);
+        sseWrite({ type: 'delta', content: chunk });
       }
 
       const assistantMsg = await ChatMessage.create({
@@ -222,21 +253,21 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
           focusedFileCount: focusedFiles.length + (selectionContext ? 1 : 0),
         })) {
           pipelineDeferred = true;
-          res.write(`data: ${JSON.stringify({
+          sseWrite({
             type: 'agent_phase',
             phase: 'waiting',
             message: 'Waiting for your answers…',
-          })}\n\n`);
-          res.write(`data: ${JSON.stringify({
+          });
+          sseWrite({
             type: 'cad_status',
             message: 'Asking clarifying questions — reply in chat to continue',
             skill: 'agent',
             status: 'asking',
-          })}\n\n`);
+          });
           cadResult = { ok: true, skill: 'agent', deferred: true, hint: 'clarify' };
         } else {
           const pipelineOutcome = await runPipelineWithRecovery({
-            res,
+            res: pipelineRes,
             userId: req.user._id,
             projectId: project._id,
             project,
@@ -268,8 +299,16 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
       });
       await ChatMessage.findByIdAndUpdate(assistantMsg._id, { content: userFacingReply });
 
+      if (agentJob) {
+        agentJob.status = cadResult && !cadResult.ok && !pipelineDeferred ? 'failed' : 'completed';
+        agentJob.output = { cadResult, pipelineDeferred, skill: resolvedSkill };
+        agentJob.completedAt = new Date();
+        if (cadResult?.error) agentJob.error = cadResult.error;
+        await agentJob.save();
+      }
+
       if (heartbeat) clearInterval(heartbeat);
-      res.write(`data: ${JSON.stringify({
+      sseWrite({
         type: 'done',
         messageId: assistantMsg._id,
         cadResult,
@@ -279,16 +318,22 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
         suggestions,
         modelUsed: chatModel,
         webSearchUsed: effectiveWebSearch,
-      })}\n\n`);
-      res.end();
+      });
+      if (clientOpen) res.end();
     } catch (err) {
       if (heartbeat) clearInterval(heartbeat);
+      if (agentJob) {
+        agentJob.status = 'failed';
+        agentJob.error = userFacingError(err?.message, 'chat');
+        agentJob.completedAt = new Date();
+        await agentJob.save().catch(() => {});
+      }
       console.error('[agent/chat stream]', err);
-      res.write(`data: ${JSON.stringify({
+      sseWrite({
         type: 'error',
         error: userFacingError(err?.message, 'chat'),
-      })}\n\n`);
-      res.end();
+      });
+      if (clientOpen) res.end();
     }
     return;
   }
