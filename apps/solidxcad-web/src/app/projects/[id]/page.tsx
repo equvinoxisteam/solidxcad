@@ -235,10 +235,6 @@ export default function StudioPage() {
         project={project}
         projectName={project?.name || 'Untitled'}
         status={status}
-        showChat={showChat}
-        showWorkspace={showWorkspace}
-        onToggleChat={toggleChat}
-        onToggleWorkspace={toggleWorkspace}
         onProjectChange={setProject}
         onStatus={setStatus}
       />
