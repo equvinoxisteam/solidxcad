@@ -6,7 +6,7 @@ import { ProjectFile } from '../models/ProjectFile.js';
 import { skillMeta } from './skillRegistry.js';
 import { exportImplicitFormat, uploadSidecarIfExists } from './cadExportService.js';
 import { generateImplicitCodeFromPlan } from './openrouter.js';
-import { detectFromScratchBuild } from './cadPythonPresets.js';
+import { detectFromScratchBuild, detectComplexCadRequest } from './cadPythonPresets.js';
 
 async function upsertProjectFile({
   projectId,
@@ -68,7 +68,7 @@ async function resolveImplicitModuleAsync({
   if (extracted) return extracted;
 
   const combined = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
-  if (!detectFromScratchBuild(combined) && !/\[AGENT_PHASE:\s*execute\]/i.test(assistantText)) {
+  if (!detectFromScratchBuild(combined) && !detectComplexCadRequest(combined) && !/\[AGENT_PHASE:\s*execute\]/i.test(assistantText)) {
     return null;
   }
 

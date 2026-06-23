@@ -2,7 +2,8 @@ const PART_NOUNS = [
   'cube', 'box', 'bracket', 'plate', 'mount', 'enclosure', 'gear', 'cylinder',
   'screw', 'housing', 'frame', 'lid', 'cover', 'spacer', 'washer', 'pin',
   'shaft', 'hub', 'flange', 'bushing', 'pulley', 'coupling', 'clamp',
-  'standoff', 'block', 'panel', 'tray', 'chassis', 'base',
+  'standoff', 'block', 'panel', 'tray', 'chassis', 'base', 'reactor', 'nozzle',
+  'valve', 'manifold', 'coil', 'jacket', 'mixer', 'tank', 'vessel',
 ];
 
 const ROBOT_NOUNS = ['robot', 'arm', 'manipulator', 'gripper', 'linkage', 'urdf'];
@@ -20,9 +21,11 @@ function slugify(parts) {
 /**
  * Build a human-readable basename from the user's prompt (no timestamps).
  */
-export function deriveFriendlyFileBase(userMessage = '', { skill = 'cad', isAssembly = false } = {}) {
-  let text = String(userMessage || '').trim();
+export function deriveFriendlyFileBase(userMessage = '', { skill = 'cad', isAssembly = false, assistantText = '' } = {}) {
+  let text = [userMessage, assistantText].filter(Boolean).join(' ').trim();
   text = text.replace(/@[\w.-]+/g, ' ');
+  const planMatch = text.match(/\[AGENT_PLAN\]([\s\S]*?)\[\/AGENT_PLAN\]/i);
+  if (planMatch) text += ` ${planMatch[1]}`;
 
   const tokens = [];
 
@@ -49,7 +52,13 @@ export function deriveFriendlyFileBase(userMessage = '', { skill = 'cad', isAsse
 
   if (/\bhole/i.test(text)) tokens.push('holes');
   if (/\bfillet/i.test(text)) tokens.push('filleted');
-  if (/\bhelical\b/i.test(text)) tokens.push('helical');
+  if (/\b(hydrogenation|flow\s+reactor|tube\s+reactor|microreactor)\b/i.test(text) && !tokens.includes('reactor')) {
+    tokens.push('reactor');
+  }
+  if (/\bhelical\s+coil\b/i.test(text) && !tokens.includes('coil')) tokens.push('coil');
+  if (/\bcooling\s+jacket\b/i.test(text) && !tokens.includes('jacket')) tokens.push('jacket');
+  if (/\bt[\s-]?mixer\b/i.test(text) && !tokens.includes('mixer')) tokens.push('mixer');
+  if (/\bhelical\b/i.test(text) && !/\b(coil|reactor|jacket|mixer|tube)\b/i.test(text)) tokens.push('helical');
   if (/\bspur\b/i.test(text)) tokens.push('spur');
   if (/\bgear/i.test(text) && !tokens.includes('gear')) tokens.push('gear');
   if (/\bimplicit\b/i.test(text)) tokens.push('implicit');
@@ -70,6 +79,23 @@ export function deriveFriendlyFileBase(userMessage = '', { skill = 'cad', isAsse
   }
 
   return base;
+}
+
+/**
+ * Avoid overwriting unrelated designs that share a vague basename (e.g. custom_part).
+ */
+export function resolveUniqueFileBase(base = '', projectFiles = [], storageFolder = 'models') {
+  const root = stripVersionSuffix(base) || 'custom_part';
+  const inFolder = (file) => String(file?.s3Key || '').includes(`/${storageFolder}/`);
+  const used = new Set(
+    projectFiles
+      .filter(inFolder)
+      .map((f) => stripVersionSuffix(baseNameFromFileName(f.name))),
+  );
+  if (!used.has(root)) return root;
+  let n = 1;
+  while (used.has(`${root}_${n}`)) n += 1;
+  return `${root}_${n}`;
 }
 
 function escapeRegExp(value = '') {

@@ -32,6 +32,7 @@ import {
   buildFallbackGenStep,
   buildGearFallbackGenStep,
   detectComplexCadRequest,
+  detectFromScratchBuild,
 } from './cadPythonPresets.js';
 import { injectViewerParametersIntoGenStep } from './stepModuleFromPython.js';
 
@@ -171,7 +172,7 @@ async function resolveCadPythonAsync({
   if (resolved) return resolved;
 
   const combined = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
-  if (!detectComplexCadRequest(combined) && !/\[AGENT_PHASE:\s*execute\]/i.test(assistantText)) {
+  if (!detectComplexCadRequest(combined) && !detectFromScratchBuild(combined) && !/\[AGENT_PHASE:\s*execute\]/i.test(assistantText)) {
     return null;
   }
 
@@ -512,6 +513,7 @@ export async function executeCadGeneration({
 
   let lastError = null;
   const maxAttempts = complexBuild ? 8 : 5;
+  const cadTimeoutMs = complexBuild ? 600_000 : 180_000;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (attempt > 0) {
@@ -533,6 +535,7 @@ export async function executeCadGeneration({
           threeMf: wants3mf ? `${partName}.3mf` : null,
           glb: `${partName}.glb`,
         },
+        timeoutMs: cadTimeoutMs,
       });
 
       const stepFile = await findStepFile(workDir, stepPath);
@@ -669,6 +672,7 @@ export async function executeCadGeneration({
         url: stepUpload.url,
         s3Key: stepUpload.key,
         repaired: attempt > 0,
+        fallback: codeSource === 'preset-fallback',
       };
     } catch (err) {
       lastError = formatPythonError(err.message);
@@ -682,37 +686,39 @@ export async function executeCadGeneration({
       }
 
       const hilbertCtx = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
-      if (detectAssemblyWithParts(hilbertCtx, partFiles.length) && codeSource !== 'preset-assembly') {
-        onProgress('Falling back to tested assembly preset…');
-        pythonCode = buildAssemblyMountGenStep({
-          ...parsePlateParams(hilbertCtx),
-          screwRelPath: partFiles[0].relPath,
-        });
-        codeSource = 'preset-assembly';
-        isPreset = true;
-        continue;
-      }
-      if (detectRoboticArmRequest(hilbertCtx) && codeSource !== 'preset-robotic-arm') {
-        onProgress('Falling back to tested 6-DOF robotic arm preset…');
-        pythonCode = buildRoboticArmGenStep(parseRoboticArmParams(hilbertCtx));
-        codeSource = 'preset-robotic-arm';
-        isPreset = true;
-        preserveCompound = true;
-        continue;
-      }
-      if (detectHilbertRequest(hilbertCtx) && codeSource !== 'preset-hilbert') {
-        onProgress('Falling back to tested Hilbert preset…');
-        pythonCode = buildHilbertGenStep(parseHilbertParams(hilbertCtx));
-        codeSource = 'preset-hilbert';
-        isPreset = true;
-        continue;
-      }
-      if (detectGearRequest(hilbertCtx) && codeSource !== 'preset-fallback') {
-        onProgress('Using tested gear fallback (cylinder + bore)…');
-        pythonCode = buildGearFallbackGenStep(hilbertCtx);
-        codeSource = 'preset-fallback';
-        isPreset = true;
-        continue;
+      if (!complexBuild) {
+        if (detectAssemblyWithParts(hilbertCtx, partFiles.length) && codeSource !== 'preset-assembly') {
+          onProgress('Falling back to tested assembly preset…');
+          pythonCode = buildAssemblyMountGenStep({
+            ...parsePlateParams(hilbertCtx),
+            screwRelPath: partFiles[0].relPath,
+          });
+          codeSource = 'preset-assembly';
+          isPreset = true;
+          continue;
+        }
+        if (detectRoboticArmRequest(hilbertCtx) && codeSource !== 'preset-robotic-arm') {
+          onProgress('Falling back to tested 6-DOF robotic arm preset…');
+          pythonCode = buildRoboticArmGenStep(parseRoboticArmParams(hilbertCtx));
+          codeSource = 'preset-robotic-arm';
+          isPreset = true;
+          preserveCompound = true;
+          continue;
+        }
+        if (detectHilbertRequest(hilbertCtx) && codeSource !== 'preset-hilbert') {
+          onProgress('Falling back to tested Hilbert preset…');
+          pythonCode = buildHilbertGenStep(parseHilbertParams(hilbertCtx));
+          codeSource = 'preset-hilbert';
+          isPreset = true;
+          continue;
+        }
+        if (detectGearRequest(hilbertCtx) && codeSource !== 'preset-fallback') {
+          onProgress('Using tested gear fallback (cylinder + bore)…');
+          pythonCode = buildGearFallbackGenStep(hilbertCtx);
+          codeSource = 'preset-fallback';
+          isPreset = true;
+          continue;
+        }
       }
 
       if (attempt < maxAttempts - 1 && config.openrouter.apiKey && !isPreset) {

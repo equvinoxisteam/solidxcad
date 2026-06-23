@@ -3,7 +3,7 @@ import { fileRefForDoc } from './projectWorkspace.js';
 
 const MAX_TEXT_CHARS = 12000;
 
-import { deriveFriendlyFileBase, resolveNextVersionedBase } from './fileNaming.js';
+import { deriveFriendlyFileBase, resolveNextVersionedBase, resolveUniqueFileBase } from './fileNaming.js';
 
 export function baseNameFromFileName(name = '') {
   return String(name).replace(/\.[^.]+$/, '');
@@ -11,6 +11,7 @@ export function baseNameFromFileName(name = '') {
 
 export function resolvePipelineOutputBase({
   userMessage = '',
+  assistantText = '',
   focusedFiles = [],
   projectFiles = [],
   skill = 'cad',
@@ -21,7 +22,7 @@ export function resolvePipelineOutputBase({
   const pickVersioned = (base) => (
     modifyIntent
       ? resolveNextVersionedBase(base, projectFiles, storageFolder)
-      : base
+      : resolveUniqueFileBase(base, projectFiles, storageFolder)
   );
 
   for (const file of focusedFiles) {
@@ -40,7 +41,7 @@ export function resolvePipelineOutputBase({
     }
   }
 
-  return deriveFriendlyFileBase(userMessage, { skill, isAssembly });
+  return deriveFriendlyFileBase(userMessage, { skill, isAssembly, assistantText });
 }
 
 export function findCompanionScript(files = [], artifactFile) {

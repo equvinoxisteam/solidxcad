@@ -71,6 +71,7 @@ export async function runCadStepFromScript({
   scriptName,
   stepName,
   sidecars = {},
+  timeoutMs = 180000,
 }) {
   const python = await findPython();
   const stepCli = path.join(cadSkillScriptsDir(), 'step');
@@ -78,7 +79,7 @@ export async function runCadStepFromScript({
   if (sidecars.stl) args.push('--stl', sidecars.stl);
   if (sidecars.threeMf) args.push('--3mf', sidecars.threeMf);
   if (sidecars.glb) args.push('--glb', sidecars.glb);
-  await spawnProcess(python, args, { cwd: workDir, env: cadSkillEnv() });
+  await spawnProcess(python, args, { cwd: workDir, env: cadSkillEnv(), timeoutMs });
 }
 
 export async function exportSidecarsFromStep({

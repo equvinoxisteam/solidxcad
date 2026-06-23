@@ -28,6 +28,30 @@ function emit(res, message, skill, status = 'info') {
   }
 }
 
+const EXECUTE_MARKER = /\[AGENT_PHASE:\s*execute\]/i;
+
+function shouldExecuteCad(cadContext, assistantText, hasCode) {
+  return hasCadPayload(assistantText, cadContext)
+    || detectHilbertRequest(cadContext)
+    || detectRoboticArmRequest(cadContext)
+    || detectComplexCadRequest(cadContext)
+    || detectFromScratchBuild(cadContext)
+    || EXECUTE_MARKER.test(assistantText)
+    || (hasCode && /build123d|export_step|Box\(|Cylinder\(/i.test(assistantText));
+}
+
+function shouldExecuteGeneratorSkill(skillId, cadContext, assistantText, hasCode) {
+  const scratch = detectFromScratchBuild(cadContext);
+  const execute = EXECUTE_MARKER.test(assistantText);
+  if (skillId === 'implicit-cad') {
+    return hasCode || hasImplicitPayload(assistantText) || scratch || execute;
+  }
+  if (['urdf', 'srdf', 'sdf'].includes(skillId)) {
+    return hasCode || hasGeneratorPayload(assistantText, skillId) || scratch || execute;
+  }
+  return false;
+}
+
 function countPipelineSteps(userMessage, assistantText, cadContext, hasCode) {
   let total = 1;
   const skill = detectSkillIntent(userMessage, assistantText);
@@ -74,6 +98,7 @@ export function normalizePipelineResult(result) {
     skill: result.skill,
     error: result.error ? userFacingError(result.error, result.skill || 'generic') : undefined,
     repaired: result.repaired,
+    fallback: result.fallback,
     deferred: result.deferred,
     hint: result.hint,
     hintMessage: result.hintMessage,
@@ -161,10 +186,11 @@ export async function runSkillPipeline({
   let result = null;
   let partsResult = null;
   let cadResult = null;
-  const isAssemblyBuild = wantsAssembly(userMessage);
+  const isAssemblyBuild = wantsAssembly(cadContext);
   const cadStorageFolder = isAssemblyBuild ? 'assemblies' : 'models';
   const outputBase = resolvePipelineOutputBase({
     userMessage,
+    assistantText,
     focusedFiles,
     projectFiles,
     skill,
@@ -231,7 +257,7 @@ export async function runSkillPipeline({
       emit(res, USER_ERRORS.noMesh, 'gcode', 'error');
       result = { ok: false, skill: 'gcode', error: USER_ERRORS.noMesh };
     }
-  } else if (skill === 'implicit-cad' && (hasCode || hasImplicitPayload(assistantText) || detectFromScratchBuild(cadContext))) {
+  } else if (skill === 'implicit-cad' && shouldExecuteGeneratorSkill('implicit-cad', cadContext, assistantText, hasCode)) {
     try {
       await chargeCredits(userId, CREDIT_COSTS.cad_generate, 'implicit_generate', { projectId });
       result = await executeImplicitGeneration({
@@ -248,7 +274,7 @@ export async function runSkillPipeline({
       console.error('[implicit]', err);
       result = { ok: false, skill: 'implicit-cad', error: USER_ERRORS.implicit };
     }
-  } else if (skill === 'srdf' && (hasCode || hasGeneratorPayload(assistantText, 'srdf') || detectFromScratchBuild(cadContext))) {
+  } else if (skill === 'srdf' && shouldExecuteGeneratorSkill('srdf', cadContext, assistantText, hasCode)) {
     try {
       await chargeCredits(userId, CREDIT_COSTS.cad_generate, 'srdf_generate', { projectId });
       result = await executeGeneratorSkill({
@@ -266,7 +292,7 @@ export async function runSkillPipeline({
       console.error('[srdf]', err);
       result = { ok: false, skill: 'srdf', error: USER_ERRORS.srdf };
     }
-  } else if (skill === 'sdf' && (hasCode || hasGeneratorPayload(assistantText, 'sdf') || detectFromScratchBuild(cadContext))) {
+  } else if (skill === 'sdf' && shouldExecuteGeneratorSkill('sdf', cadContext, assistantText, hasCode)) {
     try {
       await chargeCredits(userId, CREDIT_COSTS.cad_generate, 'sdf_generate', { projectId });
       result = await executeGeneratorSkill({
@@ -283,7 +309,7 @@ export async function runSkillPipeline({
       console.error('[sdf]', err);
       result = { ok: false, skill: 'sdf', error: USER_ERRORS.sdf };
     }
-  } else if (skill === 'urdf' && (hasCode || hasGeneratorPayload(assistantText, 'urdf') || detectFromScratchBuild(cadContext))) {
+  } else if (skill === 'urdf' && shouldExecuteGeneratorSkill('urdf', cadContext, assistantText, hasCode)) {
     try {
       await chargeCredits(userId, CREDIT_COSTS.cad_generate, 'urdf_generate', { projectId });
       result = await executeGeneratorSkill({
@@ -304,11 +330,7 @@ export async function runSkillPipeline({
     emit(res, 'Try: "import M3 socket head screw from step.parts"', 'step-parts');
     result = { ok: true, skill: 'step-parts', hint: 'parts_tab' };
   } else if (skill === 'cad' || (hasCadPayload(assistantText, cadContext) && !assistantText.includes('gen_urdf') && !assistantText.includes('gen_srdf'))) {
-    const wantsCad = hasCadPayload(assistantText, cadContext)
-      || detectHilbertRequest(cadContext)
-      || detectRoboticArmRequest(cadContext)
-      || detectComplexCadRequest(cadContext)
-      || (hasCode && /build123d|export_step|Box\(|Cylinder\(/i.test(assistantText));
+    const wantsCad = shouldExecuteCad(cadContext, assistantText, hasCode);
     const partsAvailable = grouped.parts.length + (partsResult?.ok ? 1 : 0);
     const needsAssemblyParts = assemblyNeedsCatalogParts({
       userMessage,

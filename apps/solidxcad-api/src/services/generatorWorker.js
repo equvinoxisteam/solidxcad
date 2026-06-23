@@ -10,7 +10,7 @@ import { extractPythonCode, generateGeneratorCodeFromPlan } from './openrouter.j
 import { buildS3Key, uploadFile } from './s3.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 import { skillMeta } from './skillRegistry.js';
-import { detectFromScratchBuild } from './cadPythonPresets.js';
+import { detectFromScratchBuild, detectComplexCadRequest } from './cadPythonPresets.js';
 
 const GENERATOR_SKILLS = {
   urdf: {
@@ -199,8 +199,8 @@ async function resolveGeneratorSourceAsync({
 
   const combined = [conversationContext, userMessage, assistantText].filter(Boolean).join('\n');
   const shouldGenerate = detectFromScratchBuild(combined)
-    || (/\b(urdf|srdf|sdf|robot|manipulator)\b/i.test(combined)
-      && /\[AGENT_PHASE:\s*execute\]/i.test(assistantText));
+    || detectComplexCadRequest(combined)
+    || /\[AGENT_PHASE:\s*execute\]/i.test(assistantText);
 
   if (!shouldGenerate) return null;
 

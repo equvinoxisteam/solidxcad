@@ -2,7 +2,9 @@
  * Maps browser chat intents to repo skills under TEXT_TO_CAD_ROOT/skills/.
  */
 
-import { detectRoboticArmRequest } from './cadPythonPresets.js';
+import { detectRoboticArmRequest, wantsAssembly } from './cadPythonPresets.js';
+
+export { wantsAssembly };
 
 export const SKILLS = {
   cad: {
@@ -100,13 +102,16 @@ export function detectSkillIntent(userMessage = '', assistantText = '') {
   if (PARTS_RE.test(user) && !CAD_RE.test(user) && !URDF_RE.test(user)) {
     return 'step-parts';
   }
-  if (detectRoboticArmRequest(combined) && !URDF_EXPLICIT_RE.test(user)) {
+  if (URDF_EXPLICIT_RE.test(user) || (assistantText.includes('gen_urdf') && !assistantText.includes('gen_step'))) {
+    return 'urdf';
+  }
+  if (detectRoboticArmRequest(combined)) {
     return 'cad';
   }
-  if (URDF_RE.test(user) && ROBOT_MECH_CAD_RE.test(combined)) {
+  if (URDF_RE.test(user) && ROBOT_MECH_CAD_RE.test(combined) && /\b(step|stl|solid|mechanical|build123d)\b/i.test(user)) {
     return 'cad';
   }
-  if (assistantText.includes('gen_urdf') || URDF_RE.test(user)) {
+  if (URDF_RE.test(user)) {
     return 'urdf';
   }
   return 'cad';
@@ -118,10 +123,6 @@ export function wantsSliceAfterCad(userMessage = '') {
 
 export function wantsStandaloneSlice(userMessage = '') {
   return SLICE_RE.test(userMessage) && !/\b(make|create|design|build|generate)\b/i.test(userMessage);
-}
-
-export function wantsAssembly(userMessage = '') {
-  return /\b(assembly|assemble|subassembly|multi[- ]part)\b/i.test(userMessage);
 }
 
 export function wantsSrdfAfterUrdf(userMessage = '') {

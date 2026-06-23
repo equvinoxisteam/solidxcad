@@ -365,9 +365,17 @@ export function detectFromScratchMachineBuild(text = '') {
     || (/\b(frame|chassis|enclosure|structure)\b/i.test(t) && /\b(machine|printer|build|design|assemble)\b/i.test(t));
 }
 
+export function detectFlowReactorRequest(text = '') {
+  const t = String(text || '');
+  return /\b(hydrogenation|flow\s+reactor|tube\s+reactor|microreactor|chemical\s+reactor|continuous\s+flow)\b/i.test(t)
+    || (/\bhelical\s+coil\b/i.test(t) && /\b(reactor|tube|mixer|jacket|flow)\b/i.test(t))
+    || (/\b(cooling\s+jacket|t[\s-]?mixer)\b/i.test(t) && /\b(reactor|tube|flow)\b/i.test(t));
+}
+
 export function detectComplexCadRequest(text = '') {
   const t = String(text || '');
   if (detectFromScratchMachineBuild(t)) return true;
+  if (detectFlowReactorRequest(t)) return true;
   if (/\b(from scratch|full(y)?|end[\s-]to[\s-]end|complete|entire)\b/i.test(t) && /\b(build|design|create|make)\b/i.test(t)) {
     return true;
   }
@@ -385,7 +393,17 @@ export function isSimplePartRequest(text = '') {
 }
 
 export function detectGearRequest(text = '') {
-  return /\b(gear|spur|helical|pinion|teeth|module)\b/i.test(text);
+  const t = String(text || '');
+  // Process equipment uses "helical coil" — not a mechanical helical gear.
+  if (detectFlowReactorRequest(t)) return false;
+  if (/\b(helical\s+coil|coil\s+section|heat\s+exchanger|cooling\s+jacket|t[\s-]?mixer)\b/i.test(t)) {
+    return false;
+  }
+  if (/\bhelical\s+(gear|pinion)\b/i.test(t)) return true;
+  if (/\b(spur\s+gear|pinion|gear\s+teeth)\b/i.test(t)) return true;
+  if (/\bgear\b/i.test(t) && /\b(teeth|module|bore|spur|pinion)\b/i.test(t)) return true;
+  if (/\b\d+\s*[- ]?teeth\b/i.test(t) || /\bmodule\s*[:=]?\s*\d/i.test(t)) return true;
+  return false;
 }
 
 export function parseBoxParams(text = '') {

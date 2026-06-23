@@ -20,7 +20,7 @@ import { modelLabel, inferWebSearchNeeded } from '../services/modelPicker.js';
 import { retrieveKnowledgeContext } from '../services/knowledgeRetrieval.js';
 import { buildFocusedFileContext } from '../services/projectAgentContext.js';
 import { runPipelineWithRecovery } from '../services/agentPipelineRecovery.js';
-import { resolveSkillFromChat, runSkillPipeline, normalizePipelineResult } from '../services/skillOrchestrator.js';
+import { resolveSkillFromChat, normalizePipelineResult } from '../services/skillOrchestrator.js';
 import { SKILLS, BROWSER_SKILLS } from '../services/skillRegistry.js';
 import { ProjectFile } from '../models/ProjectFile.js';
 
@@ -339,7 +339,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
   }
 
   try {
-    const reply = await chatCompletion(messages, {
+    let reply = await chatCompletion(messages, {
       model: chatModel,
       system: systemPrompt,
       maxTokens,
@@ -371,18 +371,31 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
         pipelineDeferred = true;
         cadResult = { ok: true, skill: 'agent', deferred: true, hint: 'clarify' };
       } else {
-        const pipeline = await runSkillPipeline({
+        const pipelineOutcome = await runPipelineWithRecovery({
+          res: null,
           userId: req.user._id,
           projectId: project._id,
+          project,
           userMessage: trimmedMessage,
           assistantText: reply,
-          project,
           conversationContext,
           focusedFiles,
           selectionContext,
+          chatModel,
+          systemPrompt,
+          messages,
+          maxTokens,
+          webSearch: effectiveWebSearch,
+          imageDataUrl: hasImage ? imageDataUrl : undefined,
+          hasImage,
         });
-        cadResult = normalizePipelineResult(pipeline.result);
-        skill = pipeline.skill;
+        cadResult = pipelineOutcome.cadResult;
+        pipelineDeferred = pipelineOutcome.pipelineDeferred;
+        if (pipelineOutcome.assistantText && pipelineOutcome.assistantText !== reply) {
+          reply = pipelineOutcome.assistantText;
+          await ChatMessage.findByIdAndUpdate(assistantMsg._id, { content: reply });
+        }
+        skill = resolveSkillFromChat(trimmedMessage, reply);
         if (cadResult?.deferred && cadResult?.hint === 'assembly_needs_parts') {
           pipelineDeferred = true;
         }

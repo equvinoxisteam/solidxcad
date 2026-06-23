@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { deriveFriendlyFileBase } from './fileNaming.js';
+import { deriveFriendlyFileBase, resolveUniqueFileBase } from './fileNaming.js';
 
 test('deriveFriendlyFileBase builds readable part names', () => {
   assert.equal(
@@ -23,4 +23,21 @@ test('deriveFriendlyFileBase tags assemblies and robots', () => {
     deriveFriendlyFileBase('6 DOF robot arm with gripper', { skill: 'urdf' }),
     'robot_arm_gripper',
   );
+});
+
+test('deriveFriendlyFileBase names flow reactors without helical gear token', () => {
+  const base = deriveFriendlyFileBase(
+    'Continuous flow hydrogenation reactor: 20 mm OD tube, T-mixer, helical coil, cooling jacket',
+  );
+  assert.match(base, /20mm/);
+  assert.match(base, /reactor/);
+  assert.doesNotMatch(base, /helical/);
+});
+
+test('resolveUniqueFileBase avoids basename collisions', () => {
+  const files = [
+    { name: 'custom_part.step', s3Key: 'u/p/models/custom_part.step' },
+  ];
+  assert.equal(resolveUniqueFileBase('custom_part', files, 'models'), 'custom_part_1');
+  assert.equal(resolveUniqueFileBase('new_bracket', files, 'models'), 'new_bracket');
 });
