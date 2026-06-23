@@ -162,6 +162,7 @@ export async function runSkillPipeline({
   let partsResult = null;
   let cadResult = null;
   const isAssemblyBuild = wantsAssembly(userMessage);
+  const cadStorageFolder = isAssemblyBuild ? 'assemblies' : 'models';
   const outputBase = resolvePipelineOutputBase({
     userMessage,
     focusedFiles,
@@ -171,7 +172,6 @@ export async function runSkillPipeline({
     modifyIntent,
     storageFolder: cadStorageFolder,
   });
-  const cadStorageFolder = isAssemblyBuild ? 'assemblies' : 'models';
   const urdfContext = await loadLatestProjectUrdf(projectFiles);
 
   // Pre-step: import catalog parts when requested
