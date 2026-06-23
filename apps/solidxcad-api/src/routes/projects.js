@@ -16,6 +16,7 @@ import {
   getObjectStream,
 } from '../services/s3.js';
 import { projectWorkspaceDir } from '../services/projectWorkspace.js';
+import { publishProject, unpublishProject, enrichProjectWithPreview } from '../services/projectPublish.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -31,7 +32,10 @@ async function fileDownloadUrl(s3Key) {
 
 router.get('/', asyncHandler(async (req, res) => {
   const projects = await Project.find({ userId: req.user._id }).sort({ updatedAt: -1 });
-  res.json({ projects });
+  const enriched = await Promise.all(
+    projects.map((p) => enrichProjectWithPreview(p, { includePrivate: true })),
+  );
+  res.json({ projects: enriched });
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
@@ -73,6 +77,29 @@ router.patch('/:id', validateObjectId(), asyncHandler(async (req, res) => {
   );
   if (!project) return res.status(404).json({ error: 'Project not found' });
   res.json({ project });
+}));
+
+router.post('/:id/publish', validateObjectId(), asyncHandler(async (req, res) => {
+  const project = await Project.findOne({ _id: req.params.id, userId: req.user._id });
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+
+  try {
+    await publishProject(project);
+  } catch (err) {
+    return res.status(err.status || 400).json({ error: err.message || 'Could not publish project' });
+  }
+
+  const enriched = await enrichProjectWithPreview(project, { includePrivate: true });
+  res.json({ project: enriched, ok: true });
+}));
+
+router.post('/:id/unpublish', validateObjectId(), asyncHandler(async (req, res) => {
+  const project = await Project.findOne({ _id: req.params.id, userId: req.user._id });
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+
+  await unpublishProject(project);
+  const enriched = await enrichProjectWithPreview(project, { includePrivate: true });
+  res.json({ project: enriched, ok: true });
 }));
 
 router.delete('/:id', validateObjectId(), asyncHandler(async (req, res) => {

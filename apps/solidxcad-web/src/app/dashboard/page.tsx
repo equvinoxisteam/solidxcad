@@ -6,8 +6,6 @@ import { useRouter } from 'next/navigation';
 import { BRAND_NAME } from '@/lib/brand';
 import {
   Calendar,
-  ChevronRight,
-  FolderOpen,
   FolderPlus,
   Loader2,
   Pencil,
@@ -18,6 +16,7 @@ import {
 import { DashboardShell } from '@/components/DashboardShell';
 import { DeleteProjectModal } from '@/components/DeleteProjectModal';
 import { NewProjectModal } from '@/components/NewProjectModal';
+import { ProjectModelPreview } from '@/components/ProjectModelPreview';
 import { RenameProjectModal } from '@/components/RenameProjectModal';
 import { ProjectSortMenu, type ProjectSortKey } from '@/components/ProjectSortMenu';
 import { api, getToken, projectId, type Project } from '@/lib/api';
@@ -315,13 +314,10 @@ export default function DashboardPage() {
               {visibleProjects.map((p) => (
                 <article key={p._id} className="dashboard-folder-card group">
                   <Link href={`/projects/${p._id}`} className="dashboard-folder-card-link">
-                    <div className="dashboard-folder-card-top">
-                      <div className="dashboard-folder-icon">
-                        <FolderOpen className="w-6 h-6 text-brand" aria-hidden />
-                      </div>
-                      <ChevronRight
-                        className="w-4 h-4 text-gray-400 group-hover:text-brand transition-colors shrink-0"
-                        aria-hidden
+                    <div className="dashboard-folder-preview">
+                      <ProjectModelPreview
+                        project={p}
+                        className="dashboard-folder-preview-canvas"
                       />
                     </div>
                     <p className="dashboard-folder-name">{p.name || 'Untitled project'}</p>

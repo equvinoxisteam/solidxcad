@@ -5,6 +5,7 @@ import { connectDb } from './db.js';
 import { syncAllUsersUnlimited } from './services/usage.js';
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
+import publicProjectRoutes from './routes/publicProjects.js';
 import agentRoutes from './routes/agent.js';
 import billingRoutes from './routes/billing.js';
 import adminRoutes from './routes/admin.js';
@@ -57,6 +58,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/public/projects', publicProjectRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/agent', agentRoutes);
 app.use('/api/billing', billingRoutes);

@@ -10,9 +10,10 @@ type MeshPreviewProps = {
   fileId: string;
   fileName: string;
   kind: string;
+  publicMode?: boolean;
 };
 
-export function MeshPreview({ projectId, fileId, fileName, kind }: MeshPreviewProps) {
+export function MeshPreview({ projectId, fileId, fileName, kind, publicMode = false }: MeshPreviewProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -46,8 +47,11 @@ export function MeshPreview({ projectId, fileId, fileName, kind }: MeshPreviewPr
 
       try {
         const token = getToken();
-        const res = await fetch(`/api/projects/${projectId}/files/${fileId}/content`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        const contentPath = publicMode
+          ? `/api/public/projects/${projectId}/files/${fileId}/content`
+          : `/api/projects/${projectId}/files/${fileId}/content`;
+        const res = await fetch(contentPath, {
+          headers: !publicMode && token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!res.ok) throw new Error('Could not load mesh file');
         const buffer = await res.arrayBuffer();
@@ -60,7 +64,7 @@ export function MeshPreview({ projectId, fileId, fileName, kind }: MeshPreviewPr
         while (el.firstChild) el.removeChild(el.firstChild);
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a1628);
+        scene.background = new THREE.Color(0xf4f6f9);
 
         const camera = new THREE.PerspectiveCamera(45, el.clientWidth / el.clientHeight, 0.1, 5000);
         camera.position.set(80, 60, 80);
@@ -94,11 +98,9 @@ export function MeshPreview({ projectId, fileId, fileName, kind }: MeshPreviewPr
           const geometry = loader.parse(buffer);
           geometry.computeVertexNormals();
           const material = new THREE.MeshStandardMaterial({
-            color: 0x5b9fd4,
-            metalness: 0.2,
-            roughness: 0.55,
-            emissive: 0x1a3a5c,
-            emissiveIntensity: 0.15,
+            color: 0x6b9fd4,
+            metalness: 0.15,
+            roughness: 0.5,
           });
           object = new THREE.Mesh(geometry, material);
         } else {
@@ -162,7 +164,7 @@ export function MeshPreview({ projectId, fileId, fileName, kind }: MeshPreviewPr
         while (mount.firstChild) mount.removeChild(mount.firstChild);
       }
     };
-  }, [projectId, fileId, fileName, kind]);
+  }, [projectId, fileId, fileName, kind, publicMode]);
 
   return (
     <div className="absolute inset-0">

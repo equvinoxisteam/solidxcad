@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   ChevronLeft,
   ChevronRight,
+  Compass,
   FolderKanban,
   LogOut,
   Settings,
@@ -44,6 +45,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const [ready, setReady] = useState(false);
 
   const onDashboard = pathname === '/dashboard' || pathname.startsWith('/projects/');
+  const onExplore = pathname === '/explore' || pathname.startsWith('/explore/');
   const onSettings = pathname === '/settings';
 
   useEffect(() => {
@@ -103,6 +105,14 @@ export function DashboardShell({ children }: DashboardShellProps) {
           >
             <FolderKanban className="w-5 h-5 shrink-0" aria-hidden />
             {expanded && <span>Projects</span>}
+          </Link>
+          <Link
+            href="/explore"
+            className={navItemClass(onExplore, expanded)}
+            title="Explore"
+          >
+            <Compass className="w-5 h-5 shrink-0" aria-hidden />
+            {expanded && <span>Explore</span>}
           </Link>
           <Link
             href="/settings"

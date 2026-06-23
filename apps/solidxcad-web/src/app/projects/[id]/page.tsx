@@ -234,11 +234,13 @@ export default function StudioPage() {
             <div className="studio-embed-panel-body">
               <ToolsPanel
                 projectId={id}
+                project={project}
                 files={files}
                 highlightFile={highlightFile}
                 onRefresh={() => refresh().catch(() => {})}
                 onStatus={setStatus}
                 onHighlightFile={setHighlightFile}
+                onProjectChange={setProject}
                 embedded
               />
             </div>

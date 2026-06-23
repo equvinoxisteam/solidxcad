@@ -126,6 +126,32 @@ export const api = {
 
   me: () => request<{ user: User }>('/api/auth/me'),
 
+  publishProject: (id: string) =>
+    request<{ ok: boolean; project: Project }>(`/api/projects/${id}/publish`, { method: 'POST', body: '{}' }),
+
+  unpublishProject: (id: string) =>
+    request<{ ok: boolean; project: Project }>(`/api/projects/${id}/unpublish`, { method: 'POST', body: '{}' }),
+
+  getPublicProjects: (params?: { q?: string; sort?: 'recent' | 'popular' | 'name' }) => {
+    const qs = new URLSearchParams();
+    if (params?.q) qs.set('q', params.q);
+    if (params?.sort) qs.set('sort', params.sort);
+    const query = qs.toString();
+    return request<{ projects: PublicProject[] }>(`/api/public/projects${query ? `?${query}` : ''}`);
+  },
+
+  getPublicProject: (id: string) =>
+    request<{ project: PublicProject }>(`/api/public/projects/${id}`),
+
+  getPublicProjectFiles: (id: string) =>
+    request<{ files: PublicProjectFile[] }>(`/api/public/projects/${id}/files`),
+
+  remixPublicProject: (id: string, name: string) =>
+    request<{ project: Project }>(`/api/public/projects/${id}/remix`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+
   getProjects: () => request<{ projects: Project[] }>('/api/projects'),
 
   createProject: (body: { name: string; description?: string }) =>
@@ -298,6 +324,29 @@ export type Project = {
   description?: string;
   updatedAt: string;
   createdAt: string;
+  isPublic?: boolean;
+  publishedAt?: string | null;
+  remixCount?: number;
+  previewFile?: { _id: string; name: string; kind: string } | null;
+};
+
+export type PublicProject = {
+  _id: string;
+  name: string;
+  description?: string;
+  publishedAt?: string | null;
+  remixCount?: number;
+  authorName?: string;
+  previewFile?: { _id: string; name: string; kind: string } | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type PublicProjectFile = {
+  _id: string;
+  name: string;
+  kind: string;
+  sizeBytes?: number;
 };
 
 export type ProjectFile = {

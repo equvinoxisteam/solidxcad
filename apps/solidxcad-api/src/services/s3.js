@@ -6,6 +6,7 @@ import {
   ListObjectsV2Command,
   DeleteObjectCommand,
   DeleteObjectsCommand,
+  CopyObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import fs from 'fs';
@@ -150,6 +151,28 @@ export async function uploadFile(key, filePath, contentType) {
     const data = await fsp.readFile(filePath);
     return uploadLocal(key, data);
   }
+}
+
+export async function copyStorageObject(sourceKey, destKey, contentType = 'application/octet-stream') {
+  const src = String(sourceKey || '').trim();
+  const dest = String(destKey || '').trim();
+  if (!src || !dest) throw new Error('copyStorageObject requires source and destination keys');
+
+  if (shouldUseLocalStorageOnly() || isLocalStorageKey(src)) {
+    const stream = await getObjectStream(src);
+    const chunks = [];
+    for await (const chunk of stream) chunks.push(chunk);
+    return uploadBuffer(dest, Buffer.concat(chunks), contentType);
+  }
+
+  await client.send(new CopyObjectCommand({
+    Bucket: config.aws.bucket,
+    CopySource: `${config.aws.bucket}/${encodeURIComponent(src).replace(/%2F/g, '/')}`,
+    Key: dest,
+    ContentType: contentType,
+    MetadataDirective: 'REPLACE',
+  }));
+  return uploadResult(publicUrlForKey(dest), dest);
 }
 
 export function publicUrlForKey(key) {

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Download, FileBox, Loader2, Package, Printer, Search, FolderTree } from 'lucide-react';
+import { Download, FileBox, Loader2, Package, Printer, Search, FolderTree, Globe } from 'lucide-react';
 import { api } from '@/lib/api';
-import type { ProjectFile } from '@/lib/api';
+import type { Project, ProjectFile } from '@/lib/api';
 import { ProjectFilesList } from '@/components/ProjectFilesList';
+import { ProjectModelPreview } from '@/components/ProjectModelPreview';
+import { PublishSharePanel } from '@/components/PublishSharePanel';
 import { SliceModal } from '@/components/SliceModal';
 import { isSliceableMesh } from '@/lib/sliceSettings';
 import { USER_ERROR_CATALOG, USER_ERROR_IMPORT } from '@/lib/userMessages';
@@ -26,24 +28,28 @@ function partKey(part: StepPart, index: number) {
 
 type ToolsPanelProps = {
   projectId: string;
+  project: Project | null;
   files: ProjectFile[];
   highlightFile?: string;
   onRefresh: () => void;
   onStatus: (msg: string) => void;
   onHighlightFile?: (name: string) => void;
+  onProjectChange?: (project: Project) => void;
   embedded?: boolean;
 };
 
 export function ToolsPanel({
   projectId,
+  project,
   files,
   highlightFile,
   onRefresh,
   onStatus,
   onHighlightFile,
+  onProjectChange,
   embedded = false,
 }: ToolsPanelProps) {
-  const [tab, setTab] = useState<'parts' | 'files' | 'slice'>('files');
+  const [tab, setTab] = useState<'parts' | 'files' | 'slice' | 'share'>('files');
   const [query, setQuery] = useState('');
   const [catalogParts, setCatalogParts] = useState<StepPart[]>([]);
   const [searching, setSearching] = useState(false);
@@ -174,7 +180,36 @@ export function ToolsPanel({
           <Package className="w-3.5 h-3.5" />
           Parts
         </button>
+        <button
+          type="button"
+          onClick={() => setTab('share')}
+          className={`flex-1 flex items-center justify-center gap-1 ${
+            tab === 'share' ? 'text-brand bg-brand/10 border-b-2 border-brand' : 'text-muted hover:text-gray-900'
+          }`}
+        >
+          <Globe className="w-3.5 h-3.5" />
+          Public
+        </button>
       </div>
+
+      {tab === 'share' && (
+        <PublishSharePanel
+          projectId={projectId}
+          project={project}
+          onProjectChange={(next) => onProjectChange?.(next)}
+          onStatus={onStatus}
+        />
+      )}
+
+      {tab === 'files' && (
+        <div className="shrink-0 p-2 border-b border-border">
+          <ProjectModelPreview
+            project={project}
+            files={files}
+            className="h-36 w-full rounded-lg border border-border"
+          />
+        </div>
+      )}
 
       {tab === 'parts' && (
         <div className="flex-1 flex flex-col min-h-0 p-2.5 gap-2">
