@@ -53,7 +53,8 @@ router.post('/', asyncHandler(async (req, res) => {
 router.get('/:id', validateObjectId(), asyncHandler(async (req, res) => {
   const project = await Project.findOne({ _id: req.params.id, userId: req.user._id });
   if (!project) return res.status(404).json({ error: 'Project not found' });
-  res.json({ project });
+  const enriched = await enrichProjectWithPreview(project, { includePrivate: true });
+  res.json({ project: enriched });
 }));
 
 router.patch('/:id', validateObjectId(), asyncHandler(async (req, res) => {
