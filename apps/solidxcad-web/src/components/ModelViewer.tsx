@@ -53,7 +53,7 @@ export function ModelViewer({
   );
 
   return (
-    <div className="absolute inset-0 bg-white">
+    <div className="studio-viewer-canvas">
       {projectId && (
         <CadViewerFrame
           projectId={projectId}

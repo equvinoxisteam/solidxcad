@@ -314,18 +314,23 @@ export default function DashboardPage() {
               {visibleProjects.map((p) => (
                 <article key={p._id} className="dashboard-folder-card group">
                   <Link href={`/projects/${p._id}`} className="dashboard-folder-card-link">
-                    <div className="dashboard-folder-preview">
+                    <div className="dashboard-folder-preview relative">
+                      {p.isPublic && (
+                        <span className="dashboard-folder-badge-public">Public</span>
+                      )}
                       <ProjectModelPreview
                         project={p}
                         className="dashboard-folder-preview-canvas"
                       />
                     </div>
-                    <p className="dashboard-folder-name">{p.name || 'Untitled project'}</p>
-                    <p className="dashboard-folder-meta">
-                      <Calendar className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                      <span>Updated {formatDate(p.updatedAt)}</span>
-                    </p>
-                    <p className="dashboard-folder-created">Created {formatDate(p.createdAt)}</p>
+                    <div className="dashboard-folder-card-body">
+                      <p className="dashboard-folder-name">{p.name || 'Untitled project'}</p>
+                      <p className="dashboard-folder-meta">
+                        <Calendar className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                        <span>Updated {formatDate(p.updatedAt)}</span>
+                      </p>
+                      <p className="dashboard-folder-created">Created {formatDate(p.createdAt)}</p>
+                    </div>
                   </Link>
                   <div className="dashboard-folder-actions">
                     <button

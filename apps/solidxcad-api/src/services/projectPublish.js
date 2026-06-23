@@ -13,7 +13,14 @@ export function pickPreviewFile(files = []) {
   };
   const list = [...files].filter((f) => score(f) < 9);
   if (!list.length) return null;
-  list.sort((a, b) => score(a) - score(b));
+  list.sort((a, b) => {
+    const sa = score(a);
+    const sb = score(b);
+    if (sa !== sb) return sa - sb;
+    const ta = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const tb = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return tb - ta;
+  });
   return list[0];
 }
 
@@ -51,18 +58,23 @@ export function previewFileMeta(file) {
 
 export async function enrichProjectWithPreview(projectDoc, { includePrivate = false } = {}) {
   const project = projectDoc?.toObject ? projectDoc.toObject() : { ...projectDoc };
-  if (!project.previewFileId) {
-    project.previewFile = null;
-    return project;
+  let file = null;
+
+  if (project.previewFileId) {
+    file = await ProjectFile.findById(project.previewFileId).select('name kind projectId updatedAt createdAt');
+    if (!file || String(file.projectId) !== String(project._id)) {
+      file = null;
+    }
   }
 
-  const file = await ProjectFile.findById(project.previewFileId).select('name kind projectId');
-  if (!file || String(file.projectId) !== String(project._id)) {
-    project.previewFile = null;
-    return project;
+  if (!file) {
+    const files = await ProjectFile.find({ projectId: project._id }).sort({ updatedAt: -1, createdAt: -1 });
+    const visible = filterUserVisibleFiles(files);
+    file = pickPreviewFile(visible);
   }
 
-  project.previewFile = previewFileMeta(file);
+  project.previewFile = file ? previewFileMeta(file) : null;
+
   if (!includePrivate) {
     delete project.lastPrompt;
     delete project.userId;

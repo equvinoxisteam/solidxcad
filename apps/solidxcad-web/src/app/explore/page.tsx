@@ -85,30 +85,33 @@ export default function ExplorePage() {
               <div className="dashboard-alert dashboard-alert-error">{error}</div>
             )}
 
-            <div className="dashboard-toolbar mb-6">
-              <div className="dashboard-search-wrap">
-                <Search className="dashboard-search-icon" aria-hidden />
+            <div className="explore-toolbar">
+              <div className="explore-search-wrap">
+                <Search className="explore-search-icon" aria-hidden />
                 <input
                   type="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search public designs"
-                  className="dashboard-search-input"
+                  placeholder="Search designs, authors, keywords…"
+                  className="explore-search-input"
                   aria-label="Search public designs"
                 />
               </div>
-              <div className="explore-sort-row">
-                <label htmlFor="explore-sort" className="explore-sort-label">Sort</label>
-                <select
-                  id="explore-sort"
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as SortKey)}
-                  className="explore-sort-select"
-                >
-                  <option value="recent">Newest</option>
-                  <option value="popular">Most remixed</option>
-                  <option value="name">Name A–Z</option>
-                </select>
+              <div className="explore-sort-pills" role="group" aria-label="Sort public designs">
+                {([
+                  ['recent', 'Newest'],
+                  ['popular', 'Popular'],
+                  ['name', 'A–Z'],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`explore-sort-pill${sort === key ? ' is-active' : ''}`}
+                    onClick={() => setSort(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 

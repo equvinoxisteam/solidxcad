@@ -44,14 +44,16 @@ export default function StudioPage() {
   const [status, setStatus] = useState('');
   const [highlightFile, setHighlightFile] = useState('');
   const [viewerContext, setViewerContext] = useState<ViewerSelectionContext | null>(null);
-  const [showChat, setShowChat] = useState(false);
+  const [showChat, setShowChat] = useState(true);
   const [showWorkspace, setShowWorkspace] = useState(false);
   const [viewerReloadKey, setViewerReloadKey] = useState(0);
+  const [panelsReady, setPanelsReady] = useState(false);
   useClientUser(true);
 
   useEffect(() => {
-    setShowChat(readPanelPref(PANEL_CHAT_KEY, false));
+    setShowChat(readPanelPref(PANEL_CHAT_KEY, true));
     setShowWorkspace(readPanelPref(PANEL_WORKSPACE_KEY, false));
+    setPanelsReady(true);
   }, []);
 
   function toggleChat() {
@@ -69,6 +71,11 @@ export default function StudioPage() {
       return next;
     });
   }
+
+  const openChat = useCallback(() => {
+    setShowChat(true);
+    localStorage.setItem(PANEL_CHAT_KEY, '1');
+  }, []);
 
   const openWorkspace = useCallback(() => {
     setShowWorkspace(true);
@@ -92,20 +99,8 @@ export default function StudioPage() {
         return;
       }
       if (data.type !== STUDIO_PANEL_MESSAGE_TYPE) return;
-      if (data.panel === 'agent') {
-        setShowChat((open) => {
-          const next = !open;
-          localStorage.setItem(PANEL_CHAT_KEY, next ? '1' : '0');
-          return next;
-        });
-      }
-      if (data.panel === 'workspace') {
-        setShowWorkspace((open) => {
-          const next = !open;
-          localStorage.setItem(PANEL_WORKSPACE_KEY, next ? '1' : '0');
-          return next;
-        });
-      }
+      if (data.panel === 'agent') toggleChat();
+      if (data.panel === 'workspace') toggleWorkspace();
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
@@ -124,6 +119,7 @@ export default function StudioPage() {
       setMessages(m);
       setStoredUser(me);
       api.syncViewerWorkspace(id).catch(() => {});
+      return { messages: m, files: f };
     } catch (err) {
       const raw = err instanceof Error ? err.message : '';
       if (raw.includes('log in') || raw.includes('Authentication') || raw.includes('401')) {
@@ -145,9 +141,15 @@ export default function StudioPage() {
       return;
     }
     refresh()
+      .then((data) => {
+        if (!data) return;
+        if (!data.messages.length && readPanelPref(PANEL_CHAT_KEY, true)) {
+          openChat();
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [id, router, refresh]);
+  }, [id, router, refresh, openChat]);
 
   async function refreshProjectFiles(expectedName = '') {
     for (let attempt = 0; attempt < 6; attempt += 1) {
@@ -176,6 +178,7 @@ export default function StudioPage() {
     const label = labels[result.skill || ''] || 'Design';
     if (result.deferred) {
       setStatus('Answer the assistant’s questions to continue building');
+      openChat();
       return;
     }
     if (result.ok) {
@@ -183,7 +186,8 @@ export default function StudioPage() {
       const cadName = result.file?.name;
       setStatus(`✓ ${label}: ${cadName || 'saved'}${note}`);
       setHighlightFile(cadName || '');
-      if (!showWorkspace && cadName) openWorkspace();
+      openChat();
+      if (cadName) openWorkspace();
       try {
         await refreshProjectFiles(cadName || '');
         setViewerReloadKey((k) => k + 1);
@@ -192,6 +196,7 @@ export default function StudioPage() {
       }
     } else {
       setStatus('Refining the design — try again or adjust your prompt');
+      openChat();
     }
   }
 
@@ -203,78 +208,93 @@ export default function StudioPage() {
     );
   }
 
+  const layoutClass = [
+    'studio-layout',
+    panelsReady && showChat ? 'studio-layout-chat-open' : '',
+    panelsReady && showWorkspace ? 'studio-layout-workspace-open' : '',
+  ].filter(Boolean).join(' ');
+
   return (
     <div className="h-screen studio-scene flex flex-col overflow-hidden">
       <StudioTopBar
         projectName={project?.name || 'Untitled'}
         status={status}
+        showChat={showChat}
+        showWorkspace={showWorkspace}
+        onToggleChat={toggleChat}
+        onToggleWorkspace={toggleWorkspace}
       />
 
-      <div className="studio-embed-shell flex-1 min-h-0">
-        <ModelViewer
-          projectId={id}
-          files={files}
-          highlightFile={highlightFile}
-          viewerReloadKey={viewerReloadKey}
-        />
-
-        {showWorkspace && (
-          <div className="studio-embed-panel studio-embed-panel-workspace">
-            <div className="studio-embed-panel-header">
-              <p className="studio-embed-panel-title">Workspace files</p>
-              <button
-                type="button"
-                className="studio-embed-panel-close"
-                onClick={toggleWorkspace}
-                aria-label="Close workspace files"
-              >
-                <X className="w-4 h-4" aria-hidden />
-              </button>
-            </div>
-            <div className="studio-embed-panel-body">
-              <ToolsPanel
-                projectId={id}
-                project={project}
-                files={files}
-                highlightFile={highlightFile}
-                onRefresh={() => refresh().catch(() => {})}
-                onStatus={setStatus}
-                onHighlightFile={setHighlightFile}
-                onProjectChange={setProject}
-                embedded
-              />
-            </div>
+      <div className={layoutClass}>
+        <aside
+          className={`studio-chat-column${showChat ? ' is-open' : ''}`}
+          aria-label="CAD Agent"
+          aria-hidden={!showChat}
+        >
+          <div className="studio-column-header">
+            <p className="studio-column-title">CAD Agent</p>
+            <button
+              type="button"
+              className="studio-column-close lg:hidden"
+              onClick={toggleChat}
+              aria-label="Close agent"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}
-
-        {showChat && (
-          <div className="studio-embed-panel studio-embed-panel-agent">
-            <div className="studio-embed-panel-header">
-              <p className="studio-embed-panel-title">CAD Agent</p>
-              <button
-                type="button"
-                className="studio-embed-panel-close"
-                onClick={toggleChat}
-                aria-label="Close agent"
-              >
-                <X className="w-4 h-4" aria-hidden />
-              </button>
-            </div>
-            <div className="studio-embed-panel-body">
-              <ChatPanel
-                projectId={id}
-                messages={messages}
-                projectFiles={files}
-                onMessagesChange={refresh}
-                onCadGenerated={onCadGenerated}
-                embedded
-                viewerContext={viewerContext}
-                activeFileName={highlightFile}
-              />
-            </div>
+          <div className="studio-column-body">
+            <ChatPanel
+              projectId={id}
+              messages={messages}
+              projectFiles={files}
+              onMessagesChange={refresh}
+              onCadGenerated={onCadGenerated}
+              embedded
+              viewerContext={viewerContext}
+              activeFileName={highlightFile}
+            />
           </div>
-        )}
+        </aside>
 
+        <main className="studio-viewer-column">
+          <ModelViewer
+            projectId={id}
+            files={files}
+            highlightFile={highlightFile}
+            viewerReloadKey={viewerReloadKey}
+          />
+        </main>
+
+        <aside
+          className={`studio-workspace-column${showWorkspace ? ' is-open' : ''}`}
+          aria-label="Workspace files"
+          aria-hidden={!showWorkspace}
+        >
+          <div className="studio-column-header">
+            <p className="studio-column-title">Workspace</p>
+            <button
+              type="button"
+              className="studio-column-close lg:hidden"
+              onClick={toggleWorkspace}
+              aria-label="Close workspace"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="studio-column-body">
+            <ToolsPanel
+              projectId={id}
+              project={project}
+              files={files}
+              highlightFile={highlightFile}
+              onRefresh={() => refresh().catch(() => {})}
+              onStatus={setStatus}
+              onHighlightFile={setHighlightFile}
+              onProjectChange={setProject}
+              embedded
+            />
+          </div>
+        </aside>
       </div>
     </div>
   );

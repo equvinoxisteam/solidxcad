@@ -1,20 +1,31 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, Settings } from 'lucide-react';
+import { ArrowLeft, Bot, FolderTree, Settings } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 
 type StudioTopBarProps = {
   projectName: string;
   status?: string;
+  showChat: boolean;
+  showWorkspace: boolean;
+  onToggleChat: () => void;
+  onToggleWorkspace: () => void;
 };
 
-export function StudioTopBar({ projectName, status }: StudioTopBarProps) {
+export function StudioTopBar({
+  projectName,
+  status,
+  showChat,
+  showWorkspace,
+  onToggleChat,
+  onToggleWorkspace,
+}: StudioTopBarProps) {
   return (
-    <header className="h-11 border-b border-border bg-white flex items-center gap-2 px-2 sm:px-3 shrink-0 z-20">
+    <header className="studio-topbar">
       <Link
         href="/dashboard"
-        className="p-2 rounded-lg text-muted hover:text-gray-900 hover:bg-elevated border border-transparent hover:border-border"
+        className="studio-topbar-icon-btn"
         title="Back to projects"
         aria-label="Back to projects"
       >
@@ -23,26 +34,44 @@ export function StudioTopBar({ projectName, status }: StudioTopBarProps) {
 
       <BrandLogo href="/dashboard" size={28} className="shrink-0" />
 
-      <span className="text-sm text-gray-900 font-semibold truncate max-w-[140px] sm:max-w-[280px]">
-        {projectName}
-      </span>
+      <span className="studio-topbar-title">{projectName}</span>
 
       {status && (
-        <span className="hidden md:inline text-[11px] text-brand-muted truncate max-w-[280px]">
-          {status}
-        </span>
+        <span className="studio-topbar-status hidden lg:inline">{status}</span>
       )}
 
       <div className="flex-1" />
 
-      <Link
-        href="/settings"
-        className="p-2 rounded-lg text-muted hover:text-gray-900 hover:bg-elevated border border-transparent hover:border-border"
-        title="Settings"
-        aria-label="Settings"
-      >
-        <Settings className="w-4 h-4" />
-      </Link>
+      <div className="studio-topbar-actions">
+        <button
+          type="button"
+          onClick={onToggleChat}
+          className={`studio-topbar-pill${showChat ? ' is-active' : ''}`}
+          title={showChat ? 'Hide agent' : 'Show agent'}
+          aria-pressed={showChat}
+        >
+          <Bot className="w-4 h-4" aria-hidden />
+          <span className="hidden sm:inline">Agent</span>
+        </button>
+        <button
+          type="button"
+          onClick={onToggleWorkspace}
+          className={`studio-topbar-pill${showWorkspace ? ' is-active' : ''}`}
+          title={showWorkspace ? 'Hide files' : 'Show files'}
+          aria-pressed={showWorkspace}
+        >
+          <FolderTree className="w-4 h-4" aria-hidden />
+          <span className="hidden sm:inline">Files</span>
+        </button>
+        <Link
+          href="/settings"
+          className="studio-topbar-icon-btn"
+          title="Settings"
+          aria-label="Settings"
+        >
+          <Settings className="w-4 h-4" />
+        </Link>
+      </div>
     </header>
   );
 }

@@ -23,7 +23,14 @@ function pickMeshFile(files: ProjectFile[]): ProjectFile | null {
   };
   const meshes = visible.filter((f) => score(f) < 9);
   if (!meshes.length) return null;
-  meshes.sort((a, b) => score(a) - score(b));
+  meshes.sort((a, b) => {
+    const sa = score(a);
+    const sb = score(b);
+    if (sa !== sb) return sa - sb;
+    const ta = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const tb = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return tb - ta;
+  });
   return meshes[0];
 }
 
