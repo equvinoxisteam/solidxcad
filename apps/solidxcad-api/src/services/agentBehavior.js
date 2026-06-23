@@ -175,6 +175,9 @@ export function userProvidedFollowUp(userMessage = '', history = []) {
   if (/^(yes|no|go ahead|proceed|continue|use defaults?|just build|sounds good|that works)/i.test(msg)) {
     return true;
   }
+  if (/\b(do it|build it|just do|keep going|start building|no more questions|stop asking|why.*pause|don't pause|paused)\b/i.test(msg)) {
+    return true;
+  }
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
   if (lastAssistant && CLARIFY_MARKER.test(lastAssistant.content)) {
     return true;
@@ -228,6 +231,7 @@ export function shouldDeferPipeline({
   }
 
   if (hasExecutablePayload(assistantText, skill, context)) {
+    if (EXECUTE_MARKER.test(assistantText)) return false;
     if (isAmbiguousRequest(userMessage, skill) && !userProvidedFollowUp(userMessage, history)) {
       const questionCount = (assistantText.match(/\?/g) || []).length;
       if (questionCount >= 1) return true;

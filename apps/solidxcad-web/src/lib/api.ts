@@ -410,6 +410,7 @@ export async function streamChat(
     cadResult?: CadResult;
     pipelineDeferred?: boolean;
     reply?: string;
+    suggestions?: string[];
     modelUsed?: string;
     webSearchUsed?: boolean;
   }) => void,
@@ -420,7 +421,7 @@ export async function streamChat(
 ) {
   const token = getToken();
   const modelMode = options.modelMode || (model === 'auto' ? 'auto' : 'manual');
-  const res = await fetch(`/api/agent/chat`, {
+  const res = await fetch(`${DIRECT_API_URL}/api/agent/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -457,6 +458,7 @@ export async function streamChat(
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let completed = false;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -470,6 +472,7 @@ export async function streamChat(
       if (!line.startsWith('data:')) continue;
       try {
         const json = JSON.parse(line.slice(5));
+        if (json.type === 'ping') continue;
         if (json.type === 'delta') onDelta(json.content);
         if (json.type === 'agent_phase' && json.phase) {
           onAgentPhase?.(json.phase, json.message || json.phase);
@@ -478,10 +481,12 @@ export async function streamChat(
           onCadStatus?.(json.message, json.skill, json.status);
         }
         if (json.type === 'done') {
+          completed = true;
           onDone({
             cadResult: json.cadResult,
             pipelineDeferred: json.pipelineDeferred,
             reply: json.reply,
+            suggestions: Array.isArray(json.suggestions) ? json.suggestions : [],
             modelUsed: json.modelUsed,
             webSearchUsed: json.webSearchUsed,
           });
@@ -491,5 +496,9 @@ export async function streamChat(
         // ignore
       }
     }
+  }
+
+  if (!completed) {
+    onError('The connection closed before the design finished. Check the workspace — if files are missing, send your message again.');
   }
 }

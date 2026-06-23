@@ -89,7 +89,7 @@ export async function runPipelineWithRecovery({
     });
     emit(res, {
       type: 'cad_status',
-      message: `Recovery: ${errText}`,
+      message: 'Refining the design and retrying…',
       skill: 'agent',
       status: 'running',
     });

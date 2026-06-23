@@ -8,18 +8,16 @@ import {
   ArrowUp,
   AtSign,
   Bot,
-  CheckCircle2,
-  Circle,
   ImagePlus,
   Loader2,
+  Sparkles,
   User,
   X,
 } from 'lucide-react';
-import {
-  streamChat,
-} from '@/lib/api';
+import { streamChat } from '@/lib/api';
 import type { CadResult, ChatMessage, ProjectFile } from '@/lib/api';
 import {
+  formatWorkingStatus,
   isUserVisibleFile,
   looksLikeGeneratorCode,
   parseChatError,
@@ -34,7 +32,6 @@ import {
   type ViewerSelectionContext,
 } from '@/lib/viewerContext';
 
-type AgentStep = { message: string; skill?: string; status?: string };
 type AgentPhase =
   | 'idle'
   | 'reading'
@@ -49,6 +46,7 @@ type AgentPhase =
 const PROMPTS = [
   '30mm cube with 4× M3 holes',
   'Build a 6-axis robot arm URDF',
+  'Flow reactor for hydrogenation — build with defaults',
 ];
 
 const PHASE_LABELS: Record<string, string> = {
@@ -58,21 +56,9 @@ const PHASE_LABELS: Record<string, string> = {
   exploring: 'Exploring files',
   asking: 'Clarifying',
   waiting: 'Waiting for you',
-  executing: 'Generating',
-  running: 'Generating',
-  searching: 'Web search',
-};
-
-const SKILL_LABELS: Record<string, string> = {
-  cad: 'Solid modeling',
-  urdf: 'URDF',
-  srdf: 'SRDF',
-  sdf: 'SDF',
-  'implicit-cad': 'Implicit CAD',
-  gcode: 'G-code',
-  'step-parts': 'Parts catalog',
-  sendcutsend: 'SendCutSend',
-  agent: 'Assistant',
+  executing: 'Generating files',
+  running: 'Generating files',
+  searching: 'Searching references',
 };
 
 const CHAT_MODEL = 'anthropic/claude-opus-4.7';
@@ -90,90 +76,92 @@ function extractPlanSteps(text: string): string[] {
     .filter((line) => line && !line.startsWith('['));
 }
 
-function activityLabel(msg: string) {
-  const cleaned = msg.trim();
-  if (/^✗|failed|error|traceback|exception/i.test(cleaned)) {
-    return USER_ERRORS.chat;
-  }
-  return cleaned || 'Working…';
+function renderAssistantText(text: string) {
+  const body = sanitizeAssistantForDisplay(text);
+  return body.split('\n').map((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed) return <br key={`br-${index}`} />;
+    if (trimmed.startsWith('• ')) {
+      return (
+        <p key={index} className="chat-bullet-line">
+          {trimmed.slice(2)}
+        </p>
+      );
+    }
+    const parts = trimmed.split(/(\*\*[^*]+\*\*)/g);
+    return (
+      <p key={index} className="chat-text-line">
+        {parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={i}>{part.slice(2, -2)}</strong>;
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </p>
+    );
+  });
 }
 
-function friendlyError() {
-  return USER_ERRORS.chat;
-}
-
-function skillLabel(skill?: string) {
-  if (!skill) return null;
-  return SKILL_LABELS[skill] || skill;
-}
-
-function StepStatusIcon({
-  status,
-  isActive,
-}: {
-  status?: string;
-  isActive: boolean;
-}) {
-  if (isActive && status !== 'done' && status !== 'asking') {
-    return <Loader2 className="chat-activity-icon animate-spin text-brand" />;
-  }
-  if (status === 'asking' || status === 'waiting') {
-    return <Circle className="chat-activity-icon text-amber-500" />;
-  }
-  if (status === 'error') {
-    return <AlertCircle className="chat-activity-icon text-red-500" />;
-  }
-  return <CheckCircle2 className="chat-activity-icon text-emerald-500" />;
-}
-
-function AgentActivityTimeline({
-  steps,
+function AgentWorkingStrip({
+  label,
   phaseLabel,
-  streaming,
+  planSteps,
 }: {
-  steps: AgentStep[];
+  label: string;
   phaseLabel: string;
-  streaming: boolean;
+  planSteps: string[];
 }) {
-  if (!steps.length && !streaming) return null;
-
   return (
-    <div className="chat-activity-card">
-      <div className="chat-activity-header">
-        {streaming ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
-        ) : (
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-        )}
-        <span>Agent activity</span>
-        {phaseLabel && (
-          <span className="normal-case font-normal text-muted ml-auto truncate">
-            {phaseLabel}
-          </span>
-        )}
+    <div className="chat-working-strip">
+      <div className="chat-working-strip-row">
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-brand shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="chat-working-title">{label || phaseLabel || 'Working…'}</p>
+          {phaseLabel && label && phaseLabel !== label && (
+            <p className="chat-working-sub">{phaseLabel}</p>
+          )}
+        </div>
       </div>
-      {steps.length > 0 ? (
-        <ul className="chat-activity-list">
-          {steps.map((step, i) => {
-            const isActive = streaming && i === steps.length - 1;
-            const label = skillLabel(step.skill);
-            return (
-              <li
-                key={`${i}-${step.message.slice(0, 24)}`}
-                className={`chat-activity-item${isActive ? ' chat-activity-item-active' : ''}`}
-              >
-                <StepStatusIcon status={step.status} isActive={isActive} />
-                <div className="min-w-0 flex-1">
-                  {label && <span className="chat-skill-badge">{label}</span>}
-                  <p className="m-0 whitespace-pre-wrap break-words">{step.message}</p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className="text-xs text-muted m-0">Starting…</p>
+      {planSteps.length > 0 && (
+        <ol className="chat-working-plan">
+          {planSteps.slice(0, 5).map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
       )}
+    </div>
+  );
+}
+
+function SuggestionChips({
+  suggestions,
+  onPick,
+  disabled,
+}: {
+  suggestions: string[];
+  onPick: (text: string) => void;
+  disabled?: boolean;
+}) {
+  if (!suggestions.length) return null;
+  return (
+    <div className="chat-suggestions">
+      <p className="chat-suggestions-label">
+        <Sparkles className="w-3 h-3" aria-hidden />
+        Suggested next steps
+      </p>
+      <div className="chat-suggestions-list">
+        {suggestions.map((s) => (
+          <button
+            key={s}
+            type="button"
+            disabled={disabled}
+            onClick={() => onPick(s)}
+            className="chat-suggestion-chip"
+          >
+            {s}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -211,10 +199,13 @@ export function ChatPanel({
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [liveReply, setLiveReply] = useState('');
-  const [agentSteps, setAgentSteps] = useState<AgentStep[]>([]);
+  const [pendingUser, setPendingUser] = useState('');
+  const [workingStatus, setWorkingStatus] = useState('');
   const [agentPhase, setAgentPhase] = useState<AgentPhase>('idle');
   const [assemblyHint, setAssemblyHint] = useState<string | null>(null);
   const [creditsBlocked, setCreditsBlocked] = useState(false);
+  const [streamError, setStreamError] = useState('');
+  const [followUpSuggestions, setFollowUpSuggestions] = useState<string[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
@@ -253,7 +244,7 @@ export function ChatPanel({
     const el = threadRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages, displayLiveReply, agentSteps, agentPhase, streaming, assemblyHint, selectionSummary]);
+  }, [messages, displayLiveReply, workingStatus, streaming, assemblyHint, selectionSummary, followUpSuggestions, pendingUser, streamError]);
 
   function onInputChange(value: string) {
     setInput(value);
@@ -279,13 +270,18 @@ export function ChatPanel({
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
     if (file.size > 4_000_000) {
-      setAgentSteps((s) => [...s, { message: 'Image too large — use under 4 MB', skill: 'agent' }]);
+      setStreamError('Image too large — use under 4 MB');
       return;
     }
     const reader = new FileReader();
     reader.onload = () => setImagePreview(String(reader.result || ''));
     reader.readAsDataURL(file);
     e.target.value = '';
+  }
+
+  function updateWorking(message: string, status?: string) {
+    const formatted = formatWorkingStatus(message, status);
+    if (formatted) setWorkingStatus(formatted);
   }
 
   async function send(message?: string) {
@@ -300,12 +296,15 @@ export function ChatPanel({
 
     setInput('');
     setImagePreview(null);
+    setPendingUser(text);
     setStreaming(true);
     setLiveReply('');
-    setAgentSteps([]);
+    setWorkingStatus('Reading workspace…');
     setAgentPhase('reading');
     setAssemblyHint(null);
     setCreditsBlocked(false);
+    setStreamError('');
+    setFollowUpSuggestions([]);
 
     await streamChat(
       projectId,
@@ -315,45 +314,52 @@ export function ChatPanel({
         setAgentPhase((p) => (p === 'searching' || p === 'reading' ? 'thinking' : p));
         setLiveReply((s) => s + delta);
       },
-      ({ cadResult, pipelineDeferred, reply, modelUsed, webSearchUsed }) => {
+      ({ cadResult, pipelineDeferred, suggestions, reply }) => {
         setStreaming(false);
         setLiveReply('');
-        setAgentSteps([]);
+        setPendingUser('');
+        setWorkingStatus('');
         setAgentPhase(pipelineDeferred ? 'waiting' : 'idle');
+        if (suggestions?.length) setFollowUpSuggestions(suggestions);
         onMessagesChange();
         if (cadResult?.hint === 'assembly_needs_parts') {
           setAssemblyHint(cadResult.hintMessage || null);
-          setAgentSteps((steps) => [
-            ...steps,
-            { message: 'Import a catalog part first — see steps below', skill: 'agent', status: 'asking' },
-          ]);
         } else if (pipelineDeferred) {
-          setAgentSteps((steps) => [
-            ...steps,
-            { message: 'Reply in chat to continue the build', skill: 'agent', status: 'asking' },
+          setFollowUpSuggestions((prev) => prev.length ? prev : [
+            'Use standard engineering defaults and build it',
+            'Proceed — no more questions',
           ]);
         } else if (cadResult && !cadResult.deferred && cadResult.ok) {
           onCadGenerated(cadResult);
+        } else if (cadResult && !cadResult.ok) {
+          setFollowUpSuggestions((prev) => prev.length ? prev : [
+            'Retry with simpler geometry',
+            'Use defaults and build again',
+          ]);
+        }
+        if (reply && pipelineDeferred) {
+          // suggestions already set from server
         }
       },
       (err) => {
         const parsed = parseChatError(err);
         setStreaming(false);
         setLiveReply('');
+        setPendingUser('');
+        setWorkingStatus('');
         if (parsed.code === INSUFFICIENT_CREDITS_ERROR) {
           setCreditsBlocked(true);
           setAgentPhase('idle');
-          setAgentSteps([
-            {
-              message: parsed.message,
-              skill: 'agent',
-              status: 'error',
-            },
-          ]);
+          setStreamError(parsed.message);
           return;
         }
         setAgentPhase('idle');
-        setAgentSteps((steps) => [...steps, { message: friendlyError(), skill: 'agent', status: 'error' }]);
+        setStreamError(parsed.message || USER_ERRORS.chat);
+        setFollowUpSuggestions([
+          'Try again',
+          'Use standard defaults and build it',
+          'Simplify the design',
+        ]);
         onMessagesChange();
       },
       (msg, skill, status) => {
@@ -361,11 +367,12 @@ export function ChatPanel({
         else if (status === 'exploring') setAgentPhase('exploring');
         else if (status === 'asking') setAgentPhase('asking');
         else if (status === 'running' || status === 'done') setAgentPhase('executing');
-        setAgentSteps((steps) => [...steps, { message: activityLabel(msg), skill, status }]);
+        else if (status === 'error') setAgentPhase('executing');
+        updateWorking(msg, status);
       },
       (phase, msg) => {
         setAgentPhase(phase as AgentPhase);
-        setAgentSteps((steps) => [...steps, { message: activityLabel(msg), skill: 'agent', status: phase }]);
+        updateWorking(msg, phase);
       },
       {
         contextFileIds,
@@ -377,6 +384,8 @@ export function ChatPanel({
     );
   }
 
+  const showWorkingStrip = streaming && !showLiveBubble;
+
   return (
     <aside
       className={`chat-panel ${
@@ -386,12 +395,7 @@ export function ChatPanel({
       {!embedded ? (
         <div className="bg-brand text-white px-4 py-3 flex items-center justify-between shrink-0">
           <div className="font-semibold text-sm">Agent</div>
-          <span className="text-[10px] font-medium bg-white/15 px-2 py-0.5 rounded-full flex items-center gap-1.5">
-            <span
-              className={`chat-status-dot ${streaming ? 'chat-status-dot-live' : 'chat-status-dot-ready'}`}
-            />
-            {streaming ? phaseLabel || 'Working' : 'Ready'}
-          </span>
+          <ChatStatusBadge streaming={streaming} phaseLabel={phaseLabel} />
         </div>
       ) : (
         <div className="chat-panel-embedded-header">
@@ -404,9 +408,7 @@ export function ChatPanel({
         {(viewerContext?.selectedReferences?.length ?? 0) > 0 && (
           <div className="chat-viewer-context">
             <p className="chat-viewer-context-label">3D selection</p>
-            <p className="chat-viewer-context-text whitespace-pre-wrap">
-              {selectionSummary}
-            </p>
+            <p className="chat-viewer-context-text whitespace-pre-wrap">{selectionSummary}</p>
             <p className="chat-viewer-context-hint">
               Your next message applies to this selection — e.g. add holes, fillet, or cut features.
             </p>
@@ -435,7 +437,6 @@ export function ChatPanel({
                 <User className="w-3.5 h-3.5" />
               </div>
               <div className="chat-bubble chat-bubble-user">
-                <div className="chat-bubble-label">You</div>
                 <div className="whitespace-pre-wrap break-words">{m.content}</div>
               </div>
             </div>
@@ -445,24 +446,36 @@ export function ChatPanel({
                 <Bot className="w-3.5 h-3.5" />
               </div>
               <div className="chat-bubble chat-bubble-assistant">
-                <div className="chat-bubble-label">{BRAND_NAME} Assistant</div>
-                <div className="whitespace-pre-wrap break-words">
-                  {sanitizeAssistantForDisplay(m.content)}
-                </div>
+                <div className="chat-message-body">{renderAssistantText(m.content)}</div>
               </div>
             </div>
           ),
         )}
 
-        {!messages.length && !streaming && (
+        {pendingUser && streaming && (
+          <div className="chat-row chat-row-user">
+            <div className="chat-avatar chat-avatar-user">
+              <User className="w-3.5 h-3.5" />
+            </div>
+            <div className="chat-bubble chat-bubble-user">
+              <div className="whitespace-pre-wrap break-words">{pendingUser}</div>
+            </div>
+          </div>
+        )}
+
+        {!messages.length && !streaming && !pendingUser && (
           <div className="chat-empty-state">
+            <p className="chat-empty-title">What should we build?</p>
+            <p className="chat-empty-desc">
+              Describe a part, assembly, or robot. I&apos;ll plan, generate files, and show them in the viewer.
+            </p>
             <div className="flex flex-col gap-2">
               {PROMPTS.map((p) => (
                 <button
                   key={p}
                   type="button"
                   onClick={() => send(p)}
-                  className="block w-full text-left text-xs bg-elevated border border-border rounded-lg p-2.5 hover:border-brand/50 hover:bg-brand/5 text-gray-800 transition-colors"
+                  className="chat-starter-chip"
                 >
                   {p}
                 </button>
@@ -471,33 +484,32 @@ export function ChatPanel({
           </div>
         )}
 
-        {planSteps.length > 0 && streaming && (
-          <div className="chat-plan-card">
-            <p className="chat-plan-title">Plan</p>
-            <ol className="chat-plan-list">
-              {planSteps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </div>
-        )}
-
-        {(streaming || agentSteps.length > 0) && (
-          <AgentActivityTimeline
-            steps={agentSteps}
-            phaseLabel={phaseLabel}
-            streaming={streaming}
-          />
-        )}
-
         {showLiveBubble && (
           <div className="chat-row chat-row-assistant">
             <div className="chat-avatar chat-avatar-assistant">
               <Bot className="w-3.5 h-3.5" />
             </div>
             <div className="chat-bubble chat-bubble-assistant">
-              <div className="chat-bubble-label">{BRAND_NAME} Assistant</div>
-              <div className="whitespace-pre-wrap break-words">{displayLiveReply}</div>
+              <div className="chat-message-body">{renderAssistantText(liveReply)}</div>
+            </div>
+          </div>
+        )}
+
+        {showWorkingStrip && (
+          <AgentWorkingStrip
+            label={workingStatus}
+            phaseLabel={phaseLabel}
+            planSteps={planSteps}
+          />
+        )}
+
+        {streamError && !streaming && (
+          <div className="chat-row chat-row-assistant">
+            <div className="chat-avatar chat-avatar-assistant">
+              <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+            </div>
+            <div className="chat-bubble chat-bubble-assistant chat-bubble-error">
+              <p className="m-0 text-sm text-gray-800">{streamError}</p>
             </div>
           </div>
         )}
@@ -523,6 +535,14 @@ export function ChatPanel({
               </button>
             </div>
           </div>
+        )}
+
+        {!streaming && followUpSuggestions.length > 0 && (
+          <SuggestionChips
+            suggestions={followUpSuggestions}
+            onPick={(s) => send(s)}
+            disabled={streaming}
+          />
         )}
       </div>
 

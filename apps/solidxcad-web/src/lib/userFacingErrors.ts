@@ -1,7 +1,7 @@
 /** Client-side safe copy — never show API/stack details to users. */
 
 export const USER_ERRORS = {
-  chat: 'Design paused — please send your message again.',
+  chat: 'Connection interrupted — check the workspace or send your message again.',
   cad: 'Model not ready yet — try a simpler prompt or send again.',
   slice: 'Slicing did not finish — check the mesh and try again.',
   load: 'Could not load right now — refresh the page and try again.',

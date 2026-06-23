@@ -11,7 +11,7 @@ import {
   getSystemPromptForSkill,
   maxTokensForSkill,
 } from '../services/openrouter.js';
-import { buildGenerationSummary } from '../services/agentReply.js';
+import { buildGenerationSummary, buildNextSuggestions } from '../services/agentReply.js';
 import { userFacingError, USER_ERRORS } from '../services/userFacingErrors.js';
 import { shouldDeferPipeline } from '../services/agentBehavior.js';
 import { searchStepParts } from '../services/cadWorker.js';
@@ -161,6 +161,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
     res.setHeader('Connection', 'keep-alive');
 
     let full = '';
+    let heartbeat = null;
     try {
       if (effectiveWebSearch) {
         res.write(`data: ${JSON.stringify({
@@ -178,6 +179,14 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
         message: `Reading workspace · ${modelLabel(chatModel)}`,
       })}\n\n`);
       res.write(`data: ${JSON.stringify({ type: 'agent_phase', phase: 'thinking', message: 'Designing your solution…' })}\n\n`);
+
+      heartbeat = setInterval(() => {
+        try {
+          res.write(`data: ${JSON.stringify({ type: 'ping' })}\n\n`);
+        } catch {
+          // connection closed
+        }
+      }, 12000);
 
       for await (const chunk of streamChatCompletion(messages, {
         model: chatModel,
@@ -253,8 +262,13 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
       }
 
       const userFacingReply = buildGenerationSummary(cadResult, { reply: full });
+      const suggestions = buildNextSuggestions(cadResult, {
+        pipelineDeferred,
+        skill: resolvedSkill,
+      });
       await ChatMessage.findByIdAndUpdate(assistantMsg._id, { content: userFacingReply });
 
+      if (heartbeat) clearInterval(heartbeat);
       res.write(`data: ${JSON.stringify({
         type: 'done',
         messageId: assistantMsg._id,
@@ -262,11 +276,13 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
         skill: resolvedSkill,
         pipelineDeferred,
         reply: userFacingReply,
+        suggestions,
         modelUsed: chatModel,
         webSearchUsed: effectiveWebSearch,
       })}\n\n`);
       res.end();
     } catch (err) {
+      if (heartbeat) clearInterval(heartbeat);
       console.error('[agent/chat stream]', err);
       res.write(`data: ${JSON.stringify({
         type: 'error',
@@ -329,6 +345,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
     }
 
     const userFacingReply = buildGenerationSummary(cadResult, { reply });
+    const suggestions = buildNextSuggestions(cadResult, { pipelineDeferred, skill });
     await ChatMessage.findByIdAndUpdate(assistantMsg._id, { content: userFacingReply });
 
     res.json({
@@ -337,6 +354,7 @@ Decompose complex systems (rocket engines, robots, machines) into subassemblies 
       cadResult,
       skill,
       pipelineDeferred,
+      suggestions,
       modelUsed: chatModel,
       webSearchUsed: effectiveWebSearch,
     });

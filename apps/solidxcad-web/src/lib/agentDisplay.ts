@@ -45,9 +45,29 @@ export function sanitizeAssistantForDisplay(text: string) {
   const stripped = stripCodeFromDisplay(text);
   if (stripped) return stripped;
   if (looksLikeGeneratorCode(text)) {
-    return 'Design prepared — see workspace for generated files.';
+    return 'Building your design — files will appear in the workspace when ready.';
   }
   return stripAgentMarkers(text) || 'Done.';
+}
+
+/** Compact status line for the in-progress agent strip (not full chat history). */
+export function formatWorkingStatus(message: string, status?: string): string | null {
+  const msg = String(message || '').trim();
+  if (!msg) return null;
+  if (msg === 'Plan' || msg.startsWith('• ')) return 'Planning design…';
+  if (/^Recovery:/i.test(msg)) return 'Refining design and retrying…';
+  if (status === 'asking' || status === 'waiting') return 'Need your answer to continue…';
+  if (status === 'error') return 'Adjusting approach…';
+  if (/^Executing pipeline/i.test(msg)) return 'Running design pipeline…';
+  if (/^Exploring workspace/i.test(msg)) return 'Reviewing project files…';
+  if (/^Designing your solution/i.test(msg)) return 'Designing your solution…';
+  if (/^Reading workspace/i.test(msg)) return 'Reading workspace…';
+  if (/^Searching references/i.test(msg)) return 'Searching references…';
+  if (/^Asking clarifying/i.test(msg)) return 'Preparing questions…';
+  if (/^✓/.test(msg)) return msg;
+  const step = msg.replace(/^\[Step \d+\/\d+\]\s*/, '');
+  if (step.length > 80) return `${step.slice(0, 77)}…`;
+  return step;
 }
 
 export function isUserVisibleFile(name: string, kind?: string) {

@@ -72,7 +72,7 @@ export function normalizeAssistantReply(text = '') {
   const stripped = stripCodeFromReply(text);
   if (stripped) return stripped;
   if (looksLikeGeneratorCode(text)) {
-    return 'Design prepared — check workspace for generated files.';
+    return 'Building your design — files will appear in the workspace when ready.';
   }
   return stripAgentMarkers(text) || 'Done.';
 }
@@ -98,7 +98,10 @@ export function buildGenerationSummary(cadResult = null, { reply = '' } = {}) {
     return lead ? `${lead}\n\n${tail}` : tail;
   }
 
-  if (cadResult.deferred) return narrative || 'Reply in chat to continue the build.';
+  if (cadResult.deferred) {
+    const lead = narrative || 'I need a bit more detail before I generate files.';
+    return `${lead}\n\nReply with dimensions, or say **“use defaults and build it”** to continue.`;
+  }
 
   const lines = [];
   if (narrative && !/^Design prepared/i.test(narrative)) {
@@ -125,4 +128,60 @@ export function buildGenerationSummary(cadResult = null, { reply = '' } = {}) {
   }
 
   return lines.join('\n').trim();
+}
+
+/** Short follow-up prompts shown as chips in the agent chat UI. */
+export function buildNextSuggestions(cadResult = null, { pipelineDeferred = false, skill = 'cad' } = {}) {
+  if (pipelineDeferred || cadResult?.deferred) {
+    return [
+      'Use standard engineering defaults and build it',
+      'Proceed — no more questions',
+      'Start with a simplified version',
+    ];
+  }
+
+  if (!cadResult?.ok) {
+    return [
+      'Retry with simpler geometry',
+      'Break into smaller parts first',
+      'Use 30 mm scale and try again',
+    ];
+  }
+
+  const bySkill = {
+    cad: [
+      'Add mounting holes on the base',
+      'Apply 2 mm fillets on edges',
+      'Slice this for FDM printing',
+      'Make a variant 20% larger',
+    ],
+    urdf: [
+      'Add collision meshes',
+      'Generate SRDF for MoveIt',
+      'Adjust joint limits',
+    ],
+    srdf: [
+      'Tune collision pairs',
+      'Export for simulation',
+    ],
+    sdf: [
+      'Add sensors and plugins',
+      'Tune inertial properties',
+    ],
+    'implicit-cad': [
+      'Export STL for printing',
+      'Increase lattice resolution',
+    ],
+    gcode: [
+      'Adjust layer height',
+      'Add brim and supports',
+    ],
+    'step-parts': [
+      'Build an assembly with this hardware',
+      'Import another fastener size',
+    ],
+  };
+
+  const list = bySkill[cadResult.skill || skill] || bySkill.cad;
+  return list.slice(0, 4);
 }

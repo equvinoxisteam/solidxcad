@@ -143,10 +143,7 @@ export async function runSkillPipeline({
   const hasSelectionContext = Boolean(String(selectionContext || '').trim());
   const modifyIntent = wantsModifyExisting(userMessage) || focusedFiles.length > 0 || hasSelectionContext;
   if (plan.length) {
-    emit(res, 'Plan', 'agent', 'planning');
-    for (const item of plan) {
-      emit(res, `• ${item}`, 'agent', 'planning');
-    }
+    emit(res, `Plan ready (${plan.length} steps)`, 'agent', 'planning');
   }
 
   const projectFiles = await ProjectFile.find({ projectId, userId }).sort({ createdAt: 1 });
